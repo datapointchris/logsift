@@ -489,7 +489,7 @@ This enables:
 - Bidirectional communication
 - Better error handling
 
-See [MCP Integration](../architecture/mcp-integration.md) (Phase 3 documentation).
+See MCP Integration documentation (Phase 3 - coming soon).
 
 ## Troubleshooting
 
