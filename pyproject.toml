@@ -94,9 +94,8 @@ omit = []
 source = ["src/logsift"]
 
 [tool.coverage.report]
-# Temporarily lowered for Phase 1 scaffolding (stubs raise NotImplementedError)
-# Will increase to 80 as we implement actual functionality
-fail_under = 60
+# Phase 2 complete - comprehensive test coverage achieved
+fail_under = 70
 show_missing = true
 exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:", "@abstractmethod"]
 

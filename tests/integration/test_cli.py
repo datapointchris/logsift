@@ -21,15 +21,16 @@ def test_cli_help():
     assert 'logsift' in result.stdout.lower()
 
 
-def test_monitor_command_placeholder():
-    """Test that monitor command exists (placeholder)."""
-    result = runner.invoke(app, ['monitor', '--', 'echo', 'test'])
-    # Should not crash, even if not fully implemented
-    assert 'Monitor command not yet implemented' in result.stdout
+def test_monitor_command():
+    """Test that monitor command works."""
+    result = runner.invoke(app, ['monitor', '--format=json', '--', 'echo', 'test'])
+    # Command should execute successfully
+    assert result.exit_code == 0
+    assert 'summary' in result.stdout
 
 
-def test_analyze_command_placeholder():
-    """Test that analyze command exists (placeholder)."""
-    result = runner.invoke(app, ['analyze', '/tmp/test.log'])
-    # Should not crash, even if not fully implemented
-    assert 'Analyze command not yet implemented' in result.stdout
+def test_analyze_command():
+    """Test that analyze command works with nonexistent file."""
+    result = runner.invoke(app, ['analyze', '/nonexistent/file.log'])
+    # Should handle error gracefully
+    assert result.exit_code == 1
