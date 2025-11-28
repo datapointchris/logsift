@@ -1,7 +1,6 @@
 """Main CLI application using Typer.
 
-This module defines the primary logsift command-line interface with subcommands
-for monitoring, analyzing, and managing logs.
+This module defines the primary logsift command-line interface with subcommands for monitoring, analyzing, and managing logs.
 """
 
 from typing import Annotated

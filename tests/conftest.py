@@ -11,13 +11,12 @@ import pytest
 @pytest.fixture
 def sample_log_content() -> str:
     """Sample log content for testing."""
-    return """
+    return """\
 2025-11-27T14:30:22Z [INFO] Starting installation
 2025-11-27T14:30:23Z [ERROR] Package tmux already installed
 2025-11-27T14:30:24Z [INFO] Continuing...
 2025-11-27T14:30:25Z [WARNING] Deprecated flag used
-2025-11-27T14:30:26Z [INFO] Installation complete
-    """.strip()
+2025-11-27T14:30:26Z [INFO] Installation complete"""
 
 
 @pytest.fixture

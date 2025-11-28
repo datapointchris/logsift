@@ -1,7 +1,6 @@
 """Extract errors, warnings, and file references from logs.
 
-Provides various extraction strategies for identifying important information
-in log files.
+Provides various extraction strategies for identifying important information in log files.
 """
 
 from typing import Any

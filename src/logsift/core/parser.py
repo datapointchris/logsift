@@ -1,7 +1,6 @@
 """Log parsing and format detection.
 
-Handles auto-detection of log formats (JSON, structured, plain text) and
-normalization to internal representation.
+Handles auto-detection of log formats (JSON, structured, plain text) and normalization to internal representation.
 """
 
 from typing import Any

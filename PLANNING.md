@@ -14,6 +14,7 @@
 ### The Problem We're Solving
 
 When running long commands (installations, builds, tests), current tools dump 2000+ lines of verbose output that:
+
 - Burns LLM context window
 - Makes error extraction difficult
 - Provides no structured actionable information
@@ -37,6 +38,7 @@ Command produces 2000 lines → logsift extracts 20-50 lines
 ### This Conversation
 
 This planning session is stored at:
+
 ```bash
 ~/.claude/sessions/session-2025-11-27-XXXXXX.json
 ```
@@ -46,6 +48,7 @@ This planning session is stored at:
 1. **From dotfiles directory**: Current session will be in compact/summary mode
 2. **From new logsift directory**: Start fresh with this planning document as reference
 3. **To find session files**:
+
    ```bash
    ls -lt ~/.claude/sessions/ | head -5
    ```
@@ -272,6 +275,7 @@ logsift
 ```
 
 **Why This Schema:**
+
 - ✅ **Predictable structure** - Claude knows exactly where to find information
 - ✅ **File references** - Exact paths with line numbers for editing
 - ✅ **Context included** - No need to read full log
@@ -406,6 +410,7 @@ logsift monitor --json-to=result.json --format=markdown -- task install
 **Python 3.11+** (Required for stdlib TOML support)
 
 **Why Python:**
+
 - ✅ Excellent text processing (regex, string manipulation)
 - ✅ Native JSON/TOML support (3.11+)
 - ✅ Rich ecosystem (typer, sh, rich)
@@ -696,6 +701,7 @@ build-backend = "hatchling.build"
    - [ ] **Tests**: Cache operations
 
 **Success Criteria Phase 1**:
+
 - ✅ Can analyze existing log files
 - ✅ Can monitor commands and capture output
 - ✅ JSON output matches schema
@@ -799,6 +805,7 @@ build-backend = "hatchling.build"
    - [ ] **Tests**: Cleanup behavior
 
 **Success Criteria Phase 2**:
+
 - ✅ Can load custom pattern libraries
 - ✅ fzf integration works beautifully
 - ✅ Dual output modes work correctly
@@ -861,6 +868,7 @@ build-backend = "hatchling.build"
      - Memory efficiency
 
 **Success Criteria Phase 3**:
+
 - ✅ MCP server works with Claude Code
 - ✅ Can be called as native tool
 - ✅ Remote monitoring functional
@@ -1005,6 +1013,7 @@ jobs:
 ### Industry Standards & Research
 
 **Sources**:
+
 - [Structured Logging Best Practices](https://betterstack.com/community/guides/logging/structured-logging/)
 - [JSON Logging Guide](https://betterstack.com/community/guides/logging/json-logging/)
 - [Python structlog](https://www.structlog.org/en/stable/logging-best-practices.html)
@@ -1051,6 +1060,7 @@ jobs:
 ### Auto-Detection Strategy
 
 logsift will auto-detect and parse:
+
 1. **JSON** - Try `json.loads()`, if success, use structured parser
 2. **Structured key=value** - Parse `key=value` or `key: value` patterns
 3. **Syslog** - Detect RFC 5424 or BSD syslog format
@@ -1061,6 +1071,7 @@ logsift will auto-detect and parse:
 **Best Practices**:
 
 1. **Use Standard Exit Codes**
+
    ```bash
    # Success
    exit 0
@@ -1075,11 +1086,13 @@ logsift will auto-detect and parse:
    ```
 
 2. **Include Timestamps**
+
    ```bash
    echo "$(date -Iseconds) [INFO] Starting installation"
    ```
 
 3. **Use Consistent Markers**
+
    ```bash
    echo "✅ Step completed successfully"
    echo "❌ Step failed: reason"
@@ -1088,6 +1101,7 @@ logsift will auto-detect and parse:
    ```
 
 4. **Include Context in Errors**
+
    ```bash
    # Bad
    echo "Error"
@@ -1098,6 +1112,7 @@ logsift will auto-detect and parse:
    ```
 
 5. **Show Progress**
+
    ```bash
    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
    echo " Phase 1/3: Installing packages"
@@ -1105,12 +1120,14 @@ logsift will auto-detect and parse:
    ```
 
 6. **File References**
+
    ```bash
    # Standard format: file:line
    echo "Error in src/main.py:123: undefined variable"
    ```
 
 7. **Idempotency**
+
    ```bash
    # Check before doing
    if [[ -d "$TARGET" ]]; then
@@ -1612,6 +1629,7 @@ nav:
 ### Immediate Actions
 
 1. **Create Project**
+
    ```bash
    cd ~/code
    mkdir logsift
@@ -1620,11 +1638,13 @@ nav:
    ```
 
 2. **Copy This Planning Document**
+
    ```bash
    cp /Users/chris/dotfiles/.planning/logsift-planning.md PLANNING.md
    ```
 
 3. **Create Basic Structure**
+
    ```bash
    mkdir -p src/logsift
    mkdir -p tests/{unit,integration,fixtures}
@@ -1634,11 +1654,13 @@ nav:
    ```
 
 4. **Create pyproject.toml**
+
    ```bash
    # See detailed pyproject.toml in this document
    ```
 
 5. **Copy CLAUDE.md**
+
    ```bash
    cp /Users/chris/dotfiles/CLAUDE.md CLAUDE.md
    # Edit to remove dotfiles-specific content
@@ -1646,11 +1668,13 @@ nav:
    ```
 
 6. **Install Dependencies**
+
    ```bash
    pip install -e '.[dev]'
    ```
 
 7. **First Test**
+
    ```bash
    # Create simple test
    # Run pytest
