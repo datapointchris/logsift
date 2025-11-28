@@ -3,11 +3,17 @@
 Lists and manages cached log files.
 """
 
+import sys
+from pathlib import Path
+
 from rich.console import Console
 from rich.table import Table
 
 from logsift.cache.manager import CacheManager
 from logsift.cache.rotation import clean_old_logs
+from logsift.utils.fzf import browse_log_with_preview
+from logsift.utils.fzf import is_fzf_available
+from logsift.utils.fzf import select_log_file
 
 console = Console()
 
@@ -116,3 +122,57 @@ def clean_logs(days: int = 90, dry_run: bool = False) -> None:
             console.print(f'[green]No log files older than {days} days[/green]')
         else:
             console.print(f'[green]Deleted {deleted_count} log file(s) older than {days} days[/green]')
+
+
+def browse_logs(context: str | None = None, action: str = 'select') -> None:
+    """Browse cached log files interactively using fzf.
+
+    Args:
+        context: Optional context filter for log files
+        action: Action to perform - 'select' (choose and analyze) or 'view' (preview only)
+    """
+    # Check if fzf is available
+    if not is_fzf_available():
+        console.print('[red]Error: fzf is not installed or not in PATH[/red]')
+        console.print('[dim]Install fzf: https://github.com/junegunn/fzf#installation[/dim]')
+        sys.exit(1)
+
+    # Get log files
+    cache = CacheManager()
+    logs = cache.list_all_logs(context=context)
+
+    if not logs:
+        if context:
+            console.print(f'[yellow]No logs found for context: {context}[/yellow]')
+        else:
+            console.print('[yellow]No cached logs found[/yellow]')
+        return
+
+    # Select log file with fzf
+    if action == 'select':
+        selected_path = select_log_file(logs, 'Select log file to analyze')
+
+        if not selected_path:
+            console.print('[dim]No file selected[/dim]')
+            return
+
+        # Analyze the selected log
+        console.print(f'[cyan]Analyzing: {selected_path}[/cyan]')
+
+        from logsift.commands.analyze import analyze_log
+
+        analyze_log(selected_path, output_format='markdown')
+
+    elif action == 'view':
+        selected_path = select_log_file(logs, 'Select log file to view')
+
+        if not selected_path:
+            console.print('[dim]No file selected[/dim]')
+            return
+
+        # Browse the selected log
+        log_path = Path(selected_path)
+        if browse_log_with_preview(log_path):
+            console.print(f'[dim]Browsed: {log_path}[/dim]')
+        else:
+            console.print('[red]Error browsing log file[/red]')

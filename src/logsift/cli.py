@@ -75,16 +75,49 @@ def monitor(
 
 @app.command()
 def analyze(
-    log_file: Annotated[str, typer.Argument(help='Path to log file to analyze')],
+    log_file: Annotated[str | None, typer.Argument(help='Path to log file to analyze (optional with fzf)')] = None,
     format: Annotated[str, typer.Option('--format', help='Output format: auto, json, markdown, plain')] = 'auto',
+    interactive: Annotated[bool, typer.Option('-i', '--interactive', help='Use fzf to select log file')] = False,
 ) -> None:
     """Analyze an existing log file.
+
+    If no log file is provided and fzf is installed, an interactive selector will appear.
 
     Example:
         logsift analyze /var/log/app.log
         logsift analyze --format=json build.log
+        logsift analyze --interactive
+        logsift analyze  # Interactive if fzf is available
     """
     from logsift.commands.analyze import analyze_log
+
+    # If no log file provided, try interactive mode
+    if not log_file:
+        from logsift.cache.manager import CacheManager
+        from logsift.utils.fzf import is_fzf_available
+        from logsift.utils.fzf import select_log_file
+
+        if not is_fzf_available() and not interactive:
+            console.print('[red]Error: No log file specified and fzf is not available[/red]')
+            console.print('[dim]Provide a log file path or install fzf for interactive mode[/dim]')
+            raise typer.Exit(1)
+
+        # Use fzf to select a log file
+        cache = CacheManager()
+        logs = cache.list_all_logs()
+
+        if not logs:
+            console.print('[yellow]No cached logs found[/yellow]')
+            raise typer.Exit(1)
+
+        selected = select_log_file(logs, 'Select log file to analyze')
+
+        if not selected:
+            console.print('[dim]No file selected[/dim]')
+            raise typer.Exit(0)
+
+        log_file = selected
+        console.print(f'[cyan]Analyzing: {log_file}[/cyan]\n')
 
     analyze_log(log_file, output_format=format)
 
@@ -142,6 +175,26 @@ def logs_clean(
     from logsift.commands.logs import clean_logs
 
     clean_logs(days=days, dry_run=dry_run)
+
+
+@logs_app.command('browse')
+def logs_browse(
+    context: Annotated[str | None, typer.Option('-c', '--context', help='Filter by context')] = None,
+    view: Annotated[bool, typer.Option('--view', help='Browse file content (default: analyze)')] = False,
+) -> None:
+    """Browse cached log files interactively with fzf.
+
+    Requires fzf to be installed.
+
+    Example:
+        logsift logs browse
+        logsift logs browse --context monitor
+        logsift logs browse --view
+    """
+    from logsift.commands.logs import browse_logs
+
+    action = 'view' if view else 'select'
+    browse_logs(context=context, action=action)
 
 
 if __name__ == '__main__':
