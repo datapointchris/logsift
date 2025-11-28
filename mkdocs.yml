@@ -10,35 +10,13 @@ edit_uri: edit/main/docs/
 theme:
   name: material
   palette:
-    # Light mode
-    - scheme: default
-      primary: indigo
-      accent: indigo
-      toggle:
-        icon: material/brightness-7
-        name: Switch to dark mode
-
-    # Dark mode
-    - scheme: slate
-      primary: blue
-      accent: indigo
-      toggle:
-        icon: material/brightness-4
-        name: Switch to light mode
-
+    scheme: slate
+    primary: indigo
+    accent:
   features:
     - content.code.copy
-    - content.code.annotate
     - navigation.instant
     - navigation.tracking
-    - navigation.tabs
-    - navigation.sections
-    - navigation.expand
-    - navigation.top
-    - navigation.indexes
-    - search.suggest
-    - search.highlight
-    - search.share
 
   icon:
     repo: fontawesome/brands/github
@@ -59,15 +37,10 @@ markdown_extensions:
         - name: mermaid
           class: mermaid
           format: !!python/name:pymdownx.superfences.fence_code_format
-  - pymdownx.tabbed:
-      alternate_style: true
   - pymdownx.tasklist:
       custom_checkbox: true
-  - tables
   - toc:
-      permalink: true
-  - attr_list
-  - md_in_html
+      toc_depth: 0
 
 plugins:
   - search
