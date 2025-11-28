@@ -31,4 +31,19 @@ class ContextExtractor:
         Returns:
             Dictionary with before, error, and after context
         """
-        raise NotImplementedError('Context extraction not yet implemented')
+        # Validate error_index
+        if error_index < 0 or error_index >= len(log_entries):
+            raise IndexError(f'Error index {error_index} out of bounds for log entries of length {len(log_entries)}')
+
+        # Calculate start and end indices for context
+        start_index = max(0, error_index - self.context_lines)
+        end_index = min(len(log_entries), error_index + self.context_lines + 1)
+
+        # Extract context before and after the error
+        context_before = log_entries[start_index:error_index]
+        context_after = log_entries[error_index + 1 : end_index]
+
+        return {
+            'context_before': context_before,
+            'context_after': context_after,
+        }
