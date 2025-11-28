@@ -87,25 +87,49 @@ def format_help_with_colors(ctx: Context) -> str:
             formatter.write_dl(commands)
 
     # Write options grouped by category
-    option_groups: dict[str, list[tuple[str, str]]] = {}
+    cache_options: list[tuple[str, str]] = []
+    output_options: list[tuple[str, str]] = []
+    global_options: list[tuple[str, str]] = []
+
     for param in ctx.command.get_params(ctx):
         if isinstance(param, click.Option):
-            # Group options
-            group = getattr(param, 'group', 'Options')
-            if group not in option_groups:
-                option_groups[group] = []
-
             opts = param.get_help_record(ctx)
-            if opts:
-                option_groups[group].append(opts)
+            if not opts:
+                continue
 
-    # Write each option group
-    for group_name in ('Output options', 'Cache options', 'Global options', 'Options'):
-        if group_name in option_groups:
-            formatter.write_paragraph()
-            formatter.write_heading(group_name)
-            formatter.current_section = group_name
-            formatter.write_dl(option_groups[group_name])
+            opt_name, help_text = opts
+
+            # Environment variables are already shown by Typer as [env var: X]
+            # We don't need to add them again - Typer handles this automatically
+
+            # Group options by name patterns
+            if '--cache' in opt_name or '--no-cache' in opt_name:
+                cache_options.append((opt_name, help_text))
+            elif '--format' in opt_name or '--notify' in opt_name:
+                output_options.append((opt_name, help_text))
+            elif '--config' in opt_name or '--verbose' in opt_name or '--quiet' in opt_name:
+                global_options.append((opt_name, help_text))
+            else:
+                global_options.append((opt_name, help_text))
+
+    # Write option groups in order
+    if cache_options:
+        formatter.write_paragraph()
+        formatter.write_heading('Cache options')
+        formatter.current_section = 'Cache options'
+        formatter.write_dl(cache_options)
+
+    if output_options:
+        formatter.write_paragraph()
+        formatter.write_heading('Output options')
+        formatter.current_section = 'Output options'
+        formatter.write_dl(output_options)
+
+    if global_options:
+        formatter.write_paragraph()
+        formatter.write_heading('Global options')
+        formatter.current_section = 'Global options'
+        formatter.write_dl(global_options)
 
     # Write epilog
     if ctx.command.epilog:
