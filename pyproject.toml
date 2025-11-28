@@ -141,6 +141,12 @@ minversion = "8.0"
 testpaths = ["tests"]
 
 
+[tool.refurb]
+ignore = [
+    "FURB184",  # Allow separate assignment and assertion in tests for readability
+]
+
+
 [tool.ruff]
 line-length = 140
 exclude = [
