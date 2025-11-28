@@ -19,9 +19,10 @@ class UVStyleHelpFormatter(click.HelpFormatter):
     def write_heading(self, heading: str) -> None:
         """Write a section heading in bright green."""
         if heading:
-            # Use bright green for section headers
-            styled_heading = click.style(f'{heading}:', fg='bright_green', bold=True)
-            self.write(f'{styled_heading}\n')
+            # Use click.style with color=True to force ANSI codes
+            styled = click.style(f'{heading}:', fg='bright_green', bold=True)
+            # Get the ANSI-encoded string
+            self.write(f'{styled}\n')
 
     def write_dl(
         self,
@@ -37,13 +38,18 @@ class UVStyleHelpFormatter(click.HelpFormatter):
         for first, second in rows:
             # Color command names blue in Commands section
             if self.current_section == 'Commands':
-                first = click.style(first, fg='bright_blue')
+                # Use click.style and get actual length for padding
+                colored_first = click.style(first, fg='bright_blue')
+                first_len = len(first)  # Length without ANSI codes
+                # Write with proper indentation
+                self.write(f'  {colored_first}')
+            else:
+                first_len = len(first)
+                self.write(f'  {first}')
 
-            # Write with proper indentation
-            self.write(f'  {first}')
             if second:
                 # Add spacing and description
-                padding = ' ' * (max_width - len(click.unstyle(first)) + col_spacing)
+                padding = ' ' * (max_width - first_len + col_spacing)
                 self.write(f'{padding}{second}')
             self.write('\n')
 
@@ -65,7 +71,7 @@ def format_help_with_colors(ctx: Context) -> str:
     formatter.write(f'  {usage_text}\n')
 
     # Get command object
-    if isinstance(ctx.command, click.MultiCommand):
+    if isinstance(ctx.command, click.Group):
         # Main help - show commands
         commands = []
         for name in ctx.command.list_commands(ctx):

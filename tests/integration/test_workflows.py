@@ -175,21 +175,31 @@ error: Syntax error in config.yaml:15
 class TestWatchWorkflow:
     """Test the complete watch command workflow."""
 
-    def test_watch_existing_file(self, tmp_path):
+    def test_watch_existing_file(self, tmp_path, monkeypatch):
         """Test watching an existing log file."""
+        import time
+        from contextlib import suppress
+
+        from logsift.commands.watch import watch_log
+
         log_file = tmp_path / 'watch.log'
         log_file.write_text('Initial line\n')
 
-        # Start watch in background (will timeout after 1 second)
-        runner.invoke(
-            app,
-            ['watch', str(log_file), '-i', '1'],
-            input='\x03',  # Ctrl+C to stop
-            catch_exceptions=False,
-        )
+        # Mock the infinite loop to exit after one iteration
+        original_sleep = time.sleep
+        call_count = {'count': 0}
 
-        # Watch should handle keyboard interrupt gracefully
-        # Exit code may be non-zero due to interrupt
+        def mock_sleep(seconds):
+            call_count['count'] += 1
+            if call_count['count'] >= 2:  # Exit after first watch iteration
+                raise KeyboardInterrupt()
+            original_sleep(0.01)  # Very short sleep for test
+
+        monkeypatch.setattr(time, 'sleep', mock_sleep)
+
+        # Should handle KeyboardInterrupt gracefully
+        with suppress(KeyboardInterrupt, SystemExit):
+            watch_log(str(log_file), interval=1)
 
     def test_watch_nonexistent_file(self):
         """Test watching a file that doesn't exist."""

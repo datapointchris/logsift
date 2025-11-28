@@ -5,10 +5,24 @@ This module defines the primary logsift command-line interface with subcommands 
 
 from typing import Annotated
 
+import click
 import typer
 from rich.console import Console
+from typer.core import TyperGroup
 
 from logsift import __version__
+from logsift.cli_formatter import format_help_with_colors
+
+
+class ColoredTyperGroup(TyperGroup):
+    """Custom TyperGroup that uses our uv-style colored formatter."""
+
+    def format_help(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
+        """Override help formatting to use our custom colored formatter."""
+        help_text = format_help_with_colors(ctx)
+        # Use click.echo to properly handle ANSI color codes
+        click.echo(help_text, color=True)
+
 
 app = typer.Typer(
     name='logsift',
@@ -17,6 +31,7 @@ app = typer.Typer(
     rich_markup_mode=None,  # Disable Rich markup
     pretty_exceptions_enable=False,  # Disable Rich exceptions
     epilog='Use `logsift <command> --help` for more details.',
+    cls=ColoredTyperGroup,  # Use our custom colored formatter
 )
 console = Console()
 
@@ -28,8 +43,9 @@ def version_callback(value: bool) -> None:
         raise typer.Exit()
 
 
-@app.callback()
+@app.callback(invoke_without_command=True)
 def main(
+    ctx: typer.Context,
     version: bool = typer.Option(
         None,
         '--version',
@@ -44,7 +60,10 @@ def main(
     An LLM-optimized log analysis and command monitoring tool designed for
     Claude Code and other AI agents.
     """
-    pass
+    # If no subcommand is provided, show help (like uv does)
+    if ctx.invoked_subcommand is None:
+        console.print(ctx.get_help())
+        raise typer.Exit()
 
 
 @app.command()
@@ -146,6 +165,7 @@ logs_app = typer.Typer(
     help='Manage cached log files',
     rich_markup_mode=None,
     pretty_exceptions_enable=False,
+    cls=ColoredTyperGroup,  # Use our custom colored formatter
 )
 app.add_typer(logs_app, name='logs')
 
