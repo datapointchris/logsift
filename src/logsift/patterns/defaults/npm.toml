@@ -1,0 +1,145 @@
+# NPM and Node.js package manager error patterns
+# Covers npm install, npm run, yarn, and pnpm errors
+
+[[patterns]]
+name = "npm_package_not_found"
+regex = "npm ERR! 404\\s+(.+) is not in the npm registry"
+severity = "error"
+description = "Package not found in npm registry"
+tags = ["npm", "package", "registry"]
+suggestion = "Check package name spelling or verify package exists"
+
+[[patterns]]
+name = "npm_permission_denied"
+regex = "npm ERR!.*EACCES: permission denied"
+severity = "error"
+description = "Permission denied during npm operation"
+tags = ["npm", "permissions", "fixable"]
+suggestion = "Use 'sudo npm install -g' for global packages or fix npm permissions"
+
+[[patterns]]
+name = "npm_missing_script"
+regex = "npm ERR! missing script: (.+)"
+severity = "error"
+description = "NPM script not defined in package.json"
+tags = ["npm", "script", "configuration"]
+suggestion = "Add script to package.json scripts section or check script name"
+
+[[patterns]]
+name = "npm_peer_dependency_error"
+regex = "npm ERR!.*peer dep missing: (.+)"
+severity = "error"
+description = "Peer dependency not installed"
+tags = ["npm", "dependencies", "fixable"]
+suggestion = "Install required peer dependency manually"
+
+[[patterns]]
+name = "npm_version_conflict"
+regex = "npm ERR!.*Could not resolve dependency"
+severity = "error"
+description = "Dependency version conflict"
+tags = ["npm", "dependencies", "version_conflict"]
+suggestion = "Check package.json for conflicting version requirements"
+
+[[patterns]]
+name = "npm_enoent_error"
+regex = "npm ERR!.*ENOENT.*no such file or directory"
+severity = "error"
+description = "File or directory not found"
+tags = ["npm", "filesystem"]
+suggestion = "Verify file paths and ensure all required files exist"
+
+[[patterns]]
+name = "npm_network_error"
+regex = "npm ERR!.*network.*(?:timeout|ECONNREFUSED|ETIMEDOUT)"
+severity = "error"
+description = "Network connection error"
+tags = ["npm", "network"]
+suggestion = "Check internet connection or try different registry"
+
+[[patterns]]
+name = "npm_checksum_failed"
+regex = "npm ERR!.*integrity check failed"
+severity = "error"
+description = "Package integrity check failed"
+tags = ["npm", "security", "integrity"]
+suggestion = "Clear npm cache with 'npm cache clean --force' and retry"
+
+[[patterns]]
+name = "npm_deprecated_package"
+regex = "npm WARN deprecated (.+)"
+severity = "warning"
+description = "Package is deprecated"
+tags = ["npm", "deprecated", "maintenance"]
+suggestion = "Consider updating to recommended alternative package"
+
+[[patterns]]
+name = "npm_gyp_build_error"
+regex = "npm ERR!.*node-gyp.*failed"
+severity = "error"
+description = "Native module build failed"
+tags = ["npm", "native", "build"]
+suggestion = "Install build tools (python, make, gcc) required for native modules"
+
+[[patterns]]
+name = "npm_funding_info"
+regex = "npm notice.*packages are looking for funding"
+severity = "info"
+description = "Packages requesting funding"
+tags = ["npm", "funding", "info"]
+
+[[patterns]]
+name = "npm_outdated_warning"
+regex = "npm WARN.*deprecated"
+severity = "warning"
+description = "Using outdated/deprecated dependencies"
+tags = ["npm", "outdated", "maintenance"]
+suggestion = "Run 'npm outdated' to see update options"
+
+[[patterns]]
+name = "npm_missing_dependency"
+regex = "npm ERR!.*Cannot find module '(.+)'"
+severity = "error"
+description = "Required module not found"
+tags = ["npm", "dependencies", "fixable"]
+suggestion = "Run 'npm install' to install missing dependencies"
+
+[[patterns]]
+name = "yarn_network_error"
+regex = "error An unexpected error occurred: \"(.+): ENOTFOUND"
+severity = "error"
+description = "Yarn network error"
+tags = ["yarn", "network"]
+suggestion = "Check internet connection and registry URL"
+
+[[patterns]]
+name = "pnpm_lockfile_mismatch"
+regex = "ERR_PNPM_OUTDATED_LOCKFILE"
+severity = "error"
+description = "pnpm lockfile is out of sync"
+tags = ["pnpm", "lockfile", "fixable"]
+suggestion = "Run 'pnpm install' to update lockfile"
+
+[[patterns]]
+name = "npm_engine_mismatch"
+regex = "npm ERR!.*engine.*Unsupported"
+severity = "error"
+description = "Node.js version mismatch"
+tags = ["npm", "node", "version"]
+suggestion = "Install required Node.js version or update package.json engines"
+
+[[patterns]]
+name = "npm_syntax_error"
+regex = "npm ERR!.*Unexpected token"
+severity = "error"
+description = "Syntax error in package.json or config"
+tags = ["npm", "syntax", "configuration"]
+suggestion = "Check package.json for syntax errors (trailing commas, etc.)"
+
+[[patterns]]
+name = "npm_eexist_error"
+regex = "npm ERR!.*EEXIST.*already exists"
+severity = "error"
+description = "File already exists"
+tags = ["npm", "filesystem", "fixable"]
+suggestion = "Remove existing file or use --force flag"

@@ -1,0 +1,140 @@
+# GNU Make and Makefile error patterns
+# Covers make build errors, missing targets, and common issues
+
+[[patterns]]
+name = "make_no_rule_to_make_target"
+regex = "make(?:\\[\\d+\\])?:.*No rule to make target [`'](.+)'"
+severity = "error"
+description = "Make target not found"
+tags = ["make", "target"]
+suggestion = "Check target name in Makefile or add missing rule"
+
+[[patterns]]
+name = "make_missing_separator"
+regex = "Makefile:(\\d+): \\*\\*\\* missing separator"
+severity = "error"
+description = "Missing tab character before recipe"
+tags = ["make", "syntax", "fixable"]
+suggestion = "Use tab (not spaces) before recipe commands in Makefile"
+
+[[patterns]]
+name = "make_no_such_file"
+regex = "make(?:\\[\\d+\\])?:.*No such file or directory"
+severity = "error"
+description = "File or directory not found"
+tags = ["make", "filesystem"]
+suggestion = "Check file paths and ensure dependencies exist"
+
+[[patterns]]
+name = "make_command_not_found"
+regex = "make(?:\\[\\d+\\])?:.*command not found"
+severity = "error"
+description = "Command not found in PATH"
+tags = ["make", "command", "environment"]
+suggestion = "Install required command or add to PATH"
+
+[[patterns]]
+name = "make_recipe_failed"
+regex = "make(?:\\[\\d+\\])?:.*\\[(.+)\\] Error (\\d+)"
+severity = "error"
+description = "Make recipe command failed"
+tags = ["make", "recipe"]
+
+[[patterns]]
+name = "make_stop_on_error"
+regex = "make(?:\\[\\d+\\])?:.*\\*\\*\\* \\[(.+)\\] Error"
+severity = "error"
+description = "Make stopped due to error"
+tags = ["make", "error"]
+
+[[patterns]]
+name = "make_circular_dependency"
+regex = "make:.*Circular (.+) dependency"
+severity = "error"
+description = "Circular dependency detected"
+tags = ["make", "dependency", "circular"]
+suggestion = "Fix dependency chain in Makefile to remove circular references"
+
+[[patterns]]
+name = "make_target_failed"
+regex = "make:.*\\*\\*\\* No targets specified"
+severity = "error"
+description = "No make target specified"
+tags = ["make", "target"]
+suggestion = "Specify target: 'make <target>' or add default target to Makefile"
+
+[[patterns]]
+name = "make_unterminated_variable"
+regex = "Makefile:(\\d+): \\*\\*\\* unterminated variable reference"
+severity = "error"
+description = "Unterminated variable reference"
+tags = ["make", "syntax", "variable"]
+suggestion = "Check variable syntax: $(VAR) or ${VAR}"
+
+[[patterns]]
+name = "make_makefile_not_found"
+regex = "make:.*No targets specified and no makefile found"
+severity = "error"
+description = "Makefile not found"
+tags = ["make", "filesystem"]
+suggestion = "Create Makefile or use -f flag to specify makefile location"
+
+[[patterns]]
+name = "make_multiple_target_patterns"
+regex = "Makefile:(\\d+): \\*\\*\\* multiple target patterns"
+severity = "error"
+description = "Multiple target patterns in rule"
+tags = ["make", "syntax"]
+suggestion = "Use only one % pattern per rule"
+
+[[patterns]]
+name = "make_empty_variable"
+regex = "Makefile:(\\d+): \\*\\*\\* empty variable name"
+severity = "error"
+description = "Empty variable name"
+tags = ["make", "syntax", "variable"]
+suggestion = "Provide variable name in assignment"
+
+[[patterns]]
+name = "make_warning"
+regex = "Makefile:(\\d+): warning: (.+)"
+severity = "warning"
+description = "Make warning"
+tags = ["make", "warning"]
+
+[[patterns]]
+name = "make_ignoring_old_recipe"
+regex = "Makefile:(\\d+): warning: ignoring old recipe for target"
+severity = "warning"
+description = "Multiple recipes for same target"
+tags = ["make", "duplicate", "recipe"]
+suggestion = "Remove duplicate target definitions"
+
+[[patterns]]
+name = "make_overriding_recipe"
+regex = "Makefile:(\\d+): warning: overriding recipe for target"
+severity = "warning"
+description = "Recipe being overridden"
+tags = ["make", "override"]
+
+[[patterns]]
+name = "cmake_error"
+regex = "CMake Error at (.+):(\\d+)"
+severity = "error"
+description = "CMake configuration error"
+tags = ["cmake", "configuration"]
+
+[[patterns]]
+name = "cmake_missing_required"
+regex = "CMake Error:.*Could not find (.+) \\(missing:"
+severity = "error"
+description = "CMake required package not found"
+tags = ["cmake", "dependency"]
+suggestion = "Install required package or set package path in CMake"
+
+[[patterns]]
+name = "ninja_build_stopped"
+regex = "ninja: build stopped:"
+severity = "error"
+description = "Ninja build stopped"
+tags = ["ninja", "build"]

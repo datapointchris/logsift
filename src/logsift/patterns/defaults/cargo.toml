@@ -1,0 +1,164 @@
+# Rust Cargo build and package manager error patterns
+# Covers cargo build, cargo test, cargo run, and dependency errors
+
+[[patterns]]
+name = "cargo_compilation_error"
+regex = "error\\[E\\d+\\]: (.+)"
+severity = "error"
+description = "Rust compilation error"
+tags = ["cargo", "rust", "compilation"]
+
+[[patterns]]
+name = "cargo_missing_crate"
+regex = "error: no matching package named `(.+)` found"
+severity = "error"
+description = "Crate not found in dependencies"
+tags = ["cargo", "dependencies", "fixable"]
+suggestion = "Add crate to Cargo.toml [dependencies] section"
+
+[[patterns]]
+name = "cargo_version_not_found"
+regex = "failed to select a version for the requirement `(.+)`"
+severity = "error"
+description = "Could not find compatible version"
+tags = ["cargo", "dependencies", "version"]
+suggestion = "Check version requirements in Cargo.toml or update dependencies"
+
+[[patterns]]
+name = "cargo_build_failed"
+regex = "error: could not compile `(.+)`"
+severity = "error"
+description = "Failed to compile package"
+tags = ["cargo", "compilation"]
+
+[[patterns]]
+name = "cargo_linker_error"
+regex = "error: linking with `(.+)` failed"
+severity = "error"
+description = "Linker error during build"
+tags = ["cargo", "linker", "build"]
+suggestion = "Check system linker installation or add required system libraries"
+
+[[patterns]]
+name = "cargo_undefined_reference"
+regex = "undefined reference to `(.+)`"
+severity = "error"
+description = "Undefined symbol reference"
+tags = ["cargo", "linker", "symbol"]
+suggestion = "Ensure all required libraries are linked in Cargo.toml"
+
+[[patterns]]
+name = "cargo_test_failed"
+regex = "test result: FAILED\\. (\\d+) passed; (\\d+) failed"
+severity = "error"
+description = "Cargo tests failed"
+tags = ["cargo", "test"]
+
+[[patterns]]
+name = "cargo_warning"
+regex = "warning: (.+)"
+severity = "warning"
+description = "Cargo build warning"
+tags = ["cargo", "warning"]
+
+[[patterns]]
+name = "cargo_unused_import"
+regex = "warning: unused import: `(.+)`"
+severity = "warning"
+description = "Unused import"
+tags = ["cargo", "lint", "unused"]
+suggestion = "Remove unused import or prefix with underscore"
+
+[[patterns]]
+name = "cargo_deprecated"
+regex = "warning: use of deprecated (.+)"
+severity = "warning"
+description = "Using deprecated item"
+tags = ["cargo", "deprecated"]
+suggestion = "Update to recommended alternative"
+
+[[patterns]]
+name = "cargo_network_error"
+regex = "Caused by:\\s+failed to download"
+severity = "error"
+description = "Failed to download crate"
+tags = ["cargo", "network"]
+suggestion = "Check internet connection or try different registry"
+
+[[patterns]]
+name = "cargo_corrupted_index"
+regex = "Caused by:\\s+failed to load source for dependency"
+severity = "error"
+description = "Corrupted cargo index"
+tags = ["cargo", "index", "fixable"]
+suggestion = "Run 'cargo clean' and 'rm -rf ~/.cargo/registry/index'"
+
+[[patterns]]
+name = "cargo_feature_not_found"
+regex = "error: Package `(.+)` does not have the feature `(.+)`"
+severity = "error"
+description = "Requested feature does not exist"
+tags = ["cargo", "features"]
+suggestion = "Check available features in crate documentation"
+
+[[patterns]]
+name = "cargo_mismatched_types"
+regex = "error\\[E0308\\]: mismatched types"
+severity = "error"
+description = "Type mismatch error"
+tags = ["cargo", "rust", "types"]
+
+[[patterns]]
+name = "cargo_cannot_find_type"
+regex = "error\\[E0412\\]: cannot find type `(.+)` in this scope"
+severity = "error"
+description = "Type not in scope"
+tags = ["cargo", "rust", "scope"]
+suggestion = "Import required type or check spelling"
+
+[[patterns]]
+name = "cargo_cannot_find_value"
+regex = "error\\[E0425\\]: cannot find value `(.+)` in this scope"
+severity = "error"
+description = "Value not in scope"
+tags = ["cargo", "rust", "scope"]
+suggestion = "Import required item or check spelling"
+
+[[patterns]]
+name = "cargo_trait_not_implemented"
+regex = "error\\[E0277\\]: the trait bound `(.+)` is not satisfied"
+severity = "error"
+description = "Trait not implemented"
+tags = ["cargo", "rust", "traits"]
+suggestion = "Implement required trait or add trait bound"
+
+[[patterns]]
+name = "cargo_lifetime_error"
+regex = "error\\[E0597\\]: `(.+)` does not live long enough"
+severity = "error"
+description = "Lifetime/borrow checker error"
+tags = ["cargo", "rust", "lifetime", "borrow"]
+
+[[patterns]]
+name = "cargo_cyclic_dependency"
+regex = "error: cyclic package dependency"
+severity = "error"
+description = "Circular dependency detected"
+tags = ["cargo", "dependencies", "cyclic"]
+suggestion = "Restructure dependencies to remove circular references"
+
+[[patterns]]
+name = "cargo_proc_macro_error"
+regex = "error: proc-macro derive panicked"
+severity = "error"
+description = "Procedural macro failed"
+tags = ["cargo", "macro", "proc_macro"]
+suggestion = "Check macro usage or update macro crate"
+
+[[patterns]]
+name = "cargo_workspace_member_not_found"
+regex = "error: package `(.+)` is not a workspace member"
+severity = "error"
+description = "Package not in workspace"
+tags = ["cargo", "workspace"]
+suggestion = "Add package to workspace members in root Cargo.toml"

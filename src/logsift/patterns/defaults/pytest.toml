@@ -1,0 +1,205 @@
+# Pytest and Python testing framework error patterns
+# Covers pytest failures, assertion errors, and test collection issues
+
+[[patterns]]
+name = "pytest_test_failed"
+regex = "FAILED (.+)::(.*) - (.+)"
+severity = "error"
+description = "Pytest test failed"
+tags = ["pytest", "test", "failure"]
+
+[[patterns]]
+name = "pytest_assertion_error"
+regex = "AssertionError: (.+)"
+severity = "error"
+description = "Assertion failed in test"
+tags = ["pytest", "assertion", "test"]
+
+[[patterns]]
+name = "pytest_collection_error"
+regex = "ERROR collecting (.+)"
+severity = "error"
+description = "Error collecting test"
+tags = ["pytest", "collection"]
+suggestion = "Check test file syntax and imports"
+
+[[patterns]]
+name = "pytest_import_error"
+regex = "ImportError: (.+)"
+severity = "error"
+description = "Import error in test"
+tags = ["pytest", "import", "dependencies"]
+suggestion = "Install missing dependencies or fix import paths"
+
+[[patterns]]
+name = "pytest_module_not_found"
+regex = "ModuleNotFoundError: No module named '(.+)'"
+severity = "error"
+description = "Python module not found"
+tags = ["pytest", "module", "dependencies", "fixable"]
+suggestion = "Install missing package or check PYTHONPATH"
+
+[[patterns]]
+name = "pytest_fixture_not_found"
+regex = "fixture '(.+)' not found"
+severity = "error"
+description = "Pytest fixture not found"
+tags = ["pytest", "fixture"]
+suggestion = "Define fixture or check fixture name and scope"
+
+[[patterns]]
+name = "pytest_fixture_error"
+regex = "ERROR at setup of (.+)"
+severity = "error"
+description = "Error during fixture setup"
+tags = ["pytest", "fixture", "setup"]
+
+[[patterns]]
+name = "pytest_teardown_error"
+regex = "ERROR at teardown of (.+)"
+severity = "error"
+description = "Error during fixture teardown"
+tags = ["pytest", "fixture", "teardown"]
+
+[[patterns]]
+name = "pytest_syntax_error"
+regex = "SyntaxError: (.+)"
+severity = "error"
+description = "Python syntax error"
+tags = ["pytest", "syntax", "python"]
+suggestion = "Fix syntax error in test file"
+
+[[patterns]]
+name = "pytest_indentation_error"
+regex = "IndentationError: (.+)"
+severity = "error"
+description = "Python indentation error"
+tags = ["pytest", "syntax", "indentation"]
+suggestion = "Fix indentation (use consistent spaces or tabs)"
+
+[[patterns]]
+name = "pytest_attribute_error"
+regex = "AttributeError: (.+)"
+severity = "error"
+description = "Attribute not found"
+tags = ["pytest", "attribute"]
+
+[[patterns]]
+name = "pytest_type_error"
+regex = "TypeError: (.+)"
+severity = "error"
+description = "Type error in test"
+tags = ["pytest", "type"]
+
+[[patterns]]
+name = "pytest_value_error"
+regex = "ValueError: (.+)"
+severity = "error"
+description = "Value error in test"
+tags = ["pytest", "value"]
+
+[[patterns]]
+name = "pytest_key_error"
+regex = "KeyError: (.+)"
+severity = "error"
+description = "Key not found in dictionary"
+tags = ["pytest", "key"]
+
+[[patterns]]
+name = "pytest_index_error"
+regex = "IndexError: (.+)"
+severity = "error"
+description = "Index out of range"
+tags = ["pytest", "index"]
+
+[[patterns]]
+name = "pytest_timeout"
+regex = "Timeout: (.+)"
+severity = "error"
+description = "Test timeout exceeded"
+tags = ["pytest", "timeout"]
+suggestion = "Increase timeout or optimize test performance"
+
+[[patterns]]
+name = "pytest_skipped"
+regex = "SKIPPED \\[\\d+\\] (.+)"
+severity = "warning"
+description = "Test skipped"
+tags = ["pytest", "skip"]
+
+[[patterns]]
+name = "pytest_xfail"
+regex = "XFAIL (.+)"
+severity = "warning"
+description = "Expected failure"
+tags = ["pytest", "xfail"]
+
+[[patterns]]
+name = "pytest_xpass"
+regex = "XPASS (.+)"
+severity = "warning"
+description = "Unexpected pass (expected to fail)"
+tags = ["pytest", "xpass"]
+suggestion = "Remove xfail marker or fix test expectation"
+
+[[patterns]]
+name = "pytest_warning"
+regex = "(.+): PytestWarning: (.+)"
+severity = "warning"
+description = "Pytest warning"
+tags = ["pytest", "warning"]
+
+[[patterns]]
+name = "pytest_deprecation_warning"
+regex = "DeprecationWarning: (.+)"
+severity = "warning"
+description = "Using deprecated feature"
+tags = ["pytest", "deprecated"]
+suggestion = "Update to recommended alternative"
+
+[[patterns]]
+name = "pytest_no_tests_collected"
+regex = "collected 0 items"
+severity = "warning"
+description = "No tests collected"
+tags = ["pytest", "collection"]
+suggestion = "Check test discovery patterns or add test files"
+
+[[patterns]]
+name = "pytest_internal_error"
+regex = "INTERNALERROR> (.+)"
+severity = "error"
+description = "Pytest internal error"
+tags = ["pytest", "internal"]
+suggestion = "Check pytest version and configuration"
+
+[[patterns]]
+name = "pytest_conftest_error"
+regex = "ERROR (.+)/conftest.py"
+severity = "error"
+description = "Error in conftest.py"
+tags = ["pytest", "conftest", "configuration"]
+suggestion = "Fix syntax or import errors in conftest.py"
+
+[[patterns]]
+name = "pytest_plugin_error"
+regex = "PluginValidationError: (.+)"
+severity = "error"
+description = "Pytest plugin error"
+tags = ["pytest", "plugin"]
+suggestion = "Check plugin compatibility and configuration"
+
+[[patterns]]
+name = "pytest_parameterize_error"
+regex = "ValueError: The number of names \\(\\d+\\) in (.+) does not match the number of values"
+severity = "error"
+description = "Parametrize value count mismatch"
+tags = ["pytest", "parametrize"]
+suggestion = "Ensure parameter names match values count in @pytest.mark.parametrize"
+
+[[patterns]]
+name = "unittest_assertion_error"
+regex = "AssertionError: (\\d+) != (\\d+)"
+severity = "error"
+description = "Unittest assertion failed"
+tags = ["unittest", "assertion"]

@@ -1,0 +1,119 @@
+# Docker error patterns
+# Covers docker build, docker run, docker-compose, and Dockerfile issues
+
+[[patterns]]
+name = "docker_image_not_found"
+regex = "Error response from daemon: pull access denied for (.+), repository does not exist"
+severity = "error"
+description = "Docker image not found in registry"
+tags = ["docker", "image", "registry"]
+suggestion = "Check image name and tag, or login to registry with 'docker login'"
+
+[[patterns]]
+name = "docker_image_pull_error"
+regex = "(?i)error pulling image.*:\\s*(.+)"
+severity = "error"
+description = "Failed to pull Docker image"
+tags = ["docker", "image", "network"]
+suggestion = "Check network connection and registry availability"
+
+[[patterns]]
+name = "docker_build_failed"
+regex = "(?i)ERROR \\[.+\\]\\s+(.+)"
+severity = "error"
+description = "Docker build step failed"
+tags = ["docker", "build"]
+
+[[patterns]]
+name = "docker_dockerfile_not_found"
+regex = "unable to prepare context: unable to evaluate symlinks in Dockerfile path"
+severity = "error"
+description = "Dockerfile not found"
+tags = ["docker", "build", "filesystem"]
+suggestion = "Create Dockerfile in current directory or specify with -f flag"
+
+[[patterns]]
+name = "docker_port_in_use"
+regex = "(?i)bind: address already in use"
+severity = "error"
+description = "Port already in use"
+tags = ["docker", "network", "port_conflict", "fixable"]
+suggestion = "Stop conflicting container or change port mapping"
+
+[[patterns]]
+name = "docker_container_not_found"
+regex = "Error: No such container: (.+)"
+severity = "error"
+description = "Container does not exist"
+tags = ["docker", "container"]
+suggestion = "Check container name/ID with 'docker ps -a'"
+
+[[patterns]]
+name = "docker_no_space_left"
+regex = "(?i)no space left on device"
+severity = "error"
+description = "Out of disk space"
+tags = ["docker", "disk", "storage"]
+suggestion = "Clean up images with 'docker system prune' or free up disk space"
+
+[[patterns]]
+name = "docker_daemon_not_running"
+regex = "Cannot connect to the Docker daemon"
+severity = "error"
+description = "Docker daemon is not running"
+tags = ["docker", "daemon", "fixable"]
+suggestion = "Start Docker daemon or Docker Desktop"
+
+[[patterns]]
+name = "docker_permission_denied"
+regex = "Got permission denied while trying to connect to the Docker daemon socket"
+severity = "error"
+description = "Permission denied accessing Docker socket"
+tags = ["docker", "permissions", "fixable"]
+suggestion = "Add user to docker group or run with sudo"
+
+[[patterns]]
+name = "docker_compose_service_failed"
+regex = "(?i)ERROR: for (.+)\\s+(.+)"
+severity = "error"
+description = "Docker Compose service failed"
+tags = ["docker", "docker-compose", "service"]
+
+[[patterns]]
+name = "docker_invalid_reference"
+regex = "invalid reference format"
+severity = "error"
+description = "Invalid image reference format"
+tags = ["docker", "image", "syntax"]
+suggestion = "Check image name format (e.g., 'repository/name:tag')"
+
+[[patterns]]
+name = "docker_network_not_found"
+regex = "network (.+) not found"
+severity = "error"
+description = "Docker network does not exist"
+tags = ["docker", "network"]
+suggestion = "Create network with 'docker network create' or check network name"
+
+[[patterns]]
+name = "docker_volume_not_found"
+regex = "Error response from daemon: get (.+): no such volume"
+severity = "error"
+description = "Docker volume does not exist"
+tags = ["docker", "volume"]
+suggestion = "Create volume with 'docker volume create' or check volume name"
+
+[[patterns]]
+name = "docker_copy_failed"
+regex = "COPY failed:"
+severity = "error"
+description = "Failed to copy files in Dockerfile"
+tags = ["docker", "build", "filesystem"]
+suggestion = "Check source file paths and permissions"
+
+[[patterns]]
+name = "docker_healthcheck_failed"
+regex = "(?i)health check failed"
+severity = "warning"
+description = "Container health check failed"
+tags = ["docker", "healthcheck", "monitoring"]
