@@ -2,6 +2,7 @@
 
 import json
 import sys
+from unittest.mock import patch
 
 from logsift.commands.monitor import monitor_command
 
@@ -120,3 +121,29 @@ def test_monitor_command_empty_command():
     with suppress(Exception):
         monitor_command([], output_format='json', save_log=False)
         # If it doesn't raise, that's also acceptable
+
+
+def test_monitor_command_with_notify(capsys):
+    """Test monitoring with notification enabled."""
+    with patch('logsift.commands.monitor.notify_command_complete') as mock_notify:
+        monitor_command(['echo', 'test'], output_format='json', save_log=False, notify=True)
+
+        # Should have called notify_command_complete
+        mock_notify.assert_called_once()
+
+        # Check notification was called with correct parameters
+        call_args = mock_notify.call_args[1]
+        assert 'command' in call_args
+        assert 'success' in call_args
+        assert 'errors' in call_args
+        assert 'warnings' in call_args
+        assert 'duration_seconds' in call_args
+
+
+def test_monitor_command_without_notify(capsys):
+    """Test monitoring with notification disabled (default)."""
+    with patch('logsift.commands.monitor.notify_command_complete') as mock_notify:
+        monitor_command(['echo', 'test'], output_format='json', save_log=False, notify=False)
+
+        # Should not have called notify_command_complete
+        mock_notify.assert_not_called()

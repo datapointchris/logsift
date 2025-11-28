@@ -49,6 +49,7 @@ def monitor(
     command: Annotated[list[str], typer.Argument(help='Command to monitor')],
     name: Annotated[str | None, typer.Option('-n', '--name', help='Name for this monitoring session')] = None,
     format: Annotated[str, typer.Option('--format', help='Output format: auto, json, markdown, plain')] = 'auto',
+    notify: Annotated[bool, typer.Option('--notify', help='Send desktop notification on completion')] = False,
 ) -> None:
     """Monitor a command and analyze its output.
 
@@ -58,7 +59,7 @@ def monitor(
     """
     from logsift.commands.monitor import monitor_command
 
-    monitor_command(command, name=name, output_format=format)
+    monitor_command(command, name=name, output_format=format, notify=notify)
 
 
 @app.command()

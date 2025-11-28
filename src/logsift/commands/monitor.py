@@ -10,6 +10,7 @@ from logsift.core.analyzer import Analyzer
 from logsift.monitor.process import ProcessMonitor
 from logsift.output.json_formatter import format_json
 from logsift.output.markdown_formatter import format_markdown
+from logsift.utils.notifications import notify_command_complete
 from logsift.utils.tty import detect_output_format
 
 
@@ -18,6 +19,7 @@ def monitor_command(
     name: str | None = None,
     output_format: str = 'auto',
     save_log: bool = True,
+    notify: bool = False,
 ) -> None:
     """Monitor a command and analyze its output.
 
@@ -26,6 +28,7 @@ def monitor_command(
         name: Optional name for the monitoring session
         output_format: Desired output format (auto, json, markdown)
         save_log: Whether to save the log to cache
+        notify: Whether to send desktop notification on completion
     """
     # Use command name if no name provided
     if name is None:
@@ -67,6 +70,16 @@ def monitor_command(
         # Use markdown for both markdown and plain
         output = format_markdown(analysis_result)
         print(output)
+
+    # Send notification if requested
+    if notify:
+        notify_command_complete(
+            command=result['command'],
+            success=result['success'],
+            errors=analysis_result['stats']['total_errors'],
+            warnings=analysis_result['stats']['total_warnings'],
+            duration_seconds=result['duration_seconds'],
+        )
 
     # Exit with command's exit code
     if not result['success']:
