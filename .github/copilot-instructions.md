@@ -180,7 +180,7 @@ Focus on building:
 2. **Pattern Files**: Must be valid TOML with required fields (name, regex, severity, description)
 3. **Output Format**: JSON schema must remain stable for LLM consumption
 4. **TTY Detection**: Auto-format selection based on sys.stdout.isatty()
-5. **Type Hints**: Use modern Python 3.11+ syntax (list[str] not List[str])
+5. **Type Hints**: Use modern Python 3.13+ syntax (list[str] not List[str])
 6. **Error Handling**: Prefer raising NotImplementedError for stubs, specific exceptions for errors
 
 ## Development Principles
@@ -221,7 +221,7 @@ See PLANNING.md for complete project specification and architecture details.
 
 - `pyproject.toml`: Project metadata, dependencies, tool configs
 - `.pre-commit-config.yaml`: Pre-commit hook configuration
-- `.python-version`: Python version requirement (3.11)
+- `.python-version`: Python version requirement (3.13)
 - `.markdownlint.json`: Markdown linting rules
 - `.shellcheckrc`: Shell script linting configuration
 - `.gitignore`: Git ignore patterns

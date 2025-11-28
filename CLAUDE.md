@@ -252,7 +252,7 @@ LLMs depend on this stable structure:
 ### Code Quality (Non-Negotiable)
 
 - **PEP 8** style, **Google-style docstrings** for public functions
-- **Type hints** using Python 3.11+ syntax (`list[str]` not `List[str]`)
+- **Type hints** using Python 3.13+ syntax (`list[str]` not `List[str]`)
 - **Fail fast** - raise specific exceptions, no inline defaults/fallbacks
 - **No defensive coding** - `config.key` not `getattr(config, 'key', 'default')`
 - **All code must pass pre-commit hooks** before committing
@@ -305,7 +305,7 @@ chore: update dependencies to latest versions
 
 1. **Coverage threshold**: Set to 40% for Phase 1 stubs. Increase to 60% → 70% → 80% as implementation progresses.
 2. **Output format stability**: JSON schema is a contract with LLMs - changes require major version bump.
-3. **Pattern files are TOML**: Not YAML, not JSON. Use `tomllib` (stdlib 3.11+) for reading.
+3. **Pattern files are TOML**: Not YAML, not JSON. Use `tomllib` (stdlib 3.11+, included in 3.13) for reading.
 4. **TTY detection determines format**: `sys.stdout.isatty()` → Markdown if True, JSON if False.
 5. **sh library for process monitoring**: Not `subprocess` - see `sh` library docs for clean interface.
 6. **Type hints use modern syntax**: `list[str]`, `dict[str, Any]`, `str | None` (not `Optional[str]`)
@@ -313,7 +313,7 @@ chore: update dependencies to latest versions
 ## Configuration Files
 
 - `pyproject.toml` - Project metadata, dependencies, all tool configs (ruff, mypy, pytest, coverage, bandit)
-- `.python-version` - Python 3.11 (required for stdlib TOML support)
+- `.python-version` - Python 3.13 (project standard)
 - `.pre-commit-config.yaml` - 15 pre-commit hooks
 - `.markdownlint.json` - Markdown linting rules (allows long lines in docs)
 - `.shellcheckrc` - Shell script linting config
