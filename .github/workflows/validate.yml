@@ -103,7 +103,7 @@ jobs:
         uses: codecov/codecov-action@v5
         if: matrix.os == 'ubuntu-24.04' && matrix.python-version == '3.12'
         with:
-          file: ./coverage.xml
+          files: ./coverage.xml
           fail_ci_if_error: false
 
       - name: Minimize uv cache
