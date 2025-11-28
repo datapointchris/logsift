@@ -7,11 +7,11 @@ import tomllib
 from pathlib import Path
 from typing import Any
 
+from logsift.patterns.validator import validate_pattern_file
+
 
 class PatternLoader:
     """Load and manage pattern libraries."""
-
-    REQUIRED_FIELDS = {'name', 'regex', 'severity', 'description', 'tags'}
 
     def __init__(self) -> None:
         """Initialize the pattern loader."""
@@ -95,29 +95,11 @@ class PatternLoader:
         except tomllib.TOMLDecodeError as e:
             raise ValueError(f'Invalid TOML in {pattern_file}: {e}') from e
 
-        # Validate patterns if present
+        # Validate patterns using the validator module
         if 'patterns' in data:
-            for pattern in data['patterns']:
-                self._validate_pattern(pattern)
+            validate_pattern_file(data)
 
         return data
-
-    def _validate_pattern(self, pattern: dict[str, Any]) -> None:
-        """Validate that a pattern has all required fields.
-
-        Args:
-            pattern: Pattern dictionary to validate
-
-        Raises:
-            KeyError: If required fields are missing
-        """
-        missing_fields = self.REQUIRED_FIELDS - set(pattern.keys())
-        if missing_fields:
-            raise KeyError(f'Pattern missing required fields: {missing_fields}')
-
-        # Validate tags is a list
-        if not isinstance(pattern['tags'], list):
-            raise ValueError(f"Pattern 'tags' must be a list, got {type(pattern['tags'])}")
 
     def get_all_patterns(self) -> dict[str, list[dict[str, Any]]]:
         """Get all loaded patterns.
