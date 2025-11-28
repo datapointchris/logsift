@@ -15,6 +15,7 @@ class LogParser:
     ANSI_ESCAPE = re.compile(r'\x1b\[[0-9;]*m')
     TIMESTAMP_ISO = re.compile(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}')
     LEVEL_MARKER = re.compile(r'\[(DEBUG|INFO|WARN|WARNING|ERROR|FATAL)\]', re.IGNORECASE)
+    LEVEL_COLON = re.compile(r'(DEBUG|INFO|WARN|WARNING|ERROR|FATAL):', re.IGNORECASE)
     KEY_VALUE_PAIR = re.compile(r'(\w+)=("(?:[^"\\]|\\.)*"|\S+)')
     SYSLOG_PATTERN = re.compile(r'^<\d+>')
 
@@ -224,12 +225,19 @@ class LogParser:
             entry['timestamp'] = timestamp_match.group(0)
             clean_line = clean_line[timestamp_match.end() :].strip()
 
-        # Extract level marker
+        # Extract level marker ([LEVEL] format)
         level_match = self.LEVEL_MARKER.search(clean_line)
         if level_match:
             entry['level'] = level_match.group(1).upper()
             # Remove level marker from message
             clean_line = clean_line[: level_match.start()] + clean_line[level_match.end() :]
+        else:
+            # Try LEVEL: format
+            level_colon_match = self.LEVEL_COLON.search(clean_line)
+            if level_colon_match:
+                entry['level'] = level_colon_match.group(1).upper()
+                # Remove level from message (keep the text after the colon)
+                clean_line = clean_line[level_colon_match.end() :].strip()
 
         entry['message'] = clean_line.strip()
 
