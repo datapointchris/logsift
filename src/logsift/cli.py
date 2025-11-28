@@ -75,9 +75,9 @@ def analyze(
         logsift analyze /var/log/app.log
         logsift analyze --format=json build.log
     """
-    console.print('[yellow]Analyze command not yet implemented[/yellow]')
-    console.print(f'Log file: {log_file}')
-    console.print(f'Format: {format}')
+    from logsift.commands.analyze import analyze_log
+
+    analyze_log(log_file, output_format=format)
 
 
 @app.command()
