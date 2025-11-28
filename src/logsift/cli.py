@@ -12,8 +12,11 @@ from logsift import __version__
 
 app = typer.Typer(
     name='logsift',
-    help='Intelligent log analysis for agentic workflows',
+    help='LLM-optimized log analysis for automated error diagnosis.',
     add_completion=False,
+    rich_markup_mode=None,  # Disable Rich markup
+    pretty_exceptions_enable=False,  # Disable Rich exceptions
+    epilog='Use `logsift <command> --help` for more details.',
 )
 console = Console()
 
@@ -139,7 +142,11 @@ def watch(
 
 
 # Create logs command group
-logs_app = typer.Typer(help='Manage cached log files')
+logs_app = typer.Typer(
+    help='Manage cached log files',
+    rich_markup_mode=None,
+    pretty_exceptions_enable=False,
+)
 app.add_typer(logs_app, name='logs')
 
 
