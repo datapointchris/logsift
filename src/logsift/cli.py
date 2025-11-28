@@ -48,20 +48,17 @@ def main(
 def monitor(
     command: Annotated[list[str], typer.Argument(help='Command to monitor')],
     name: Annotated[str | None, typer.Option('-n', '--name', help='Name for this monitoring session')] = None,
-    interval: Annotated[int, typer.Option('-i', '--interval', help='Progress check interval in seconds')] = 60,
     format: Annotated[str, typer.Option('--format', help='Output format: auto, json, markdown, plain')] = 'auto',
 ) -> None:
     """Monitor a command and analyze its output.
 
     Example:
         logsift monitor -- make build
-        logsift monitor -n install -i 30 -- task install
+        logsift monitor -n install -- task install
     """
-    console.print('[yellow]Monitor command not yet implemented[/yellow]')
-    console.print(f'Command: {" ".join(command)}')
-    console.print(f'Name: {name}')
-    console.print(f'Interval: {interval}s')
-    console.print(f'Format: {format}')
+    from logsift.commands.monitor import monitor_command
+
+    monitor_command(command, name=name, output_format=format)
 
 
 @app.command()
