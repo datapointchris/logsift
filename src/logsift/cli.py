@@ -100,9 +100,9 @@ def watch(
         logsift watch /var/log/app.log
         logsift watch -i 2 /var/log/app.log
     """
-    console.print('[yellow]Watch command not yet implemented[/yellow]')
-    console.print(f'Log file: {log_file}')
-    console.print(f'Interval: {interval}s')
+    from logsift.commands.watch import watch_log
+
+    watch_log(log_file, interval=interval)
 
 
 if __name__ == '__main__':
