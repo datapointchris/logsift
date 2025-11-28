@@ -105,5 +105,44 @@ def watch(
     watch_log(log_file, interval=interval)
 
 
+# Create logs command group
+logs_app = typer.Typer(help='Manage cached log files')
+app.add_typer(logs_app, name='logs')
+
+
+@logs_app.command('list')
+def logs_list(
+    context: Annotated[str | None, typer.Option('-c', '--context', help='Filter by context')] = None,
+    format: Annotated[str, typer.Option('--format', help='Output format: table, json, plain')] = 'table',
+) -> None:
+    """List cached log files.
+
+    Example:
+        logsift logs list
+        logsift logs list --context monitor
+        logsift logs list --format json
+    """
+    from logsift.commands.logs import list_logs
+
+    list_logs(context=context, output_format=format)
+
+
+@logs_app.command('clean')
+def logs_clean(
+    days: Annotated[int, typer.Option('-d', '--days', help='Delete logs older than N days')] = 90,
+    dry_run: Annotated[bool, typer.Option('--dry-run', help='Show what would be deleted')] = False,
+) -> None:
+    """Clean old log files from cache.
+
+    Example:
+        logsift logs clean --dry-run
+        logsift logs clean --days 30
+        logsift logs clean --days 7
+    """
+    from logsift.commands.logs import clean_logs
+
+    clean_logs(days=days, dry_run=dry_run)
+
+
 if __name__ == '__main__':
     app()
