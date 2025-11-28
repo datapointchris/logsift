@@ -147,3 +147,101 @@ def test_monitor_command_without_notify(capsys):
 
         # Should not have called notify_command_complete
         mock_notify.assert_not_called()
+
+
+def test_monitor_command_with_external_log(tmp_path, capsys):
+    """Test monitoring with external log file."""
+
+    # Create external log file
+    external_log = tmp_path / 'external.log'
+    external_log.write_text('External log line 1\nExternal log line 2\n')
+
+    # Monitor a command while watching the external log
+    monitor_command(
+        ['echo', 'Command output'],
+        output_format='json',
+        save_log=False,
+        external_log=str(external_log),
+    )
+
+    captured = capsys.readouterr()
+
+    # Parse the JSON output
+    data = json.loads(captured.out)
+
+    # Command should have succeeded
+    assert data['summary']['exit_code'] == 0
+    assert 'stats' in data
+
+
+def test_monitor_command_with_nonexistent_external_log(capsys):
+    """Test monitoring with non-existent external log file."""
+    from contextlib import suppress
+
+    # Should exit with error
+    with suppress(SystemExit):
+        monitor_command(
+            ['echo', 'test'],
+            output_format='json',
+            save_log=False,
+            external_log='/nonexistent/log/file.log',
+        )
+
+
+def test_monitor_command_with_append_mode(tmp_path, capsys):
+    """Test monitoring with append mode."""
+    # First run - create initial log
+    monitor_command(
+        ['echo', 'first run'],
+        name='test-append',
+        output_format='json',
+        save_log=True,
+        append=False,
+    )
+
+    # Get the created log file
+    from logsift.cache.manager import CacheManager
+
+    cache = CacheManager()
+    log_file = cache.get_latest_log('test-append', context='monitor')
+
+    assert log_file is not None
+    assert log_file.exists()
+
+    # Read initial content
+    initial_content = log_file.read_text()
+    assert 'first run' in initial_content
+
+    # Second run - append to existing log
+    monitor_command(
+        ['echo', 'second run'],
+        name='test-append',
+        output_format='json',
+        save_log=True,
+        append=True,
+    )
+
+    # Read updated content
+    updated_content = log_file.read_text()
+
+    # Should contain both runs
+    assert 'first run' in updated_content
+    assert 'second run' in updated_content
+
+
+def test_monitor_command_append_without_existing_log(capsys):
+    """Test append mode when no existing log exists."""
+    # Using unique name to ensure no existing log
+    monitor_command(
+        ['echo', 'new log'],
+        name='unique-test-name-12345',
+        output_format='json',
+        save_log=True,
+        append=True,
+    )
+
+    captured = capsys.readouterr()
+
+    # Should succeed and create new log
+    data = json.loads(captured.out)
+    assert data['summary']['exit_code'] == 0

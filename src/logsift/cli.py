@@ -50,16 +50,27 @@ def monitor(
     name: Annotated[str | None, typer.Option('-n', '--name', help='Name for this monitoring session')] = None,
     format: Annotated[str, typer.Option('--format', help='Output format: auto, json, markdown, plain')] = 'auto',
     notify: Annotated[bool, typer.Option('--notify', help='Send desktop notification on completion')] = False,
+    external_log: Annotated[str | None, typer.Option('--external-log', help='Tail external log file while monitoring')] = None,
+    append: Annotated[bool, typer.Option('--append', help='Append to existing log instead of creating new')] = False,
 ) -> None:
     """Monitor a command and analyze its output.
 
     Example:
         logsift monitor -- make build
         logsift monitor -n install -- task install
+        logsift monitor --external-log /var/log/app.log -- npm start
+        logsift monitor -n build --append -- make
     """
     from logsift.commands.monitor import monitor_command
 
-    monitor_command(command, name=name, output_format=format, notify=notify)
+    monitor_command(
+        command,
+        name=name,
+        output_format=format,
+        notify=notify,
+        external_log=external_log,
+        append=append,
+    )
 
 
 @app.command()
