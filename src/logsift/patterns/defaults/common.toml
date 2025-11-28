@@ -1,0 +1,30 @@
+# Common error patterns for universal detection
+# These patterns match common error indicators across different tools
+
+[[patterns]]
+name = "generic_error"
+regex = "(?i)(error|failed|failure|exception):\\s*(.+)"
+severity = "error"
+description = "Generic error pattern"
+tags = ["generic", "error"]
+
+[[patterns]]
+name = "generic_warning"
+regex = "(?i)(warning|warn):\\s*(.+)"
+severity = "warning"
+description = "Generic warning pattern"
+tags = ["generic", "warning"]
+
+[[patterns]]
+name = "file_not_found"
+regex = "(?i)(no such file or directory|file not found):\\s*(.+)"
+severity = "error"
+description = "File not found error"
+tags = ["filesystem", "error"]
+
+[[patterns]]
+name = "permission_denied"
+regex = "(?i)(permission denied|access denied):\\s*(.+)"
+severity = "error"
+description = "Permission/access denied error"
+tags = ["filesystem", "permissions", "error"]

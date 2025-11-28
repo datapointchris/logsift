@@ -1,0 +1,41 @@
+name: Publish to PyPI
+
+# This workflow is currently disabled. Rename to publish.yml to enable.
+# Remove the .disabled extension when ready to publish to PyPI.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  build-and-publish:
+    name: Build and Publish to PyPI
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install UV
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Build package
+        run: uv build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          # Uses OIDC for trusted publishing (no API token needed)
+          # Configure at: https://pypi.org/manage/account/publishing/
+          skip-existing: true

@@ -1,0 +1,17 @@
+# APT package manager error patterns
+
+[[patterns]]
+name = "apt_package_not_found"
+regex = "E:\\s*Unable to locate package (.+)"
+severity = "error"
+description = "Package not found in repositories"
+tags = ["apt", "package_not_found"]
+suggestion = "Run 'apt update' or check package name"
+
+[[patterns]]
+name = "apt_dpkg_lock"
+regex = "E:\\s*Could not get lock /var/lib/dpkg/lock"
+severity = "error"
+description = "dpkg lock file is held by another process"
+tags = ["apt", "lock", "fixable"]
+suggestion = "Wait for other package operations to complete or remove lock file"

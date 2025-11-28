@@ -1,0 +1,25 @@
+# Homebrew package manager error patterns
+
+[[patterns]]
+name = "brew_package_already_installed"
+regex = "Error:\\s*(.+)\\s+is already installed"
+severity = "error"
+description = "Package is already installed"
+tags = ["brew", "package_conflict", "fixable"]
+suggestion = "Remove package from install list or use 'brew upgrade' instead"
+
+[[patterns]]
+name = "brew_formula_not_found"
+regex = "Error:\\s*No available formula with the name \"(.+)\""
+severity = "error"
+description = "Formula not found in Homebrew"
+tags = ["brew", "package_not_found"]
+suggestion = "Check package name or add tap with 'brew tap'"
+
+[[patterns]]
+name = "brew_cask_not_found"
+regex = "Error:\\s*Cask '(.+)' is unavailable"
+severity = "error"
+description = "Cask not found in Homebrew"
+tags = ["brew", "cask", "package_not_found"]
+suggestion = "Check cask name or add tap"
