@@ -1,0 +1,110 @@
+site_name: logsift
+site_description: Intelligent log analysis for agentic workflows
+site_author: Chris Birch
+site_url: https://datapointchris.github.io/logsift
+
+repo_name: datapointchris/logsift
+repo_url: https://github.com/datapointchris/logsift
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    # Light mode
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+    # Dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+
+  icon:
+    repo: fontawesome/brands/github
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - toc:
+      permalink: true
+  - attr_list
+  - md_in_html
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_source: true
+            show_root_heading: true
+            show_category_heading: true
+            merge_init_into_class: true
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - 5-Minute Quickstart: quickstart.md
+      - Installation: installation.md
+      - CLI Reference: cli-reference.md
+  - Concepts:
+      - Agentic Integration: concepts/agentic-integration.md
+      - Output Modes: concepts/output-modes.md
+      - Pattern Matching: concepts/pattern-matching.md
+  - Guides:
+      - Structured Logging: guides/structured-logging.md
+      - Custom Patterns: guides/custom-patterns.md
+      - Process Monitoring: guides/monitoring.md
+  - Architecture:
+      - Design Principles: architecture/design-principles.md
+      - Data Flow: architecture/data-flow.md
+  - API Reference:
+      - JSON Schema: api/json-schema.md
+      - Pattern Format: api/pattern-format.md
+      - Config Format: api/config-format.md
+  - Development:
+      - Setup Guide: development/setup.md
+      - Testing Guide: development/testing.md
+      - Code Patterns: development/patterns.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/datapointchris/logsift
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/logsift/
+
+  version:
+    provider: mike
+
+copyright: Copyright &copy; 2024 Chris Birch
