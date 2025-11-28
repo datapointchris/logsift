@@ -5,6 +5,8 @@ Applies loaded patterns to log content to identify known error types.
 
 from typing import Any
 
+from logsift.patterns.matcher import match_patterns
+
 
 class PatternMatcher:
     """Apply patterns to log content to detect known errors."""
@@ -26,4 +28,4 @@ class PatternMatcher:
         Returns:
             Match result with pattern metadata if found, None otherwise
         """
-        raise NotImplementedError('Pattern matching not yet implemented')
+        return match_patterns(log_entry, self.patterns)
