@@ -157,29 +157,25 @@ def monitor(
         ),
     ] = False,
 ) -> None:
-    """Monitor a command and analyze its output for errors.
+    """Monitor a command and analyze its output for errors
 
     Runs a command while capturing both stdout and stderr, then analyzes the
     output using pattern matching to identify errors, warnings, and actionable
     items. Results are cached and can be re-analyzed later.
 
+    Common Options:
+        -n, --name          Name for this monitoring session
+        --format            Output format: auto, json, markdown, plain
+        --notify            Send desktop notification on completion
+        --external-log      Tail external log file while monitoring
+        --append            Append to existing log
+
     Examples:
-        # Monitor a build command
         logsift monitor -- make build
-
-        # Monitor with custom session name
         logsift monitor -n install-deps -- npm install
-
-        # Get JSON output for Claude Code
         logsift monitor --format json -- pytest tests/
-
-        # Monitor with external log file
         logsift monitor --external-log /var/log/app.log -- npm start
-
-        # Append to existing session (useful for retry workflows)
         logsift monitor -n build --append -- make
-
-        # Get notification when long-running command completes
         logsift monitor --notify -- docker build -t myapp .
     """
     from logsift.commands.monitor import monitor_command
@@ -217,28 +213,21 @@ def analyze(
         ),
     ] = False,
 ) -> None:
-    """Analyze an existing log file for errors and patterns.
+    """Analyze an existing log file for errors and patterns
 
     Analyzes a log file (from disk or cache) and extracts errors, warnings,
     and actionable items using pattern matching. Works with any log format
     (JSON, structured, plain text).
 
-    If no log file is provided and fzf is installed, shows an interactive
-    selector for cached logs.
+    Common Options:
+        --format            Output format: auto, json, markdown, plain
+        -i, --interactive   Use fzf to select log file
 
     Examples:
-        # Analyze a specific log file
         logsift analyze /var/log/app.log
-
-        # Analyze with JSON output for LLM consumption
         logsift analyze --format json build.log
-
-        # Interactive mode (select from cached logs)
         logsift analyze --interactive
-        logsift analyze  # Same as above if fzf is available
-
-        # Analyze previously monitored command output
-        logsift analyze ~/.cache/logsift/monitor/build-20241128_120000_000000.log
+        logsift analyze  # Interactive if fzf is available
     """
     from logsift.commands.analyze import analyze_log
 
@@ -286,20 +275,18 @@ def watch(
         ),
     ] = 1,
 ) -> None:
-    """Watch and analyze a log file in real-time as it grows.
+    """Watch and analyze a log file in real-time as it grows
 
     Continuously monitors a log file for new lines and analyzes them as they
     appear. Useful for monitoring long-running services or applications.
     Press Ctrl+C to stop watching.
 
+    Common Options:
+        -i, --interval      Update interval in seconds (default: 1)
+
     Examples:
-        # Watch application log with 1-second updates
         logsift watch /var/log/app.log
-
-        # Watch with custom interval (less CPU usage)
         logsift watch --interval 5 /var/log/nginx/error.log
-
-        # Watch local development server
         logsift watch ./logs/development.log
     """
     from logsift.commands.watch import watch_log

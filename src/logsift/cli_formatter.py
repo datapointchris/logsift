@@ -72,13 +72,19 @@ def format_help_with_colors(ctx: Context) -> str:
 
     # Get command object
     if isinstance(ctx.command, click.Group):
-        # Main help - show commands
+        # Main help - show commands with expanded descriptions
         commands = []
         for name in ctx.command.list_commands(ctx):
             cmd = ctx.command.get_command(ctx, name)
             if cmd and not cmd.hidden:
-                help_text = cmd.get_short_help_str(limit=100)
-                commands.append((name, help_text))
+                # Get full help text and extract first paragraph + common options if present
+                full_help = cmd.help or ''
+                help_lines = full_help.split('\n\n')  # Split by paragraphs
+
+                # Take first paragraph as summary
+                summary = help_lines[0].replace('\n', ' ').strip() if help_lines else ''
+
+                commands.append((name, summary))
 
         if commands:
             formatter.write_paragraph()
