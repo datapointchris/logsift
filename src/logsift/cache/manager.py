@@ -30,8 +30,13 @@ class CacheManager:
         Returns:
             Path to the log file
         """
-        # Sanitize name (replace invalid filesystem characters)
-        sanitized_name = re.sub(r'[^\w\-_.]', '_', name)
+        # Sanitize name (replace slashes with dashes, other invalid chars with underscores)
+        # Remove leading slash if present
+        sanitized_name = name.lstrip('/')
+        # Replace remaining slashes with dashes
+        sanitized_name = sanitized_name.replace('/', '-')
+        # Replace any other invalid filesystem characters with underscores
+        sanitized_name = re.sub(r'[^\w\-.]', '_', sanitized_name)
 
         # Create ISO8601 timestamp (prefix)
         timestamp = datetime.now(tz=UTC).strftime('%Y-%m-%dT%H:%M:%S')
@@ -52,8 +57,10 @@ class CacheManager:
         Returns:
             Path to latest log file or None if not found
         """
-        # Sanitize inputs
-        sanitized_name = re.sub(r'[^\w\-_.]', '_', name)
+        # Sanitize inputs the same way as create_log_path
+        sanitized_name = name.lstrip('/')
+        sanitized_name = sanitized_name.replace('/', '-')
+        sanitized_name = re.sub(r'[^\w\-.]', '_', sanitized_name)
 
         if not self.cache_dir.exists():
             return None
