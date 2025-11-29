@@ -39,10 +39,9 @@ def select_log_file(log_files: list[dict[str, str | int]], prompt: str = 'Select
         return None
 
     # Format log entries for fzf display
-    # Format: "context/name (size) - date"
+    # Format: "name (size) - date"
     entries = []
     for log in log_files:
-        context = str(log['context'])
         name = str(log['name'])
         size_bytes = int(log['size_bytes'])
         modified = str(log['modified_iso']).split('T')[0]
@@ -56,7 +55,7 @@ def select_log_file(log_files: list[dict[str, str | int]], prompt: str = 'Select
             size_str = f'{size_bytes / (1024 * 1024):.1f}MB'
 
         # Create display line with path as suffix
-        display = f'{context}/{name} ({size_str}) - {modified}'
+        display = f'{name} ({size_str}) - {modified}'
         path = str(log['path'])
 
         # Store as "display|path" so we can extract the path later
@@ -67,24 +66,26 @@ def select_log_file(log_files: list[dict[str, str | int]], prompt: str = 'Select
 
     try:
         # Run fzf with enhanced options
+        # 100% width, 100% height, with 80% preview and 20% for list (showing ~10 logs)
         result = subprocess.run(  # nosec B603 B607
             [
                 'fzf',
                 '--prompt',
                 f'{prompt}> ',
                 '--height',
-                '40%',
+                '100%',  # Full screen
                 '--layout',
                 'reverse',
                 '--border',
                 '--preview',
-                'head -50 {2}',  # Preview first 50 lines, {2} is the path after |
+                'head -100 {2}',  # Preview first 100 lines, {2} is the path after |
                 '--preview-window',
-                'down:50%:wrap',
+                'down:80%:wrap',  # 80% height for preview, 20% for list (~10 logs)
                 '--delimiter',
                 '|',
                 '--with-nth',
                 '1',  # Only show first field (before |) in main window
+                '--reverse',  # Newest (first in list) at top
             ],
             input=input_text,
             capture_output=True,

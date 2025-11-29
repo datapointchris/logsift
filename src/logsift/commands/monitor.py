@@ -25,6 +25,8 @@ def monitor_command(
     command: list[str],
     name: str | None = None,
     output_format: str = 'auto',
+    stream: bool = False,
+    update_interval: int = 60,
     save_log: bool = True,
     notify: bool = False,
     external_log: str | None = None,
@@ -36,6 +38,8 @@ def monitor_command(
         command: Command to monitor as list of strings
         name: Optional name for the monitoring session
         output_format: Desired output format (auto, json, markdown)
+        stream: Whether to stream all output in real-time (default: False, show periodic updates)
+        update_interval: Seconds between progress updates when not streaming (default: 60)
         save_log: Whether to save the log to cache
         notify: Whether to send desktop notification on completion
         external_log: Optional path to external log file to tail while monitoring
@@ -51,12 +55,12 @@ def monitor_command(
         cache = CacheManager()
 
         if append:
-            # Try to get the latest log for this command
-            log_file = cache.get_latest_log(name, context='monitor')
+            # Try to get the latest log for this command (context defaults to current working directory)
+            log_file = cache.get_latest_log(name)
 
         if not log_file or not append:
-            # Create new log file
-            log_file = cache.create_log_path(name, context='monitor')
+            # Create new log file (context defaults to current working directory)
+            log_file = cache.create_log_path(name)
 
     # Determine output format early to decide on interactive output
     final_format = output_format
@@ -103,21 +107,50 @@ def monitor_command(
 
         if show_progress:
             stderr_console.print(f'[dim]Process started with PID: {process.pid}[/dim]')
-            stderr_console.print('[dim]Streaming output...[/dim]\n')
+            if stream:
+                stderr_console.print('[dim]Streaming output...[/dim]\n')
+            else:
+                stderr_console.print(f'[dim]Showing updates every {update_interval}s (use --stream for real-time output)...[/dim]\n')
 
-        # Stream output line by line
+        # Track time for periodic updates
+        last_update_time = time.time()
+        update_count = 0
+
+        # Stream or collect output line by line
         if process.stdout:
             for line in process.stdout:
-                # Print to console only in interactive mode
-                if show_progress:
-                    stderr_console.print(line, end='', markup=False, highlight=False)
-
                 # Save to log file
                 if log_handle:
                     log_handle.write(line)
 
                 # Keep in memory for analysis
                 output_lines.append(line.rstrip('\n'))
+
+                # Handle output display based on stream flag
+                if show_progress:
+                    if stream:
+                        # Stream mode: print every line immediately
+                        stderr_console.print(line, end='', markup=False, highlight=False)
+                    else:
+                        # Periodic update mode: show updates at intervals
+                        current_time = time.time()
+                        if current_time - last_update_time >= update_interval:
+                            elapsed = current_time - start_time
+                            update_count += 1
+
+                            # Show update with progress info
+                            stderr_console.print(
+                                f'[dim]Update #{update_count}: {len(output_lines)} lines captured, {elapsed:.0f}s elapsed[/dim]'
+                            )
+
+                            # Show last 3 lines of output
+                            if len(output_lines) >= 3:
+                                stderr_console.print('[dim]Last 3 lines:[/dim]')
+                                for recent_line in output_lines[-3:]:
+                                    stderr_console.print(f'  [dim]{recent_line}[/dim]')
+                            stderr_console.print()
+
+                            last_update_time = current_time
 
         # Wait for process to complete
         exit_code = process.wait()

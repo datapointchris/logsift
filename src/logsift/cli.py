@@ -54,20 +54,6 @@ def main(
         is_eager=True,
         help='Display the logsift version',
     ),
-    verbose: bool = typer.Option(
-        False,
-        '--verbose',
-        '-v',
-        help='Use verbose output',
-        envvar='LOGSIFT_VERBOSE',
-    ),
-    quiet: bool = typer.Option(
-        False,
-        '--quiet',
-        '-q',
-        help='Use quiet output (errors only)',
-        envvar='LOGSIFT_QUIET',
-    ),
     cache_dir: str | None = typer.Option(
         None,
         '--cache-dir',
@@ -101,8 +87,6 @@ def main(
     """
     # Store options in context for subcommands to use
     ctx.obj = {
-        'verbose': verbose,
-        'quiet': quiet,
         'cache_dir': cache_dir,
         'no_cache': no_cache,
         'config_file': config_file,
@@ -117,7 +101,8 @@ def main(
 
 @app.command()
 def monitor(
-    command: Annotated[list[str], typer.Argument(help='Command to monitor')],
+    ctx: typer.Context,
+    command: Annotated[list[str] | None, typer.Argument(help='Command to monitor')] = None,
     name: Annotated[
         str | None,
         typer.Option(
@@ -135,6 +120,21 @@ def monitor(
             envvar='LOGSIFT_OUTPUT_FORMAT',
         ),
     ] = 'auto',
+    stream: Annotated[
+        bool,
+        typer.Option(
+            '--stream',
+            help='Stream all output to terminal in real-time (default: show periodic updates)',
+        ),
+    ] = False,
+    update_interval: Annotated[
+        int,
+        typer.Option(
+            '--update-interval',
+            help='Seconds between progress updates when not streaming (default: 60)',
+            envvar='LOGSIFT_UPDATE_INTERVAL',
+        ),
+    ] = 60,
     notify: Annotated[
         bool,
         typer.Option(
@@ -163,27 +163,40 @@ def monitor(
     output using pattern matching to identify errors, warnings, and actionable
     items. Results are cached and can be re-analyzed later.
 
+    By default, shows periodic progress updates every 60 seconds. Use --stream
+    to see all output in real-time.
+
     Common Options:
         -n, --name          Name for this monitoring session
         --format            Output format: auto, json, markdown, plain
+        --stream            Stream all output in real-time
+        --update-interval   Seconds between updates (default: 60)
         --notify            Send desktop notification on completion
         --external-log      Tail external log file while monitoring
         --append            Append to existing log
 
     Examples:
         logsift monitor -- make build
-        logsift monitor -n install-deps -- npm install
-        logsift monitor --format json -- pytest tests/
-        logsift monitor --external-log /var/log/app.log -- npm start
-        logsift monitor -n build --append -- make
-        logsift monitor --notify -- docker build -t myapp .
+        logsift monitor --stream -- npm install
+        logsift monitor --update-interval 10 -- pytest tests/
+        logsift monitor --format json -- docker build -t myapp .
     """
+    from logsift.cli_formatter import format_help_with_colors
+
+    # Show help if no command provided
+    if command is None or len(command) == 0:
+        help_text = format_help_with_colors(ctx)
+        click.echo(help_text, color=True)
+        raise typer.Exit()
+
     from logsift.commands.monitor import monitor_command
 
     monitor_command(
         command,
         name=name,
         output_format=format,
+        stream=stream,
+        update_interval=update_interval,
         notify=notify,
         external_log=external_log,
         append=append,
@@ -192,6 +205,7 @@ def monitor(
 
 @app.command()
 def analyze(
+    ctx: typer.Context,
     log_file: Annotated[
         str | None,
         typer.Argument(help='Path to log file to analyze (optional if using --interactive or fzf)'),
@@ -229,6 +243,14 @@ def analyze(
         logsift analyze --interactive
         logsift analyze  # Interactive if fzf is available
     """
+    from logsift.cli_formatter import format_help_with_colors
+
+    # Show help if no arguments provided
+    if not log_file and not interactive:
+        help_text = format_help_with_colors(ctx)
+        click.echo(help_text, color=True)
+        raise typer.Exit()
+
     from logsift.commands.analyze import analyze_log
 
     # If no log file provided, try interactive mode
@@ -264,7 +286,8 @@ def analyze(
 
 @app.command()
 def watch(
-    log_file: Annotated[str, typer.Argument(help='Path to log file to watch')],
+    ctx: typer.Context,
+    log_file: Annotated[str | None, typer.Argument(help='Path to log file to watch')] = None,
     interval: Annotated[
         int,
         typer.Option(
@@ -289,6 +312,14 @@ def watch(
         logsift watch --interval 5 /var/log/nginx/error.log
         logsift watch ./logs/development.log
     """
+    from logsift.cli_formatter import format_help_with_colors
+
+    # Show help if no log file provided
+    if not log_file:
+        help_text = format_help_with_colors(ctx)
+        click.echo(help_text, color=True)
+        raise typer.Exit()
+
     from logsift.commands.watch import watch_log
 
     watch_log(log_file, interval=interval)
@@ -300,20 +331,25 @@ logs_app = typer.Typer(
     rich_markup_mode=None,
     pretty_exceptions_enable=False,
     cls=ColoredTyperGroup,  # Use our custom colored formatter
+    invoke_without_command=True,
 )
 app.add_typer(logs_app, name='logs')
 
 
+@logs_app.callback()
+def logs_callback(ctx: typer.Context) -> None:
+    """Manage cached log files."""
+    # Show help if no subcommand provided
+    if ctx.invoked_subcommand is None:
+        from logsift.cli_formatter import format_help_with_colors
+
+        help_text = format_help_with_colors(ctx)
+        click.echo(help_text, color=True)
+        raise typer.Exit()
+
+
 @logs_app.command('list')
 def logs_list(
-    context: Annotated[
-        str | None,
-        typer.Option(
-            '-c',
-            '--context',
-            help='Filter by context (monitor, analyze, watch)',
-        ),
-    ] = None,
     format: Annotated[
         str,
         typer.Option(
@@ -324,15 +360,12 @@ def logs_list(
 ) -> None:
     """List all cached log files with metadata.
 
-    Shows all logs stored in the cache directory with their size, modification
-    time, and context. Useful for finding previously monitored sessions.
+    Shows all logs stored in the cache directory with their size and modification
+    time. Useful for finding previously monitored sessions.
 
     Examples:
         # List all cached logs
         logsift logs list
-
-        # List only monitor logs
-        logsift logs list --context monitor
 
         # Get JSON output for scripting
         logsift logs list --format json
@@ -342,7 +375,7 @@ def logs_list(
     """
     from logsift.commands.logs import list_logs
 
-    list_logs(context=context, output_format=format)
+    list_logs(output_format=format)
 
 
 @logs_app.command('clean')
@@ -389,14 +422,6 @@ def logs_clean(
 
 @logs_app.command('browse')
 def logs_browse(
-    context: Annotated[
-        str | None,
-        typer.Option(
-            '-c',
-            '--context',
-            help='Filter by context (monitor, analyze, watch)',
-        ),
-    ] = None,
     view: Annotated[
         bool,
         typer.Option(
@@ -417,19 +442,53 @@ def logs_browse(
         # Browse and analyze a cached log
         logsift logs browse
 
-        # Browse only monitor logs
-        logsift logs browse --context monitor
-
         # Browse raw file content (no analysis)
         logsift logs browse --view
-
-        # Search through monitor logs interactively
-        logsift logs browse -c monitor
     """
     from logsift.commands.logs import browse_logs
 
     action = 'view' if view else 'select'
-    browse_logs(context=context, action=action)
+    browse_logs(action=action)
+
+
+@app.command()
+def help(
+    ctx: typer.Context,
+    command: Annotated[str | None, typer.Argument(help='Command to get help for')] = None,
+) -> None:
+    """Display help information for logsift commands.
+
+    Examples:
+        logsift help
+        logsift help monitor
+        logsift help analyze
+    """
+    from logsift.cli_formatter import format_help_with_colors
+
+    # Get the Click context for the main app
+    click_ctx = ctx.parent or ctx
+
+    if command is None:
+        # Show main help using custom formatter
+        help_text = format_help_with_colors(click_ctx)
+        click.echo(help_text, color=True)
+    else:
+        # Try to get the command from the group
+        if hasattr(click_ctx.command, 'get_command'):
+            cmd = click_ctx.command.get_command(click_ctx, command)
+            if cmd:
+                # Create context for the command and show its help with custom formatter
+                with click.Context(cmd, info_name=command, parent=click_ctx) as cmd_ctx:
+                    help_text = format_help_with_colors(cmd_ctx)
+                    click.echo(help_text, color=True)
+            else:
+                console.print(f'[red]Error: Unknown command "{command}"[/red]')
+                console.print('[dim]Run "logsift help" to see available commands[/dim]')
+                raise typer.Exit(1)
+        else:
+            console.print(f'[red]Error: Unknown command "{command}"[/red]')
+            console.print('[dim]Run "logsift help" to see available commands[/dim]')
+            raise typer.Exit(1)
 
 
 if __name__ == '__main__':

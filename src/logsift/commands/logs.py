@@ -18,21 +18,17 @@ from logsift.utils.fzf import select_log_file
 console = Console()
 
 
-def list_logs(context: str | None = None, output_format: str = 'table') -> None:
+def list_logs(output_format: str = 'table') -> None:
     """List cached log files.
 
     Args:
-        context: Optional context filter for log files
         output_format: Output format (table, json, plain)
     """
     cache = CacheManager()
-    logs = cache.list_all_logs(context=context)
+    logs = cache.list_all_logs()
 
     if not logs:
-        if context:
-            console.print(f'[yellow]No logs found for context: {context}[/yellow]')
-        else:
-            console.print('[yellow]No cached logs found[/yellow]')
+        console.print('[yellow]No cached logs found[/yellow]')
         return
 
     if output_format == 'json':
@@ -41,11 +37,10 @@ def list_logs(context: str | None = None, output_format: str = 'table') -> None:
         print(json.dumps(logs, indent=2))
     elif output_format == 'plain':
         for log in logs:
-            print(f'{log["path"]}\t{log["context"]}\t{log["size_bytes"]}\t{log["modified_iso"]}')
+            print(f'{log["path"]}\t{log["size_bytes"]}\t{log["modified_iso"]}')
     else:
         # Table format (default)
         table = Table(title='Cached Log Files')
-        table.add_column('Context', style='cyan')
         table.add_column('Name', style='white')
         table.add_column('Size', justify='right', style='green')
         table.add_column('Modified', style='yellow')
@@ -62,13 +57,13 @@ def list_logs(context: str | None = None, output_format: str = 'table') -> None:
 
             # Truncate name if too long
             name = str(log['name'])  # Always str from CacheManager
-            if len(name) > 40:
-                name = name[:37] + '...'
+            if len(name) > 60:
+                name = name[:57] + '...'
 
             # Format timestamp
             modified = str(log['modified_iso']).split('T')[0]  # Just the date
 
-            table.add_row(str(log['context']), name, size_str, modified)
+            table.add_row(name, size_str, modified)
 
         console.print(table)
         console.print(f'\n[dim]Total: {len(logs)} log file(s)[/dim]')
@@ -124,11 +119,10 @@ def clean_logs(days: int = 90, dry_run: bool = False) -> None:
             console.print(f'[green]Deleted {deleted_count} log file(s) older than {days} days[/green]')
 
 
-def browse_logs(context: str | None = None, action: str = 'select') -> None:
+def browse_logs(action: str = 'select') -> None:
     """Browse cached log files interactively using fzf.
 
     Args:
-        context: Optional context filter for log files
         action: Action to perform - 'select' (choose and analyze) or 'view' (preview only)
     """
     # Check if fzf is available
@@ -139,13 +133,10 @@ def browse_logs(context: str | None = None, action: str = 'select') -> None:
 
     # Get log files
     cache = CacheManager()
-    logs = cache.list_all_logs(context=context)
+    logs = cache.list_all_logs()
 
     if not logs:
-        if context:
-            console.print(f'[yellow]No logs found for context: {context}[/yellow]')
-        else:
-            console.print('[yellow]No cached logs found[/yellow]')
+        console.print('[yellow]No cached logs found[/yellow]')
         return
 
     # Select log file with fzf
