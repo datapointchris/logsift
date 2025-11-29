@@ -63,7 +63,9 @@ def monitor_command(
     if output_format == 'auto':
         final_format = detect_output_format()
 
-    show_progress = final_format != 'json'  # Only show progress in interactive modes
+    # Always show progress unless explicitly using --format=json
+    # This ensures users see streaming output even when stdout is piped
+    show_progress = output_format != 'json'
 
     # Print initial banner (like run-and-summarize.sh) - only in interactive mode
     if show_progress:
