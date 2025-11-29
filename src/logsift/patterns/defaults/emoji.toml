@@ -1,0 +1,34 @@
+# Emoji Status Indicators
+# These patterns detect emoji-based status indicators commonly used
+# in modern CLI tools, scripts, and log output
+
+[[patterns]]
+name = "emoji_success"
+regex = "✅"
+severity = "info"
+description = "Success indicated by check mark emoji (major event)"
+tags = ["emoji", "success", "structural"]
+suggestion = "Major success event detected"
+
+[[patterns]]
+name = "emoji_error"
+regex = "❌"
+severity = "error"
+description = "Error indicated by cross mark emoji (major event)"
+tags = ["emoji", "error", "structural"]
+suggestion = "Major error event detected"
+
+[[patterns]]
+name = "emoji_warning"
+regex = "⚠️"
+severity = "warning"
+description = "Warning indicated by warning sign emoji"
+tags = ["emoji", "warning", "structural"]
+suggestion = "Major warning event detected"
+
+[[patterns]]
+name = "emoji_info"
+regex = "ℹ️"
+severity = "info"
+description = "Information indicated by info emoji"
+tags = ["emoji", "info", "structural"]

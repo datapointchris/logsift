@@ -1,0 +1,31 @@
+# Unicode Icon Status Indicators
+# These patterns detect unicode character-based status indicators
+# commonly used in logging libraries and CLI output
+
+[[patterns]]
+name = "unicode_check"
+regex = "✓"
+severity = "info"
+description = "Success indicated by check mark (U+2713)"
+tags = ["unicode", "success", "status"]
+
+[[patterns]]
+name = "unicode_cross"
+regex = "✗"
+severity = "error"
+description = "Error indicated by cross mark (U+2717)"
+tags = ["unicode", "error", "status"]
+
+[[patterns]]
+name = "unicode_warning"
+regex = "▲"
+severity = "warning"
+description = "Warning indicated by triangle (U+25B2)"
+tags = ["unicode", "warning", "status"]
+
+[[patterns]]
+name = "unicode_info"
+regex = "●"
+severity = "info"
+description = "Info indicated by bullet (U+25CF)"
+tags = ["unicode", "info", "status"]
