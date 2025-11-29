@@ -208,7 +208,7 @@ def analyze(
     ctx: typer.Context,
     log_file: Annotated[
         str | None,
-        typer.Argument(help='Path to log file to analyze, or "latest" for most recent log (optional if using --interactive)'),
+        typer.Argument(help='Path to log file, "latest" for most recent, or "browse" to select with fzf'),
     ] = None,
     format: Annotated[
         str,
@@ -218,14 +218,21 @@ def analyze(
             envvar='LOGSIFT_OUTPUT_FORMAT',
         ),
     ] = 'auto',
-    interactive: Annotated[
+    stream: Annotated[
         bool,
         typer.Option(
-            '-i',
-            '--interactive',
-            help='Use fzf to interactively select from cached logs',
+            '--stream',
+            help='Stream analyze: analyze entire file, then continue as it grows',
         ),
     ] = False,
+    interval: Annotated[
+        int,
+        typer.Option(
+            '-i',
+            '--interval',
+            help='Update interval in seconds when streaming (default: 1)',
+        ),
+    ] = 1,
 ) -> None:
     """Analyze an existing log file for errors and patterns
 
@@ -234,25 +241,27 @@ def analyze(
     (JSON, structured, plain text).
 
     Common Options:
-        --format            Output format: auto, json, markdown, plain
-        -i, --interactive   Use fzf to select log file
+        --format    Output format: auto, json, markdown, plain
+        --stream    Continuously analyze as file grows
 
     Examples:
         logsift analyze /var/log/app.log
         logsift analyze --format json build.log
         logsift analyze latest
-        logsift analyze --interactive
-        logsift analyze  # Interactive if fzf is available
+        logsift analyze latest --stream
+        logsift analyze browse
+        logsift analyze browse --stream
     """
     from logsift.cli_formatter import format_help_with_colors
 
     # Show help if no arguments provided
-    if not log_file and not interactive:
+    if not log_file:
         help_text = format_help_with_colors(ctx)
         click.echo(help_text, color=True)
         raise typer.Exit()
 
     from logsift.commands.analyze import analyze_log
+    from logsift.commands.analyze import stream_analyze_log
 
     # Handle "latest" shortcut
     if log_file == 'latest':
@@ -266,17 +275,18 @@ def analyze(
             raise typer.Exit(1)
 
         log_file = str(latest_log)
-        console.print(f'[cyan]Analyzing latest log: {log_file}[/cyan]\n')
+        action = 'Stream analyzing' if stream else 'Analyzing'
+        console.print(f'[cyan]{action} latest log: {log_file}[/cyan]\n')
 
-    # If no log file provided, try interactive mode
-    if not log_file:
+    # Handle "browse" shortcut
+    elif log_file == 'browse':
         from logsift.cache.manager import CacheManager
         from logsift.utils.fzf import is_fzf_available
         from logsift.utils.fzf import select_log_file
 
-        if not is_fzf_available() and not interactive:
-            console.print('[red]Error: No log file specified and fzf is not available[/red]')
-            console.print('[dim]Provide a log file path or install fzf for interactive mode[/dim]')
+        if not is_fzf_available():
+            console.print('[red]Error: fzf is not available[/red]')
+            console.print('[dim]Install fzf to use browse mode[/dim]')
             raise typer.Exit(1)
 
         # Use fzf to select a log file
@@ -294,9 +304,14 @@ def analyze(
             raise typer.Exit(0)
 
         log_file = selected
-        console.print(f'[cyan]Analyzing: {log_file}[/cyan]\n')
+        action = 'Stream analyzing' if stream else 'Analyzing'
+        console.print(f'[cyan]{action}: {log_file}[/cyan]\n')
 
-    analyze_log(log_file, output_format=format)
+    # Call appropriate function based on stream flag
+    if stream:
+        stream_analyze_log(log_file, interval=interval)
+    else:
+        analyze_log(log_file, output_format=format)
 
 
 @app.command()
