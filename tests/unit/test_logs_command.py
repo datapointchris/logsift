@@ -21,14 +21,11 @@ def test_list_logs_empty_cache(capsys, tmp_path):
 
 def test_list_logs_with_files(capsys, tmp_path):
     """Test listing logs with files present."""
-    # Create some test log files
-    context_dir = tmp_path / 'monitor'
-    context_dir.mkdir(parents=True)
-
-    log1 = context_dir / 'test1-20240101_120000_000000.log'
+    # Create some test log files in flat structure
+    log1 = tmp_path / '2024-01-01T12:00:00-test1.log'
     log1.write_text('log content 1')
 
-    log2 = context_dir / 'test2-20240101_130000_000000.log'
+    log2 = tmp_path / '2024-01-01T13:00:00-test2.log'
     log2.write_text('log content 2 with more data')
 
     from logsift.cache.manager import CacheManager
@@ -40,17 +37,13 @@ def test_list_logs_with_files(capsys, tmp_path):
         # Should show both files
         assert 'test1' in captured.out
         assert 'test2' in captured.out
-        assert 'monitor' in captured.out
         assert 'Total: 2 log file(s)' in captured.out
 
 
 def test_list_logs_json_format(capsys, tmp_path):
     """Test listing logs with JSON output format."""
-    # Create test log file
-    context_dir = tmp_path / 'analyze'
-    context_dir.mkdir(parents=True)
-
-    log_file = context_dir / 'test-20240101_120000_000000.log'
+    # Create test log file in flat structure
+    log_file = tmp_path / '2024-01-01T12:00:00-test.log'
     log_file.write_text('test log content')
 
     from logsift.cache.manager import CacheManager
@@ -63,18 +56,14 @@ def test_list_logs_json_format(capsys, tmp_path):
         data = json.loads(captured.out)
         assert isinstance(data, list)
         assert len(data) == 1
-        assert data[0]['context'] == 'analyze'
-        assert 'test-20240101_120000_000000' in data[0]['name']
+        assert '2024-01-01T12:00:00-test' in data[0]['name']
 
 
 def test_list_logs_plain_format(capsys, tmp_path):
     """Test listing logs with plain output format."""
-    # Create test log file
-    context_dir = tmp_path / 'watch'
-    context_dir.mkdir(parents=True)
-
-    log_file = context_dir / 'app-20240101_120000_000000.log'
-    log_file.write_text('watch log content')
+    # Create test log file in flat structure
+    log_file = tmp_path / '2024-01-01T12:00:00-app.log'
+    log_file.write_text('app log content')
 
     from logsift.cache.manager import CacheManager
 
@@ -83,42 +72,8 @@ def test_list_logs_plain_format(capsys, tmp_path):
         captured = capsys.readouterr()
 
         # Should show tab-separated values
-        assert 'watch' in captured.out
+        assert 'app' in captured.out
         assert str(log_file) in captured.out
-
-
-def test_list_logs_with_context_filter(capsys, tmp_path):
-    """Test listing logs with context filter."""
-    # Create logs in multiple contexts
-    monitor_dir = tmp_path / 'monitor'
-    monitor_dir.mkdir(parents=True)
-    (monitor_dir / 'test1-20240101_120000_000000.log').write_text('monitor log')
-
-    analyze_dir = tmp_path / 'analyze'
-    analyze_dir.mkdir(parents=True)
-    (analyze_dir / 'test2-20240101_120000_000000.log').write_text('analyze log')
-
-    from logsift.cache.manager import CacheManager
-
-    with patch.object(CacheManager, '__init__', lambda self, cache_dir=None: setattr(self, 'cache_dir', tmp_path)):
-        list_logs(context='monitor', output_format='table')
-        captured = capsys.readouterr()
-
-        # Should only show monitor logs
-        assert 'test1' in captured.out
-        assert 'test2' not in captured.out
-        assert 'monitor' in captured.out
-
-
-def test_list_logs_nonexistent_context(capsys, tmp_path):
-    """Test listing logs with non-existent context."""
-    from logsift.cache.manager import CacheManager
-
-    with patch.object(CacheManager, '__init__', lambda self, cache_dir=None: setattr(self, 'cache_dir', tmp_path)):
-        list_logs(context='nonexistent', output_format='table')
-        captured = capsys.readouterr()
-
-        assert 'No logs found for context: nonexistent' in captured.out
 
 
 def test_clean_logs_empty_cache(capsys, tmp_path):
@@ -137,10 +92,8 @@ def test_clean_logs_empty_cache(capsys, tmp_path):
 
 def test_clean_logs_no_old_files(capsys, tmp_path):
     """Test cleaning logs when no files are old enough."""
-    # Create recent log file
-    context_dir = tmp_path / 'monitor'
-    context_dir.mkdir(parents=True)
-    (context_dir / 'recent-20240101_120000_000000.log').write_text('recent log')
+    # Create recent log file in flat structure
+    (tmp_path / '2024-01-01T12:00:00-recent.log').write_text('recent log')
 
     from logsift.cache.manager import CacheManager
 
@@ -155,11 +108,8 @@ def test_clean_logs_dry_run(capsys, tmp_path):
     """Test cleaning logs with dry-run mode."""
     import time
 
-    # Create an old log file by creating and modifying its timestamp
-    context_dir = tmp_path / 'monitor'
-    context_dir.mkdir(parents=True)
-
-    old_log = context_dir / 'old-20240101_120000_000000.log'
+    # Create an old log file in flat structure
+    old_log = tmp_path / '2024-01-01T12:00:00-old.log'
     old_log.write_text('old log')
 
     # Set modification time to 100 days ago
@@ -177,7 +127,7 @@ def test_clean_logs_dry_run(capsys, tmp_path):
 
         # Should show what would be deleted
         assert 'Would delete' in captured.out
-        assert 'old-20240101_120000_000000.log' in captured.out
+        assert '2024-01-01T12:00:00-old.log' in captured.out
         assert 'Run without --dry-run to actually delete' in captured.out
 
         # File should still exist
@@ -188,11 +138,8 @@ def test_clean_logs_actual_deletion(capsys, tmp_path):
     """Test actual deletion of old log files."""
     import time
 
-    # Create an old log file
-    context_dir = tmp_path / 'monitor'
-    context_dir.mkdir(parents=True)
-
-    old_log = context_dir / 'old-20240101_120000_000000.log'
+    # Create an old log file in flat structure
+    old_log = tmp_path / '2024-01-01T12:00:00-old.log'
     old_log.write_text('old log')
 
     # Set modification time to 100 days ago
@@ -218,11 +165,8 @@ def test_clean_logs_preserves_recent_files(tmp_path):
     """Test that clean_logs preserves recent files."""
     import time
 
-    context_dir = tmp_path / 'monitor'
-    context_dir.mkdir(parents=True)
-
-    # Create old log
-    old_log = context_dir / 'old-20240101_120000_000000.log'
+    # Create old log in flat structure
+    old_log = tmp_path / '2024-01-01T12:00:00-old.log'
     old_log.write_text('old log')
     old_time = time.time() - (100 * 24 * 60 * 60)
     import os
@@ -230,7 +174,7 @@ def test_clean_logs_preserves_recent_files(tmp_path):
     os.utime(old_log, (old_time, old_time))
 
     # Create recent log
-    recent_log = context_dir / 'recent-20240101_120000_000000.log'
+    recent_log = tmp_path / '2024-01-01T12:00:00-recent.log'
     recent_log.write_text('recent log')
 
     from logsift.cache.manager import CacheManager

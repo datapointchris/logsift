@@ -451,6 +451,74 @@ def logs_browse(
     browse_logs(action=action)
 
 
+@logs_app.command('latest')
+def logs_latest(
+    name: Annotated[
+        str | None,
+        typer.Argument(help='Name of log to find (e.g., "echo", "pytest"). If omitted, shows absolute latest log'),
+    ] = None,
+    tail: Annotated[
+        bool,
+        typer.Option(
+            '--tail',
+            help='Tail the log file in real-time instead of analyzing it',
+        ),
+    ] = False,
+    interval: Annotated[
+        int,
+        typer.Option(
+            '-i',
+            '--interval',
+            help='Update interval in seconds when tailing (default: 1)',
+        ),
+    ] = 1,
+) -> None:
+    """Open the most recent log file, optionally tailing it in real-time.
+
+    Finds the latest log file by name and either analyzes it or tails it in
+    real-time. If no name is provided, uses the absolute latest log across
+    all cached logs.
+
+    Examples:
+        # Analyze the latest pytest log
+        logsift logs latest pytest
+
+        # Tail the latest build log in real-time
+        logsift logs latest make --tail
+
+        # Analyze the absolute latest log (any name)
+        logsift logs latest
+
+        # Tail with custom update interval
+        logsift logs latest pytest --tail --interval 5
+    """
+    from logsift.cache.manager import CacheManager
+    from logsift.commands.analyze import analyze_log
+    from logsift.commands.watch import watch_log
+
+    cache = CacheManager()
+
+    # Get the latest log
+    if name:
+        log_path = cache.get_latest_log(name)
+        if not log_path:
+            console.print(f'[red]Error: No logs found for name "{name}"[/red]')
+            raise typer.Exit(1)
+    else:
+        log_path = cache.get_absolute_latest_log()
+        if not log_path:
+            console.print('[red]Error: No cached logs found[/red]')
+            raise typer.Exit(1)
+
+    console.print(f'[cyan]Latest log: {log_path}[/cyan]\n')
+
+    # Either tail or analyze
+    if tail:
+        watch_log(str(log_path), interval=interval)
+    else:
+        analyze_log(str(log_path), output_format='markdown')
+
+
 @app.command()
 def help(
     ctx: typer.Context,

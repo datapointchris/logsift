@@ -68,6 +68,24 @@ class CacheManager:
         # Return the last one (most recent due to ISO8601 timestamp sorting)
         return matching_logs[-1]
 
+    def get_absolute_latest_log(self) -> Path | None:
+        """Get the absolute latest log file across all logs.
+
+        Returns:
+            Path to the most recent log file, or None if no logs exist
+        """
+        if not self.cache_dir.exists():
+            return None
+
+        # Get all log files and sort by name (ISO8601 timestamp prefix)
+        all_logs = sorted(self.cache_dir.glob('*.log'))
+
+        if not all_logs:
+            return None
+
+        # Return the most recent (last in sorted list)
+        return all_logs[-1]
+
     def list_all_logs(self) -> list[dict[str, str | int]]:
         """List all cached log files with metadata.
 

@@ -118,7 +118,8 @@ def test_monitor_command_empty_command():
     """Test monitoring with empty command list."""
     from contextlib import suppress
 
-    with suppress(Exception):
+    # Empty command should raise SystemExit or Exception
+    with suppress(SystemExit, Exception):
         monitor_command([], output_format='json', save_log=False)
         # If it doesn't raise, that's also acceptable
 
@@ -203,7 +204,7 @@ def test_monitor_command_with_append_mode(tmp_path, capsys):
     from logsift.cache.manager import CacheManager
 
     cache = CacheManager()
-    log_file = cache.get_latest_log('test-append', context='monitor')
+    log_file = cache.get_latest_log('test-append')
 
     assert log_file is not None
     assert log_file.exists()

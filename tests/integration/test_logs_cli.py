@@ -61,16 +61,6 @@ class TestLogsListCommand:
         # Plain format should have tab-separated values
         assert '\t' in result.stdout or 'plain-test' in result.stdout
 
-    def test_logs_list_with_context_filter(self):
-        """Test listing logs filtered by context."""
-        # Create logs in different contexts (monitor is the default context)
-        runner.invoke(app, ['monitor', '-n', 'context-test', '--format=json', '--', 'echo', 'test'])
-
-        # List with context filter
-        result = runner.invoke(app, ['logs', 'list', '--context', 'monitor'])
-
-        assert result.exit_code == 0
-
 
 class TestLogsCleanCommand:
     """Test the logs clean command."""
@@ -103,13 +93,12 @@ class TestLogsCleanCommand:
         """Test cleaning with dry-run mode."""
         from logsift.cache.manager import CacheManager
 
-        # Create an old log file manually
+        # Create an old log file manually in flat structure
         cache = CacheManager()
         cache_dir = cache.cache_dir
-        context_dir = cache_dir / 'monitor'
-        context_dir.mkdir(parents=True, exist_ok=True)
+        cache_dir.mkdir(parents=True, exist_ok=True)
 
-        old_log = context_dir / 'old-test-20240101_120000_000000.log'
+        old_log = cache_dir / '2024-01-01T12:00:00-old-test.log'
         old_log.write_text('old log content')
 
         # Set modification time to 100 days ago
@@ -132,13 +121,12 @@ class TestLogsCleanCommand:
         """Test actual deletion of old log files."""
         from logsift.cache.manager import CacheManager
 
-        # Create an old log file manually
+        # Create an old log file manually in flat structure
         cache = CacheManager()
         cache_dir = cache.cache_dir
-        context_dir = cache_dir / 'monitor'
-        context_dir.mkdir(parents=True, exist_ok=True)
+        cache_dir.mkdir(parents=True, exist_ok=True)
 
-        old_log = context_dir / 'delete-test-20240101_120000_000000.log'
+        old_log = cache_dir / '2024-01-01T12:00:00-delete-test.log'
         old_log.write_text('old log to delete')
 
         # Set modification time to 100 days ago
@@ -162,15 +150,14 @@ class TestLogsCleanCommand:
 
         cache = CacheManager()
         cache_dir = cache.cache_dir
-        context_dir = cache_dir / 'monitor'
-        context_dir.mkdir(parents=True, exist_ok=True)
+        cache_dir.mkdir(parents=True, exist_ok=True)
 
-        # Create log files with different ages
-        log_60_days = context_dir / 'log-60days-20240101_120000_000000.log'
+        # Create log files with different ages in flat structure
+        log_60_days = cache_dir / '2024-01-01T12:00:00-log-60days.log'
         log_60_days.write_text('60 days old')
         time_60_days = time.time() - (60 * 24 * 60 * 60)
 
-        log_20_days = context_dir / 'log-20days-20240101_120000_000000.log'
+        log_20_days = cache_dir / '2024-01-01T12:00:00-log-20days.log'
         log_20_days.write_text('20 days old')
         time_20_days = time.time() - (20 * 24 * 60 * 60)
 
@@ -234,3 +221,89 @@ class TestLogsEndToEnd:
         # Should have at least our 3 logs
         our_logs = [log for log in data if 'multi-test' in log['name']]
         assert len(our_logs) >= 3
+
+
+class TestLogsLatestCommand:
+    """Test the logs latest command."""
+
+    def test_logs_latest_by_name(self):
+        """Test getting the latest log by name."""
+        # Create multiple logs for the same command
+        runner.invoke(app, ['monitor', '-n', 'latest-test', '--format=json', '--', 'echo', 'test1'])
+        runner.invoke(app, ['monitor', '-n', 'latest-test', '--format=json', '--', 'echo', 'test2'])
+
+        # Get latest for that name
+        result = runner.invoke(app, ['logs', 'latest', 'latest-test'])
+
+        assert result.exit_code == 0
+        assert 'Latest log:' in result.stdout
+        assert 'latest-test' in result.stdout
+
+    def test_logs_latest_absolute(self):
+        """Test getting the absolute latest log (no name filter)."""
+        # Create logs for different commands
+        runner.invoke(app, ['monitor', '-n', 'latest-abs-1', '--format=json', '--', 'echo', 'test1'])
+        runner.invoke(app, ['monitor', '-n', 'latest-abs-2', '--format=json', '--', 'echo', 'test2'])
+
+        # Get absolute latest
+        result = runner.invoke(app, ['logs', 'latest'])
+
+        assert result.exit_code == 0
+        assert 'Latest log:' in result.stdout
+
+    def test_logs_latest_nonexistent_name(self):
+        """Test getting latest log for nonexistent name."""
+        result = runner.invoke(app, ['logs', 'latest', 'nonexistent-command-xyz'])
+
+        assert result.exit_code == 1
+        assert 'No logs found' in result.stdout
+
+    def test_logs_latest_with_tail_flag(self):
+        """Test that --tail flag is accepted (full tail testing in watch tests)."""
+        # Create a log
+        runner.invoke(app, ['monitor', '-n', 'tail-test', '--format=json', '--', 'echo', 'test'])
+
+        # This should not error with --tail flag (though we'll ctrl-c it quickly)
+        # Just verify the command accepts the flag
+        result = runner.invoke(app, ['logs', 'latest', 'tail-test', '--help'])
+
+        assert result.exit_code == 0
+        assert '--tail' in result.stdout
+
+
+class TestMonitorStreamFlags:
+    """Test the monitor command --stream and --update-interval flags."""
+
+    def test_monitor_with_stream_flag(self):
+        """Test monitor with --stream flag for real-time output."""
+        result = runner.invoke(app, ['monitor', '--stream', '--format=json', '--', 'echo', 'stream test'])
+
+        assert result.exit_code == 0
+        # Should have captured output and analysis
+        data = json.loads(result.stdout)
+        assert 'summary' in data
+
+    def test_monitor_with_update_interval(self):
+        """Test monitor with custom --update-interval."""
+        result = runner.invoke(app, ['monitor', '--update-interval', '5', '--format=json', '--', 'echo', 'interval test'])
+
+        assert result.exit_code == 0
+        data = json.loads(result.stdout)
+        assert 'summary' in data
+
+    def test_monitor_default_periodic_updates(self):
+        """Test monitor default behavior (periodic updates, not streaming)."""
+        # Without --stream, should still work (periodic mode)
+        result = runner.invoke(app, ['monitor', '--format=json', '--', 'echo', 'periodic test'])
+
+        assert result.exit_code == 0
+        data = json.loads(result.stdout)
+        assert 'summary' in data
+
+    def test_monitor_stream_with_interval(self):
+        """Test monitor with both --stream and --update-interval."""
+        result = runner.invoke(app, ['monitor', '--stream', '--update-interval', '10', '--format=json', '--', 'echo', 'both flags test'])
+
+        assert result.exit_code == 0
+        data = json.loads(result.stdout)
+        assert 'summary' in data

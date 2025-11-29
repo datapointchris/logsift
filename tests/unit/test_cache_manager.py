@@ -28,22 +28,10 @@ def test_create_log_path_basic():
 
         log_path = manager.create_log_path('test_command')
 
-        # Should create a path under cache_dir
-        assert log_path.parent.parent == manager.cache_dir
+        # Should create a path directly under cache_dir (flat structure)
+        assert log_path.parent == manager.cache_dir
         assert log_path.name.endswith('.log')
         assert 'test_command' in str(log_path)
-
-
-def test_create_log_path_with_context():
-    """Test creating log path with context."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        manager = CacheManager(cache_dir=Path(tmpdir))
-
-        log_path = manager.create_log_path('npm_build', context='frontend')
-
-        # Should include context in path
-        assert 'frontend' in str(log_path)
-        assert 'npm_build' in str(log_path)
 
 
 def test_create_log_path_creates_directories():
@@ -59,10 +47,13 @@ def test_create_log_path_creates_directories():
 
 def test_create_log_path_unique_timestamps():
     """Test that consecutive calls create unique paths."""
+    import time
+
     with tempfile.TemporaryDirectory() as tmpdir:
         manager = CacheManager(cache_dir=Path(tmpdir))
 
         path1 = manager.create_log_path('test_command')
+        time.sleep(1.1)  # Sleep to ensure different timestamp
         path2 = manager.create_log_path('test_command')
 
         # Paths should be different due to timestamps
@@ -113,26 +104,6 @@ def test_get_latest_log_returns_most_recent():
         assert latest == path3
 
 
-def test_get_latest_log_with_context():
-    """Test get_latest_log with context filter."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        manager = CacheManager(cache_dir=Path(tmpdir))
-
-        # Create logs in different contexts
-        path1 = manager.create_log_path('build', context='frontend')
-        path1.write_text('frontend build')
-
-        path2 = manager.create_log_path('build', context='backend')
-        path2.write_text('backend build')
-
-        # Get latest for specific context
-        latest_frontend = manager.get_latest_log('build', context='frontend')
-        latest_backend = manager.get_latest_log('build', context='backend')
-
-        assert latest_frontend == path1
-        assert latest_backend == path2
-
-
 def test_get_latest_log_ignores_other_commands():
     """Test get_latest_log only returns logs for the specified command."""
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -152,24 +123,60 @@ def test_get_latest_log_ignores_other_commands():
         assert latest != path2
 
 
-def test_create_log_path_default_context():
-    """Test create_log_path uses 'default' context when not specified."""
+def test_get_absolute_latest_log_returns_none_when_empty():
+    """Test get_absolute_latest_log returns None when no logs exist."""
     with tempfile.TemporaryDirectory() as tmpdir:
         manager = CacheManager(cache_dir=Path(tmpdir))
 
-        log_path = manager.create_log_path('test_command')
+        latest = manager.get_absolute_latest_log()
 
-        # Should use default context
-        assert 'default' in str(log_path) or log_path.parent.name == 'default'
+        assert latest is None
 
 
-def test_cache_manager_handles_nested_contexts():
-    """Test cache manager handles nested context paths."""
+def test_get_absolute_latest_log_returns_most_recent():
+    """Test get_absolute_latest_log returns the most recent log across all names."""
+    import time
+
     with tempfile.TemporaryDirectory() as tmpdir:
         manager = CacheManager(cache_dir=Path(tmpdir))
 
-        # Create with a simple context that might become a nested path
-        log_path = manager.create_log_path('test', context='project/build')
+        # Create logs for different commands with delays to ensure different timestamps
+        path1 = manager.create_log_path('npm_build')
+        path1.write_text('npm log')
+        time.sleep(1.1)
 
-        # Should handle the context appropriately
-        assert log_path.parent.exists()
+        path2 = manager.create_log_path('pytest')
+        path2.write_text('pytest log')
+        time.sleep(1.1)
+
+        path3 = manager.create_log_path('make')
+        path3.write_text('make log')
+
+        # Get absolute latest (should be the last created)
+        latest = manager.get_absolute_latest_log()
+
+        assert latest == path3
+
+
+def test_get_absolute_latest_log_sorts_by_timestamp():
+    """Test get_absolute_latest_log correctly sorts by ISO8601 timestamp prefix."""
+    import time
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        manager = CacheManager(cache_dir=Path(tmpdir))
+
+        # Create multiple logs with different names and delays to ensure different timestamps
+        paths = []
+        for i, cmd in enumerate(['echo', 'bash', 'pytest', 'make']):
+            path = manager.create_log_path(cmd)
+            path.write_text(f'{cmd} log')
+            paths.append(path)
+            # Sleep except after last one
+            if i < 3:
+                time.sleep(1.1)
+
+        # Get absolute latest
+        latest = manager.get_absolute_latest_log()
+
+        # Should be the last one created
+        assert latest == paths[-1]
