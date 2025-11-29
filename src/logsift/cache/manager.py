@@ -65,8 +65,8 @@ class CacheManager:
         if not self.cache_dir.exists():
             return None
 
-        # Find all log files matching the name pattern (timestamp-name.log format)
-        pattern = f'*-{sanitized_name}.log'
+        # Find all log files matching the name pattern (substring match)
+        pattern = f'*{sanitized_name}*.log'
         matching_logs = sorted(self.cache_dir.glob(pattern))
 
         if not matching_logs:
