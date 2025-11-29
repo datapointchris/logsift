@@ -31,8 +31,8 @@ def test_create_log_path_basic():
 
         log_path = manager.create_log_path('test_command')
 
-        # Should create a path directly under cache_dir (flat structure)
-        assert log_path.parent == manager.cache_dir
+        # Should create a path in logs/ subdirectory
+        assert log_path.parent == manager.logs_dir
         assert log_path.name.endswith('.log')
         assert 'test_command' in str(log_path)
 

@@ -92,12 +92,12 @@ class TestLogsCleanCommand:
         """Test cleaning with dry-run mode."""
         from logsift.cache.manager import CacheManager
 
-        # Create an old log file manually in flat structure
+        # Create an old log file in logs/ subdirectory
         cache = CacheManager()
-        cache_dir = cache.cache_dir
-        cache_dir.mkdir(parents=True, exist_ok=True)
+        logs_dir = cache.logs_dir
+        logs_dir.mkdir(parents=True, exist_ok=True)
 
-        old_log = cache_dir / '2024-01-01T12:00:00-old-test.log'
+        old_log = logs_dir / '2024-01-01T12:00:00-old-test.log'
         old_log.write_text('old log content')
 
         # Set modification time to 100 days ago
@@ -120,12 +120,12 @@ class TestLogsCleanCommand:
         """Test actual deletion of old log files."""
         from logsift.cache.manager import CacheManager
 
-        # Create an old log file manually in flat structure
+        # Create an old log file in logs/ subdirectory
         cache = CacheManager()
-        cache_dir = cache.cache_dir
-        cache_dir.mkdir(parents=True, exist_ok=True)
+        logs_dir = cache.logs_dir
+        logs_dir.mkdir(parents=True, exist_ok=True)
 
-        old_log = cache_dir / '2024-01-01T12:00:00-delete-test.log'
+        old_log = logs_dir / '2024-01-01T12:00:00-delete-test.log'
         old_log.write_text('old log to delete')
 
         # Set modification time to 100 days ago
@@ -148,15 +148,15 @@ class TestLogsCleanCommand:
         from logsift.cache.manager import CacheManager
 
         cache = CacheManager()
-        cache_dir = cache.cache_dir
-        cache_dir.mkdir(parents=True, exist_ok=True)
+        logs_dir = cache.logs_dir
+        logs_dir.mkdir(parents=True, exist_ok=True)
 
-        # Create log files with different ages in flat structure
-        log_60_days = cache_dir / '2024-01-01T12:00:00-log-60days.log'
+        # Create log files with different ages in logs/ subdirectory
+        log_60_days = logs_dir / '2024-01-01T12:00:00-log-60days.log'
         log_60_days.write_text('60 days old')
         time_60_days = time.time() - (60 * 24 * 60 * 60)
 
-        log_20_days = cache_dir / '2024-01-01T12:00:00-log-20days.log'
+        log_20_days = logs_dir / '2024-01-01T12:00:00-log-20days.log'
         log_20_days.write_text('20 days old')
         time_20_days = time.time() - (20 * 24 * 60 * 60)
 
@@ -236,7 +236,9 @@ class TestLogsLatestCommand:
 
         assert result.exit_code == 0
         assert 'Latest log:' in result.stdout
-        assert 'latest-test' in result.stdout
+        # The name might be split across lines due to path wrapping, so check for it without newlines
+        stdout_no_newlines = result.stdout.replace('\n', '')
+        assert 'latest-test' in stdout_no_newlines
 
     def test_logs_latest_absolute(self):
         """Test getting the absolute latest log (no name filter)."""
