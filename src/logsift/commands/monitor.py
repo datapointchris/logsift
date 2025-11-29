@@ -3,6 +3,8 @@
 Monitors a command and analyzes its output.
 """
 
+import os
+import shlex
 import subprocess  # nosec B404
 import sys
 import time
@@ -73,9 +75,7 @@ def monitor_command(
 
     # Print initial banner (like run-and-summarize.sh) - only in interactive mode
     if show_progress:
-        stderr_console.print('\n[bold cyan]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/bold cyan]')
-        stderr_console.print('[bold cyan] Starting monitored process[/bold cyan]')
-        stderr_console.print('[bold cyan]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/bold cyan]\n')
+        stderr_console.print('\n[bold cyan]## Starting Monitored Process[/bold cyan]')
         stderr_console.print(f'[bold]Command:[/bold] {" ".join(command)}')
         stderr_console.print(f'[bold]Name:[/bold] {name}')
         if log_file:
@@ -96,14 +96,41 @@ def monitor_command(
             if append and log_file.exists():
                 log_handle.write('\n')
 
-        # Start the command
-        process = subprocess.Popen(  # nosec B603
-            command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            bufsize=1,
-        )
+        # Try to run command directly first (for executables in PATH)
+        # If that fails, fall back to interactive shell (for shell functions/aliases)
+        use_shell_filtering = False  # Track if we need to filter shell init output
+        marker = '___LOGSIFT_COMMAND_START___'
+
+        try:
+            # First attempt: direct execution without shell
+            process = subprocess.Popen(  # nosec B603
+                command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+            )
+        except FileNotFoundError:
+            # Command not found - likely a shell function, alias, or builtin
+            # Fall back to interactive shell which loads user's configuration
+            use_shell_filtering = True
+            shell = os.environ.get('SHELL', '/bin/bash')
+            command_str = shlex.join(command)
+
+            # Use a marker to separate shell init output from command output
+            # We'll filter out everything before the marker
+            wrapped_command = f'printf "\\n{marker}\\n" >&2; {command_str}'
+
+            # Use interactive shell to load functions and aliases
+            shell_command = [shell, '-i', '-c', wrapped_command]
+
+            process = subprocess.Popen(  # nosec B603
+                shell_command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+            )
 
         if show_progress:
             stderr_console.print(f'[dim]Process started with PID: {process.pid}[/dim]')
@@ -116,9 +143,18 @@ def monitor_command(
         last_update_time = time.time()
         update_count = 0
 
+        # Track whether we've seen the marker (for shell init filtering)
+        seen_marker = not use_shell_filtering  # If not using shell, act like we've seen it
+
         # Stream or collect output line by line
         if process.stdout:
             for line in process.stdout:
+                # Filter out shell initialization output if using shell fallback
+                if use_shell_filtering and not seen_marker:
+                    if marker in line:
+                        seen_marker = True
+                    continue  # Skip all lines until we see the marker
+
                 # Save to log file
                 if log_handle:
                     log_handle.write(line)
@@ -179,9 +215,7 @@ def monitor_command(
 
     # Print completion banner - only in interactive mode
     if show_progress:
-        stderr_console.print('\n[bold green]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/bold green]')
-        stderr_console.print('[bold green] Process completed[/bold green]')
-        stderr_console.print('[bold green]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/bold green]\n')
+        stderr_console.print('\n[bold green]## Process Completed[/bold green]')
         end_time_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         stderr_console.print(f'[bold]Completed:[/bold] {end_time_str}')
         stderr_console.print(f'[bold]Duration:[/bold] {duration:.1f}s ({int(duration // 60)}m {int(duration % 60)}s)')
@@ -205,9 +239,8 @@ def monitor_command(
 
     # Print analysis summary header - only in interactive mode
     if show_progress:
-        stderr_console.print('[bold cyan]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/bold cyan]')
-        stderr_console.print('[bold cyan] ANALYSIS SUMMARY[/bold cyan]')
-        stderr_console.print('[bold cyan]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/bold cyan]\n')
+        stderr_console.print('[bold cyan]## Analysis Summary[/bold cyan]')
+        stderr_console.print('[dim]' + '─' * 60 + '[/dim]')
 
     # Format and output results (to stdout, not stderr)
     if final_format == 'json':

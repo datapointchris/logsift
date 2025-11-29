@@ -208,7 +208,7 @@ def analyze(
     ctx: typer.Context,
     log_file: Annotated[
         str | None,
-        typer.Argument(help='Path to log file to analyze (optional if using --interactive or fzf)'),
+        typer.Argument(help='Path to log file to analyze, or "latest" for most recent log (optional if using --interactive)'),
     ] = None,
     format: Annotated[
         str,
@@ -240,6 +240,7 @@ def analyze(
     Examples:
         logsift analyze /var/log/app.log
         logsift analyze --format json build.log
+        logsift analyze latest
         logsift analyze --interactive
         logsift analyze  # Interactive if fzf is available
     """
@@ -252,6 +253,20 @@ def analyze(
         raise typer.Exit()
 
     from logsift.commands.analyze import analyze_log
+
+    # Handle "latest" shortcut
+    if log_file == 'latest':
+        from logsift.cache.manager import CacheManager
+
+        cache = CacheManager()
+        latest_log = cache.get_absolute_latest_log()
+
+        if not latest_log:
+            console.print('[red]Error: No cached logs found[/red]')
+            raise typer.Exit(1)
+
+        log_file = str(latest_log)
+        console.print(f'[cyan]Analyzing latest log: {log_file}[/cyan]\n')
 
     # If no log file provided, try interactive mode
     if not log_file:
@@ -461,7 +476,7 @@ def logs_latest(
         bool,
         typer.Option(
             '--tail',
-            help='Tail the log file in real-time instead of analyzing it',
+            help='Tail the log file in real-time instead of displaying it',
         ),
     ] = False,
     interval: Annotated[
@@ -473,27 +488,26 @@ def logs_latest(
         ),
     ] = 1,
 ) -> None:
-    """Open the most recent log file, optionally tailing it in real-time.
+    """Show the most recent log file, optionally tailing it in real-time.
 
-    Finds the latest log file by name and either analyzes it or tails it in
-    real-time. If no name is provided, uses the absolute latest log across
-    all cached logs.
+    Finds the latest log file by name and displays its raw contents. Use --tail
+    to watch it in real-time. If no name is provided, uses the absolute latest
+    log across all cached logs.
 
     Examples:
-        # Analyze the latest pytest log
+        # Show the latest pytest log
         logsift logs latest pytest
 
         # Tail the latest build log in real-time
         logsift logs latest make --tail
 
-        # Analyze the absolute latest log (any name)
+        # Show the absolute latest log (any name)
         logsift logs latest
 
         # Tail with custom update interval
         logsift logs latest pytest --tail --interval 5
     """
     from logsift.cache.manager import CacheManager
-    from logsift.commands.analyze import analyze_log
     from logsift.commands.watch import watch_log
 
     cache = CacheManager()
@@ -512,11 +526,13 @@ def logs_latest(
 
     console.print(f'[cyan]Latest log: {log_path}[/cyan]\n')
 
-    # Either tail or analyze
+    # Either tail or show the raw log
     if tail:
         watch_log(str(log_path), interval=interval)
     else:
-        analyze_log(str(log_path), output_format='markdown')
+        # Show raw log contents
+        with open(log_path) as f:
+            print(f.read(), end='')
 
 
 @app.command()

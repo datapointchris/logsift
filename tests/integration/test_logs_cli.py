@@ -65,15 +65,14 @@ class TestLogsListCommand:
 class TestLogsCleanCommand:
     """Test the logs clean command."""
 
-    def test_logs_clean_empty_cache(self, tmp_path, monkeypatch):
+    def test_logs_clean_empty_cache(self):
         """Test cleaning with empty cache."""
-        # Set cache directory to temp
-        monkeypatch.setenv('HOME', str(tmp_path))
-
+        # Cache directory exists but is empty (thanks to autouse fixture)
         result = runner.invoke(app, ['logs', 'clean'])
 
         assert result.exit_code == 0
-        assert 'No cache directory found' in result.stdout
+        # Should report no old files, not that directory doesn't exist
+        assert 'No log files older than' in result.stdout or 'Deleted 0 log file(s)' in result.stdout
 
     def test_logs_clean_no_old_files(self):
         """Test cleaning when no files are old enough."""
