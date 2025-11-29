@@ -508,7 +508,7 @@ def logs_latest(
         logsift logs latest pytest --tail --interval 5
     """
     from logsift.cache.manager import CacheManager
-    from logsift.commands.watch import watch_log
+    from logsift.commands.watch import tail_log
 
     cache = CacheManager()
 
@@ -528,7 +528,7 @@ def logs_latest(
 
     # Either tail or show the raw log
     if tail:
-        watch_log(str(log_path), interval=interval)
+        tail_log(str(log_path), interval=interval)
     else:
         # Show raw log contents
         with open(log_path) as f:
