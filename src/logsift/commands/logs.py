@@ -119,11 +119,12 @@ def clean_logs(days: int = 90, dry_run: bool = False) -> None:
             console.print(f'[green]Deleted {deleted_count} log file(s) older than {days} days[/green]')
 
 
-def browse_logs(action: str = 'select') -> None:
+def browse_logs(action: str = 'select', interval: int = 1) -> None:
     """Browse cached log files interactively using fzf.
 
     Args:
-        action: Action to perform - 'select' (choose and analyze) or 'view' (preview only)
+        action: Action to perform - 'select' (choose and analyze), 'view' (preview only), or 'tail' (tail in real-time)
+        interval: Update interval in seconds when tailing (default: 1)
     """
     # Check if fzf is available
     if not is_fzf_available():
@@ -167,3 +168,15 @@ def browse_logs(action: str = 'select') -> None:
             console.print(f'[dim]Browsed: {log_path}[/dim]')
         else:
             console.print('[red]Error browsing log file[/red]')
+
+    elif action == 'tail':
+        selected_path = select_log_file(logs, 'Select log file to tail')
+
+        if not selected_path:
+            console.print('[dim]No file selected[/dim]')
+            return
+
+        # Tail the selected log
+        from logsift.commands.watch import tail_log
+
+        tail_log(selected_path, interval=interval)

@@ -459,12 +459,27 @@ def logs_browse(
             help='Browse raw file content instead of analyzing (useful for inspection)',
         ),
     ] = False,
+    tail: Annotated[
+        bool,
+        typer.Option(
+            '--tail',
+            help='Tail the selected log file in real-time',
+        ),
+    ] = False,
+    interval: Annotated[
+        int,
+        typer.Option(
+            '-i',
+            '--interval',
+            help='Update interval in seconds when tailing (default: 1)',
+        ),
+    ] = 1,
 ) -> None:
     """Browse and search cached log files interactively using fzf.
 
     Opens an interactive fuzzy-finder interface to search and select from
     cached logs. By default, analyzes the selected file. Use --view to browse
-    raw content instead.
+    raw content, or --tail to tail it in real-time.
 
     Requires fzf to be installed (install with: brew install fzf).
 
@@ -474,11 +489,20 @@ def logs_browse(
 
         # Browse raw file content (no analysis)
         logsift logs browse --view
+
+        # Browse and tail a log file
+        logsift logs browse --tail
     """
     from logsift.commands.logs import browse_logs
 
-    action = 'view' if view else 'select'
-    browse_logs(action=action)
+    if tail:
+        action = 'tail'
+    elif view:
+        action = 'view'
+    else:
+        action = 'select'
+
+    browse_logs(action=action, interval=interval)
 
 
 @logs_app.command('latest')
