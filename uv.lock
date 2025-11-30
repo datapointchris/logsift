@@ -363,6 +363,7 @@ dependencies = [
     { name = "python-dateutil" },
     { name = "sh" },
     { name = "tomli-w" },
+    { name = "toon-format" },
     { name = "typer" },
 ]
 
@@ -398,6 +399,7 @@ requires-dist = [
     { name = "python-dateutil", specifier = ">=2.8.0" },
     { name = "sh", specifier = ">=2.0.0" },
     { name = "tomli-w", specifier = ">=1.0.0" },
+    { name = "toon-format", git = "https://github.com/toon-format/toon-python" },
     { name = "typer", extras = ["all"], specifier = ">=0.15.0" },
 ]
 
@@ -1056,6 +1058,11 @@ sdist = { url = "https://files.pythonhosted.org/packages/19/75/241269d1da26b624c
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c7/18/c86eb8e0202e32dd3df50d43d7ff9854f8e0603945ff398974c1d91ac1ef/tomli_w-1.2.0-py3-none-any.whl", hash = "sha256:188306098d013b691fcadc011abd66727d3c414c571bb01b1a174ba8c983cf90", size = 6675, upload-time = "2025-01-15T12:07:22.074Z" },
 ]
+
+[[package]]
+name = "toon-format"
+version = "0.9.0b1"
+source = { git = "https://github.com/toon-format/toon-python#8dfb593ed1c2b1442f1dd161406e1f7b8ae16573" }
 
 [[package]]
 name = "typer"

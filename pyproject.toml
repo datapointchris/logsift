@@ -15,6 +15,7 @@ dependencies = [
     "sh>=2.0.0",
     # Date parsing
     "python-dateutil>=2.8.0",
+    "toon-format",
 ]
 keywords = ["log-analysis", "monitoring", "llm", "automation", "cli"]
 classifiers = [
@@ -198,3 +199,6 @@ build-backend = "uv_build"
 [tool.uv.build-backend]
 module-name = "logsift"
 module-root = "src"
+
+[tool.uv.sources]
+toon-format = { git = "https://github.com/toon-format/toon-python" }
