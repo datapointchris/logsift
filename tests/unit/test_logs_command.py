@@ -14,10 +14,16 @@ def test_list_logs_empty_cache(capsys, tmp_path):
     # Use temporary cache directory
     def mock_init(self, cache_dir=None):
         self.cache_dir = tmp_path
+        self.raw_dir = tmp_path / 'raw'
+        self.json_dir = tmp_path / 'json'
+        self.toon_dir = tmp_path / 'toon'
+        self.md_dir = tmp_path / 'md'
         self.logs_dir = tmp_path / 'logs'
         self.analyzed_dir = tmp_path / 'analyzed'
-        self.logs_dir.mkdir(parents=True, exist_ok=True)
-        self.analyzed_dir.mkdir(parents=True, exist_ok=True)
+        self.raw_dir.mkdir(parents=True, exist_ok=True)
+        self.json_dir.mkdir(parents=True, exist_ok=True)
+        self.toon_dir.mkdir(parents=True, exist_ok=True)
+        self.md_dir.mkdir(parents=True, exist_ok=True)
 
     with patch.object(CacheManager, '__init__', mock_init):
         list_logs(output_format='table')
@@ -28,23 +34,27 @@ def test_list_logs_empty_cache(capsys, tmp_path):
 
 def test_list_logs_with_files(capsys, tmp_path):
     """Test listing logs with files present."""
-    # Create some test log files in logs/ subdirectory
-    logs_dir = tmp_path / 'logs'
-    logs_dir.mkdir(parents=True, exist_ok=True)
+    # Create some test log files in raw/ subdirectory
+    raw_dir = tmp_path / 'raw'
+    raw_dir.mkdir(parents=True, exist_ok=True)
 
-    log1 = logs_dir / '2024-01-01T12:00:00-test1.log'
+    log1 = raw_dir / '2024-01-01T12:00:00-test1.log'
     log1.write_text('log content 1')
 
-    log2 = logs_dir / '2024-01-01T13:00:00-test2.log'
+    log2 = raw_dir / '2024-01-01T13:00:00-test2.log'
     log2.write_text('log content 2 with more data')
 
     from logsift.cache.manager import CacheManager
 
     def mock_init(self, cache_dir=None):
         self.cache_dir = tmp_path
-        self.logs_dir = logs_dir
+        self.raw_dir = raw_dir
+        self.json_dir = tmp_path / 'json'
+        self.toon_dir = tmp_path / 'toon'
+        self.md_dir = tmp_path / 'md'
+        self.logs_dir = tmp_path / 'logs'
         self.analyzed_dir = tmp_path / 'analyzed'
-        self.analyzed_dir.mkdir(parents=True, exist_ok=True)
+        self.json_dir.mkdir(parents=True, exist_ok=True)
 
     with patch.object(CacheManager, '__init__', mock_init):
         list_logs(output_format='table')
@@ -58,20 +68,24 @@ def test_list_logs_with_files(capsys, tmp_path):
 
 def test_list_logs_json_format(capsys, tmp_path):
     """Test listing logs with JSON output format."""
-    # Create test log file in logs/ subdirectory
-    logs_dir = tmp_path / 'logs'
-    logs_dir.mkdir(parents=True, exist_ok=True)
+    # Create test log file in raw/ subdirectory
+    raw_dir = tmp_path / 'raw'
+    raw_dir.mkdir(parents=True, exist_ok=True)
 
-    log_file = logs_dir / '2024-01-01T12:00:00-test.log'
+    log_file = raw_dir / '2024-01-01T12:00:00-test.log'
     log_file.write_text('test log content')
 
     from logsift.cache.manager import CacheManager
 
     def mock_init(self, cache_dir=None):
         self.cache_dir = tmp_path
-        self.logs_dir = logs_dir
+        self.raw_dir = raw_dir
+        self.json_dir = tmp_path / 'json'
+        self.toon_dir = tmp_path / 'toon'
+        self.md_dir = tmp_path / 'md'
+        self.logs_dir = tmp_path / 'logs'
         self.analyzed_dir = tmp_path / 'analyzed'
-        self.analyzed_dir.mkdir(parents=True, exist_ok=True)
+        self.json_dir.mkdir(parents=True, exist_ok=True)
 
     with patch.object(CacheManager, '__init__', mock_init):
         list_logs(output_format='json')
@@ -86,20 +100,24 @@ def test_list_logs_json_format(capsys, tmp_path):
 
 def test_list_logs_plain_format(capsys, tmp_path):
     """Test listing logs with plain output format."""
-    # Create test log file in logs/ subdirectory
-    logs_dir = tmp_path / 'logs'
-    logs_dir.mkdir(parents=True, exist_ok=True)
+    # Create test log file in raw/ subdirectory
+    raw_dir = tmp_path / 'raw'
+    raw_dir.mkdir(parents=True, exist_ok=True)
 
-    log_file = logs_dir / '2024-01-01T12:00:00-app.log'
+    log_file = raw_dir / '2024-01-01T12:00:00-app.log'
     log_file.write_text('app log content')
 
     from logsift.cache.manager import CacheManager
 
     def mock_init(self, cache_dir=None):
         self.cache_dir = tmp_path
-        self.logs_dir = logs_dir
+        self.raw_dir = raw_dir
+        self.json_dir = tmp_path / 'json'
+        self.toon_dir = tmp_path / 'toon'
+        self.md_dir = tmp_path / 'md'
+        self.logs_dir = tmp_path / 'logs'
         self.analyzed_dir = tmp_path / 'analyzed'
-        self.analyzed_dir.mkdir(parents=True, exist_ok=True)
+        self.json_dir.mkdir(parents=True, exist_ok=True)
 
     with patch.object(CacheManager, '__init__', mock_init):
         list_logs(output_format='plain')

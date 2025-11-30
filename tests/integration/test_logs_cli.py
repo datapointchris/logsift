@@ -92,12 +92,12 @@ class TestLogsCleanCommand:
         """Test cleaning with dry-run mode."""
         from logsift.cache.manager import CacheManager
 
-        # Create an old log file in logs/ subdirectory
+        # Create an old log file in raw/ subdirectory
         cache = CacheManager()
-        logs_dir = cache.logs_dir
-        logs_dir.mkdir(parents=True, exist_ok=True)
+        raw_dir = cache.raw_dir
+        raw_dir.mkdir(parents=True, exist_ok=True)
 
-        old_log = logs_dir / '2024-01-01T12:00:00-old-test.log'
+        old_log = raw_dir / '2024-01-01T12:00:00-old-test.log'
         old_log.write_text('old log content')
 
         # Set modification time to 100 days ago
@@ -120,12 +120,12 @@ class TestLogsCleanCommand:
         """Test actual deletion of old log files."""
         from logsift.cache.manager import CacheManager
 
-        # Create an old log file in logs/ subdirectory
+        # Create an old log file in raw/ subdirectory
         cache = CacheManager()
-        logs_dir = cache.logs_dir
-        logs_dir.mkdir(parents=True, exist_ok=True)
+        raw_dir = cache.raw_dir
+        raw_dir.mkdir(parents=True, exist_ok=True)
 
-        old_log = logs_dir / '2024-01-01T12:00:00-delete-test.log'
+        old_log = raw_dir / '2024-01-01T12:00:00-delete-test.log'
         old_log.write_text('old log to delete')
 
         # Set modification time to 100 days ago
@@ -148,15 +148,15 @@ class TestLogsCleanCommand:
         from logsift.cache.manager import CacheManager
 
         cache = CacheManager()
-        logs_dir = cache.logs_dir
-        logs_dir.mkdir(parents=True, exist_ok=True)
+        raw_dir = cache.raw_dir
+        raw_dir.mkdir(parents=True, exist_ok=True)
 
-        # Create log files with different ages in logs/ subdirectory
-        log_60_days = logs_dir / '2024-01-01T12:00:00-log-60days.log'
+        # Create log files with different ages in raw/ subdirectory
+        log_60_days = raw_dir / '2024-01-01T12:00:00-log-60days.log'
         log_60_days.write_text('60 days old')
         time_60_days = time.time() - (60 * 24 * 60 * 60)
 
-        log_20_days = logs_dir / '2024-01-01T12:00:00-log-20days.log'
+        log_20_days = raw_dir / '2024-01-01T12:00:00-log-20days.log'
         log_20_days.write_text('20 days old')
         time_20_days = time.time() - (20 * 24 * 60 * 60)
 
