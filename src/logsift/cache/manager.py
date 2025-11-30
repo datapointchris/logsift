@@ -229,7 +229,7 @@ class CacheManager:
                 results.append(
                     {
                         'path': str(analyzed_file),
-                        'name': analyzed_file.stem,
+                        'name': analyzed_file.name,  # Show full filename including .json extension
                         'context': '',
                         'size_bytes': stat.st_size,
                         'modified_timestamp': int(stat.st_mtime),
