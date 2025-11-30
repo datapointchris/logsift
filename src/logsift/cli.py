@@ -314,47 +314,6 @@ def analyze(
         analyze_log(log_file, output_format=format)
 
 
-@app.command()
-def watch(
-    ctx: typer.Context,
-    log_file: Annotated[str | None, typer.Argument(help='Path to log file to watch')] = None,
-    interval: Annotated[
-        int,
-        typer.Option(
-            '-i',
-            '--interval',
-            help='Update interval in seconds (how often to check for new lines)',
-            envvar='LOGSIFT_WATCH_INTERVAL',
-        ),
-    ] = 1,
-) -> None:
-    """Watch and analyze a log file in real-time as it grows
-
-    Continuously monitors a log file for new lines and analyzes them as they
-    appear. Useful for monitoring long-running services or applications.
-    Press Ctrl+C to stop watching.
-
-    Common Options:
-        -i, --interval      Update interval in seconds (default: 1)
-
-    Examples:
-        logsift watch /var/log/app.log
-        logsift watch --interval 5 /var/log/nginx/error.log
-        logsift watch ./logs/development.log
-    """
-    from logsift.cli_formatter import format_help_with_colors
-
-    # Show help if no log file provided
-    if not log_file:
-        help_text = format_help_with_colors(ctx)
-        click.echo(help_text, color=True)
-        raise typer.Exit()
-
-    from logsift.commands.watch import watch_log
-
-    watch_log(log_file, interval=interval)
-
-
 # Create logs command group
 logs_app = typer.Typer(
     help='Manage cached log files',
@@ -570,7 +529,7 @@ def logs_latest(
         logsift logs latest pytest --tail --interval 5
     """
     from logsift.cache.manager import CacheManager
-    from logsift.commands.watch import tail_log
+    from logsift.commands.logs import tail_log
 
     cache = CacheManager()
 

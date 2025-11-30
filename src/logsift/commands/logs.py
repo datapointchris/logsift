@@ -177,6 +177,45 @@ def browse_logs(action: str = 'select', interval: int = 1) -> None:
             return
 
         # Tail the selected log
-        from logsift.commands.watch import tail_log
-
         tail_log(selected_path, interval=interval)
+
+
+def tail_log(log_file: str, interval: int = 1) -> None:
+    """Tail a log file in real-time (like tail -f).
+
+    Just shows raw log lines as they appear, without analysis.
+
+    Args:
+        log_file: Path to the log file to tail
+        interval: Update interval in seconds
+    """
+    import time
+
+    file_path = Path(log_file).expanduser().resolve()
+
+    if not file_path.exists():
+        console.print(f'[red]Error: Log file not found: {file_path}[/red]')
+        sys.exit(1)
+
+    console.print(f'[blue]Tailing:[/blue] {file_path}')
+    console.print('[dim]Press Ctrl+C to stop[/dim]\n')
+
+    # Open file and seek to end
+    try:
+        with file_path.open('r', encoding='utf-8') as f:
+            # Go to end of file
+            f.seek(0, 2)
+
+            while True:
+                line = f.readline()
+
+                if line:
+                    # New line available - print it
+                    print(line, end='')
+                else:
+                    # No new data - wait before checking again
+                    time.sleep(interval)
+
+    except KeyboardInterrupt:
+        console.print('\n[yellow]Stopped tailing log file[/yellow]')
+        sys.exit(0)
