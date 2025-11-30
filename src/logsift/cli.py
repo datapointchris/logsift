@@ -378,6 +378,29 @@ def logs_callback(ctx: typer.Context) -> None:
         raise typer.Exit()
 
 
+# Create analyzed command group
+analyzed_app = typer.Typer(
+    help='Manage saved analysis results',
+    rich_markup_mode=None,
+    pretty_exceptions_enable=False,
+    cls=ColoredTyperGroup,  # Use our custom colored formatter
+    invoke_without_command=True,
+)
+app.add_typer(analyzed_app, name='analyzed')
+
+
+@analyzed_app.callback()
+def analyzed_callback(ctx: typer.Context) -> None:
+    """Manage saved analysis results."""
+    # Show help if no subcommand provided
+    if ctx.invoked_subcommand is None:
+        from logsift.cli_formatter import format_help_with_colors
+
+        help_text = format_help_with_colors(ctx)
+        click.echo(help_text, color=True)
+        raise typer.Exit()
+
+
 @logs_app.command('list')
 def logs_list(
     format: Annotated[
@@ -572,6 +595,242 @@ def logs_latest(
         # Show raw log contents
         with open(log_path) as f:
             print(f.read(), end='')
+
+
+@analyzed_app.command('list')
+def analyzed_list(
+    format: Annotated[
+        str,
+        typer.Option(
+            '--format',
+            help='Output format: table (default), json, or plain',
+        ),
+    ] = 'table',
+) -> None:
+    """List all saved analysis results.
+
+    Shows all analysis results saved in the cache directory with metadata
+    including name, size, and modification time.
+
+    Examples:
+        # List in table format
+        logsift analyzed list
+
+        # List in JSON format
+        logsift analyzed list --format json
+    """
+    from logsift.cache.manager import CacheManager
+
+    cache = CacheManager()
+    analyses = cache.list_all_analyzed()
+
+    if not analyses:
+        console.print('[yellow]No saved analyses found[/yellow]')
+        return
+
+    if format == 'json':
+        import json
+
+        print(json.dumps(analyses, indent=2))
+    elif format == 'plain':
+        for analysis in analyses:
+            print(f'{analysis["name"]}\t{analysis["path"]}\t{analysis["size_bytes"]}\t{analysis["modified_iso"]}')
+    else:
+        # Table format
+        from rich.table import Table
+
+        table = Table(title='Saved Analysis Results', show_header=True)
+        table.add_column('Name', style='cyan')
+        table.add_column('Size', justify='right')
+        table.add_column('Modified', style='dim')
+
+        for analysis in analyses:
+            size_kb = int(analysis['size_bytes']) / 1024
+            size_str = f'{size_kb:.1f} KB' if size_kb < 1024 else f'{size_kb / 1024:.1f} MB'
+            table.add_row(analysis['name'], size_str, analysis['modified_iso'])
+
+        console.print(table)
+        console.print(f'\n[dim]Total: {len(analyses)} analysis result(s)[/dim]')
+
+
+@analyzed_app.command('browse')
+def analyzed_browse() -> None:
+    """Browse saved analyses interactively with fzf.
+
+    Opens an interactive fuzzy-finder to search and select from saved analyses,
+    then displays the selected analysis result.
+
+    Requires fzf to be installed (install with: brew install fzf).
+
+    Examples:
+        logsift analyzed browse
+    """
+    from logsift.cache.manager import CacheManager
+    from logsift.utils.fzf import is_fzf_available
+    from logsift.utils.fzf import select_log_file
+
+    if not is_fzf_available():
+        console.print('[red]Error: fzf is not installed or not in PATH[/red]')
+        console.print('[dim]Install fzf: https://github.com/junegunn/fzf#installation[/dim]')
+        raise typer.Exit(1)
+
+    cache = CacheManager()
+    analyses = cache.list_all_analyzed()
+
+    if not analyses:
+        console.print('[yellow]No saved analyses found[/yellow]')
+        return
+
+    selected_path = select_log_file(analyses, 'Select analysis result to view')
+
+    if not selected_path:
+        console.print('[dim]No file selected[/dim]')
+        return
+
+    # Display the analysis
+    import json
+    from pathlib import Path
+
+    try:
+        analysis_data = json.loads(Path(selected_path).read_text())
+        console.print(f'[cyan]Analysis: {selected_path}[/cyan]\n')
+
+        from logsift.output.markdown_formatter import format_markdown
+
+        output = format_markdown(analysis_data)
+        console.print(output)
+    except (json.JSONDecodeError, OSError) as e:
+        console.print(f'[red]Error reading analysis: {e}[/red]')
+
+
+@analyzed_app.command('latest')
+def analyzed_latest(
+    name: Annotated[
+        str | None,
+        typer.Argument(help='Name to filter by (substring match). If omitted, shows absolute latest'),
+    ] = None,
+) -> None:
+    """Show the most recent saved analysis.
+
+    Displays the latest saved analysis result, optionally filtered by name.
+
+    Examples:
+        # Show absolute latest analysis
+        logsift analyzed latest
+
+        # Show latest analysis matching "build"
+        logsift analyzed latest build
+    """
+    from logsift.cache.manager import CacheManager
+
+    cache = CacheManager()
+
+    if name:
+        latest_analysis = cache.get_latest_analyzed(name)
+        if not latest_analysis:
+            console.print(f'[red]Error: No analyses found matching "{name}"[/red]')
+            raise typer.Exit(1)
+    else:
+        latest_analysis = cache.get_absolute_latest_analyzed()
+        if not latest_analysis:
+            console.print('[red]Error: No saved analyses found[/red]')
+            raise typer.Exit(1)
+
+    console.print(f'[cyan]Latest analysis: {latest_analysis}[/cyan]\n')
+
+    # Display the analysis
+    import json
+
+    try:
+        analysis_data = json.loads(latest_analysis.read_text())
+
+        from logsift.output.markdown_formatter import format_markdown
+
+        output = format_markdown(analysis_data)
+        console.print(output)
+    except (json.JSONDecodeError, OSError) as e:
+        console.print(f'[red]Error reading analysis: {e}[/red]')
+        raise typer.Exit(1) from None
+
+
+@analyzed_app.command('clean')
+def analyzed_clean(
+    days: Annotated[
+        int,
+        typer.Option(
+            '-d',
+            '--days',
+            help='Delete analyses older than this many days (default: 30)',
+        ),
+    ] = 30,
+    dry_run: Annotated[
+        bool,
+        typer.Option(
+            '--dry-run',
+            help='Show what would be deleted without actually deleting',
+        ),
+    ] = False,
+) -> None:
+    """Clean old saved analyses from cache.
+
+    Removes analysis results older than the specified number of days.
+    Use --dry-run to preview what would be deleted.
+
+    Examples:
+        # Clean analyses older than 30 days
+        logsift analyzed clean
+
+        # Clean analyses older than 7 days
+        logsift analyzed clean --days 7
+
+        # Preview what would be deleted
+        logsift analyzed clean --dry-run
+    """
+    from logsift.cache.manager import CacheManager
+
+    cache = CacheManager()
+
+    if not cache.analyzed_dir.exists():
+        console.print('[yellow]No cache directory found - nothing to clean[/yellow]')
+        return
+
+    if dry_run:
+        # Show what would be deleted
+        from datetime import UTC
+        from datetime import datetime
+        from datetime import timedelta
+
+        cutoff_time = datetime.now(tz=UTC) - timedelta(days=days)
+        cutoff_timestamp = cutoff_time.timestamp()
+
+        to_delete = []
+        for analysis_file in cache.analyzed_dir.rglob('*.json'):
+            if analysis_file.is_file():
+                mtime = analysis_file.stat().st_mtime
+                if mtime < cutoff_timestamp:
+                    to_delete.append(analysis_file)
+
+        if not to_delete:
+            console.print(f'[green]No analysis files older than {days} days[/green]')
+            return
+
+        console.print(f'[yellow]Would delete {len(to_delete)} analysis file(s) older than {days} days:[/yellow]')
+        for analysis_file in to_delete[:10]:  # Show first 10
+            console.print(f'  - {analysis_file}')
+        if len(to_delete) > 10:
+            console.print(f'  ... and {len(to_delete) - 10} more')
+
+        console.print('\n[dim]Run without --dry-run to actually delete[/dim]')
+    else:
+        # Actually delete
+        from logsift.cache.rotation import clean_old_logs
+
+        deleted_count = clean_old_logs(cache.analyzed_dir, retention_days=days)
+
+        if deleted_count == 0:
+            console.print(f'[green]No analysis files older than {days} days[/green]')
+        else:
+            console.print(f'[green]Deleted {deleted_count} analysis file(s) older than {days} days[/green]')
 
 
 @app.command()
