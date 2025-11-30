@@ -551,9 +551,10 @@ def logs_latest(
     if tail:
         tail_log(str(log_path), interval=interval)
     else:
-        # Show raw log contents
-        with open(log_path) as f:
-            print(f.read(), end='')
+        # Show raw log contents with bat for better UX
+        from logsift.utils.display import display_file_with_bat
+
+        display_file_with_bat(log_path)
 
 
 @analyzed_app.command('list')
@@ -646,7 +647,7 @@ def analyzed_browse() -> None:
         console.print('[dim]No file selected[/dim]')
         return
 
-    # Display the analysis
+    # Display the analysis with bat for better UX
     import json
     from pathlib import Path
 
@@ -655,9 +656,10 @@ def analyzed_browse() -> None:
         console.print(f'[cyan]Analysis: {selected_path}[/cyan]\n')
 
         from logsift.output.markdown_formatter import format_markdown
+        from logsift.utils.display import display_with_bat
 
         output = format_markdown(analysis_data)
-        console.print(output)
+        display_with_bat(output, language='markdown', filename=Path(selected_path).name)
     except (json.JSONDecodeError, OSError) as e:
         console.print(f'[red]Error reading analysis: {e}[/red]')
 
@@ -697,16 +699,17 @@ def analyzed_latest(
 
     console.print(f'[cyan]Latest analysis: {latest_analysis}[/cyan]\n')
 
-    # Display the analysis
+    # Display the analysis with bat for better UX
     import json
 
     try:
         analysis_data = json.loads(latest_analysis.read_text())
 
         from logsift.output.markdown_formatter import format_markdown
+        from logsift.utils.display import display_with_bat
 
         output = format_markdown(analysis_data)
-        console.print(output)
+        display_with_bat(output, language='markdown', filename=latest_analysis.name)
     except (json.JSONDecodeError, OSError) as e:
         console.print(f'[red]Error reading analysis: {e}[/red]')
         raise typer.Exit(1) from None
