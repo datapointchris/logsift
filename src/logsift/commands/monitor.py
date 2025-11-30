@@ -16,6 +16,7 @@ from logsift.cache.manager import CacheManager
 from logsift.core.analyzer import Analyzer
 from logsift.output.json_formatter import format_json
 from logsift.output.markdown_formatter import format_markdown
+from logsift.output.toon_formatter import format_toon
 from logsift.utils.notifications import notify_command_complete
 from logsift.utils.tty import detect_output_format
 
@@ -51,8 +52,9 @@ def monitor_command(
     if name is None:
         name = command[0] if command else 'unknown'
 
-    # Determine log file path
+    # Determine log file paths
     log_file = None
+    log_paths = None
     if save_log:
         cache = CacheManager()
 
@@ -61,8 +63,9 @@ def monitor_command(
             log_file = cache.get_latest_log(name)
 
         if not log_file or not append:
-            # Create new log file (context defaults to current working directory)
-            log_file = cache.create_log_path(name)
+            # Create new log file paths (all 4 formats)
+            log_paths = cache.create_paths(name)
+            log_file = log_paths['raw']
 
     # Determine output format early to decide on interactive output
     final_format = output_format
@@ -237,6 +240,23 @@ def monitor_command(
         'log_file': str(log_file) if log_file else None,
     }
 
+    # Save all analysis formats if we created new paths
+    if log_paths:
+        import json
+        from contextlib import suppress
+
+        # Save JSON (full analysis with metadata)
+        with suppress(OSError), log_paths['json'].open('w', encoding='utf-8') as f:
+            json.dump(analysis_result, f, indent=2)
+
+        # Save TOON (compact for LLMs)
+        with suppress(OSError), log_paths['toon'].open('w', encoding='utf-8') as f:
+            f.write(format_toon(analysis_result))
+
+        # Save Markdown (curated for humans)
+        with suppress(OSError), log_paths['md'].open('w', encoding='utf-8') as f:
+            f.write(format_markdown(analysis_result))
+
     # Print analysis summary header - only in interactive mode
     if show_progress:
         stderr_console.print('[bold cyan]## Analysis Summary[/bold cyan]')
@@ -245,6 +265,9 @@ def monitor_command(
     # Format and output results (to stdout, not stderr)
     if final_format == 'json':
         output = format_json(analysis_result)
+        print(output)
+    elif final_format == 'toon':
+        output = format_toon(analysis_result)
         print(output)
     else:
         output = format_markdown(analysis_result)

@@ -25,9 +25,9 @@ def test_detect_output_format_interactive():
 
 
 def test_detect_output_format_headless():
-    """Test detect_output_format returns 'json' for headless/piped output."""
+    """Test detect_output_format returns 'toon' for headless/piped output."""
     with patch('sys.stdout.isatty', return_value=False):
-        assert detect_output_format() == 'json'
+        assert detect_output_format() == 'toon'
 
 
 def test_is_interactive_direct_call():
@@ -39,6 +39,6 @@ def test_is_interactive_direct_call():
 
 def test_detect_output_format_direct_call():
     """Test detect_output_format can be called without mocking (actual behavior)."""
-    # This will return 'json' in test environment (pytest captures stdout)
+    # This will return 'toon' in test environment (pytest captures stdout)
     result = detect_output_format()
-    assert result in ('json', 'markdown')
+    assert result in ('toon', 'markdown')

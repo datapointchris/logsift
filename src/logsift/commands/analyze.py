@@ -12,6 +12,7 @@ from logsift.core.analyzer import Analyzer
 from logsift.monitor.watcher import LogWatcher
 from logsift.output.json_formatter import format_json
 from logsift.output.markdown_formatter import format_markdown
+from logsift.output.toon_formatter import format_toon
 from logsift.utils.tty import detect_output_format
 
 console = Console()
@@ -42,7 +43,7 @@ def analyze_log(log_file: str, output_format: str = 'auto', save: bool = True) -
     analyzer = Analyzer()
     analysis_result = analyzer.analyze(log_content)
 
-    # Auto-save analysis result
+    # Auto-save analysis result in all formats
     if save:
         import json
         from contextlib import suppress
@@ -50,11 +51,27 @@ def analyze_log(log_file: str, output_format: str = 'auto', save: bool = True) -
         from logsift.cache.manager import CacheManager
 
         cache = CacheManager()
-        analyzed_path = cache.create_analyzed_path(log_path)
+
+        # Get stem from log file name (without extension)
+        stem = log_path.stem
+
+        # Create paths for all analysis formats
+        json_path = cache.json_dir / f'{stem}.json'
+        toon_path = cache.toon_dir / f'{stem}.toon'
+        md_path = cache.md_dir / f'{stem}.md'
 
         # Silently fail if we can't save - don't interrupt the analysis
-        with suppress(OSError), analyzed_path.open('w', encoding='utf-8') as f:
+        # Save JSON (full analysis with metadata)
+        with suppress(OSError), json_path.open('w', encoding='utf-8') as f:
             json.dump(analysis_result, f, indent=2)
+
+        # Save TOON (compact for LLMs)
+        with suppress(OSError), toon_path.open('w', encoding='utf-8') as f:
+            f.write(format_toon(analysis_result))
+
+        # Save Markdown (curated for humans)
+        with suppress(OSError), md_path.open('w', encoding='utf-8') as f:
+            f.write(format_markdown(analysis_result))
 
     # Determine output format
     if output_format == 'auto':
@@ -63,6 +80,9 @@ def analyze_log(log_file: str, output_format: str = 'auto', save: bool = True) -
     # Format and output results
     if output_format == 'json':
         output = format_json(analysis_result)
+        print(output)
+    elif output_format == 'toon':
+        output = format_toon(analysis_result)
         print(output)
     elif output_format == 'markdown':
         output = format_markdown(analysis_result)

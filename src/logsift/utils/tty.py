@@ -19,6 +19,6 @@ def detect_output_format() -> str:
     """Auto-detect appropriate output format based on terminal.
 
     Returns:
-        'markdown' for interactive terminals, 'json' for headless
+        'markdown' for interactive terminals, 'toon' for headless (LLM agents)
     """
-    return 'markdown' if is_interactive() else 'json'
+    return 'markdown' if is_interactive() else 'toon'

@@ -414,3 +414,118 @@ class TestErrorHandling:
 
         # Should handle empty file gracefully
         assert data['stats']['total_errors'] == 0
+
+
+class TestMultiFormatCreation:
+    """Test that commands create all required output formats."""
+
+    def test_monitor_creates_all_formats(self):
+        """Test that monitor creates raw, json, toon, and md files."""
+        from logsift.cache.manager import CacheManager
+
+        cache = CacheManager()
+
+        # Run monitor command
+        result = runner.invoke(app, ['monitor', '-n', 'multi-format-test', '--format=json', '--', 'echo', 'test'])
+
+        assert result.exit_code == 0
+
+        # Get the latest log for this name
+        latest_raw = cache.get_latest_log('multi-format-test')
+        assert latest_raw is not None
+        assert latest_raw.exists()
+
+        # Get stem from raw log
+        stem = latest_raw.stem
+
+        # Verify all formats exist
+        formats = cache.get_all_formats(stem)
+
+        assert formats['raw'] is not None
+        assert formats['raw'].exists()
+        assert formats['raw'].suffix == '.log'
+
+        assert formats['json'] is not None
+        assert formats['json'].exists()
+        assert formats['json'].suffix == '.json'
+
+        assert formats['toon'] is not None
+        assert formats['toon'].exists()
+        assert formats['toon'].suffix == '.toon'
+
+        assert formats['md'] is not None
+        assert formats['md'].exists()
+        assert formats['md'].suffix == '.md'
+
+        # Verify content is not empty
+        assert formats['raw'].stat().st_size > 0
+        assert formats['json'].stat().st_size > 0
+        assert formats['toon'].stat().st_size > 0
+        assert formats['md'].stat().st_size > 0
+
+        # Verify JSON is valid
+        json_content = json.loads(formats['json'].read_text())
+        assert 'summary' in json_content
+        assert 'stats' in json_content
+
+    def test_analyze_creates_all_analysis_formats(self, tmp_path):
+        """Test that analyze creates json, toon, and md files."""
+        from logsift.cache.manager import CacheManager
+
+        cache = CacheManager()
+
+        # Create a test log file in raw/
+        log_file = cache.raw_dir / '2025-01-15T10:00:00-analyze-test.log'
+        log_file.write_text('Error: test error\nWarning: test warning\n')
+
+        # Run analyze command
+        result = runner.invoke(app, ['analyze', str(log_file), '--format=json'])
+
+        assert result.exit_code == 0
+
+        # Check that all analysis formats were created
+        stem = log_file.stem
+
+        json_path = cache.json_dir / f'{stem}.json'
+        toon_path = cache.toon_dir / f'{stem}.toon'
+        md_path = cache.md_dir / f'{stem}.md'
+
+        assert json_path.exists()
+        assert toon_path.exists()
+        assert md_path.exists()
+
+        # Verify content is not empty
+        assert json_path.stat().st_size > 0
+        assert toon_path.stat().st_size > 0
+        assert md_path.stat().st_size > 0
+
+        # Verify JSON is valid
+        json_content = json.loads(json_path.read_text())
+        assert 'stats' in json_content
+
+    def test_toon_format_is_compact(self):
+        """Test that TOON format is more compact than JSON."""
+        from logsift.cache.manager import CacheManager
+
+        cache = CacheManager()
+
+        # Run monitor with an error
+        runner.invoke(app, ['monitor', '-n', 'compact-test', '--format=json', '--', 'bash', '-c', 'echo "Error: test error"; exit 1'])
+
+        # Get the latest log
+        latest_raw = cache.get_latest_log('compact-test')
+        assert latest_raw is not None
+
+        stem = latest_raw.stem
+        formats = cache.get_all_formats(stem)
+
+        # Compare sizes
+        json_size = formats['json'].stat().st_size
+        toon_size = formats['toon'].stat().st_size
+
+        # TOON should be smaller than JSON
+        assert toon_size < json_size
+
+        # Calculate reduction (should be > 20%)
+        reduction = ((json_size - toon_size) / json_size) * 100
+        assert reduction > 20, f'TOON should be at least 20% smaller, got {reduction:.1f}%'
