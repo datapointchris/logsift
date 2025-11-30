@@ -98,6 +98,56 @@ def test_extract_errors_preserves_all_fields():
     assert errors[0]['timestamp'] == '2025-11-28T10:30:00Z'
 
 
+def test_extract_shell_errors_command_not_found():
+    """Test that shell error patterns are detected (command not found)."""
+    log_entries = [
+        {'level': 'INFO', 'message': 'Starting process', 'line_number': 1, 'format': 'plain'},
+        {'level': 'INFO', 'message': 'bash: unzip: command not found', 'line_number': 2, 'format': 'plain'},
+        {'level': 'INFO', 'message': 'zsh:1: no such file or directory: /path/file.sh', 'line_number': 3, 'format': 'plain'},
+    ]
+    extractor = ErrorExtractor()
+    errors = extractor.extract_errors(log_entries)
+
+    assert len(errors) == 2
+    assert errors[0]['severity'] == 'error'
+    assert errors[0]['message'] == 'bash: unzip: command not found'
+    assert errors[0]['line_in_log'] == 2
+    assert errors[0]['pattern_name'] == 'shell_error'
+    assert errors[0]['description'] == 'Command not found'  # Matches ': command not found' pattern
+    assert 'shell' in errors[0]['tags']
+
+    assert errors[1]['message'] == 'zsh:1: no such file or directory: /path/file.sh'
+    assert errors[1]['line_in_log'] == 3
+    assert errors[1]['description'] == 'File or directory not found'
+
+
+def test_extract_shell_errors_no_duplicates():
+    """Test that ERROR level entries aren't duplicated when they also match patterns."""
+    log_entries = [
+        {'level': 'ERROR', 'message': 'fatal error: file not found', 'line_number': 1, 'format': 'plain'},
+    ]
+    extractor = ErrorExtractor()
+    errors = extractor.extract_errors(log_entries)
+
+    # Should only appear once (as ERROR level, not as pattern match)
+    assert len(errors) == 1
+    assert errors[0]['line_in_log'] == 1
+
+
+def test_extract_shell_errors_package_manager():
+    """Test that package manager errors are detected."""
+    log_entries = [
+        {'level': 'INFO', 'message': 'E: Unable to locate package foobar', 'line_number': 1, 'format': 'plain'},
+        {'level': 'INFO', 'message': 'npm ERR! 404 Not Found', 'line_number': 2, 'format': 'plain'},
+    ]
+    extractor = ErrorExtractor()
+    errors = extractor.extract_errors(log_entries)
+
+    assert len(errors) == 2
+    assert 'Package not found' in errors[0]['description']
+    assert 'NPM error' in errors[1]['description']
+
+
 # WarningExtractor Tests
 
 

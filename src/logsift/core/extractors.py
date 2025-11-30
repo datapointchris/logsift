@@ -10,8 +10,45 @@ from typing import Any
 class ErrorExtractor:
     """Extract error messages from log entries."""
 
+    # Shell and system error patterns that indicate failures
+    # These are critical errors that often don't have explicit ERROR log levels
+    SHELL_ERROR_PATTERNS = [
+        # Command execution errors
+        (r': command not found\s*$', 'Command not found'),
+        (r': not found\s*$', 'Command not found'),
+        (r'bash: .+: command not found', 'Bash command not found'),
+        (r'sh: .+: command not found', 'Shell command not found'),
+        (r'zsh:\d+: .+: command not found', 'Zsh command not found'),
+        (r'zsh:\d+: .+: not found', 'Zsh command not found'),
+        # File system errors
+        (r': No such file or directory', 'File or directory not found'),
+        (r': cannot find .+', 'Cannot find file'),
+        (r': Permission denied', 'Permission denied'),
+        (r'cannot access .+: No such file or directory', 'File not found'),
+        # Compilation/build errors
+        (r'fatal error:', 'Fatal error'),
+        (r'compilation terminated', 'Compilation failed'),
+        (r'collect2: error:', 'Linker error'),
+        (r'cannot find -l\w+', 'Missing library'),
+        (r'undefined reference to', 'Undefined reference'),
+        # Runtime errors
+        (r'Segmentation fault', 'Segmentation fault'),
+        (r'core dumped', 'Core dumped'),
+        (r'Aborted', 'Process aborted'),
+        (r'Killed', 'Process killed'),
+        # Package manager errors
+        (r'E: Unable to locate package', 'Package not found'),
+        (r'Error: Package .+ not found', 'Package not found'),
+        (r'npm ERR!', 'NPM error'),
+        (r'error: failed to .+', 'Operation failed'),
+    ]
+
     def extract_errors(self, log_entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Extract error entries from parsed log data.
+
+        Extracts errors from two sources:
+        1. Explicit ERROR level log entries
+        2. Shell/system error patterns (command not found, permission denied, etc.)
 
         Args:
             log_entries: List of normalized log entry dictionaries
@@ -21,15 +58,19 @@ class ErrorExtractor:
         """
         errors = []
         error_id = 1
+        seen_lines: set[int] = set()  # Track processed lines to avoid duplicates
 
+        # First pass: Extract explicit ERROR level entries
         for entry in log_entries:
             level = entry.get('level', '').upper()
-            if level == 'ERROR':
+            line_number = entry.get('line_number')
+
+            if level == 'ERROR' and line_number is not None and line_number not in seen_lines:
                 error = {
                     'id': error_id,
                     'severity': 'error',
                     'message': entry.get('message', ''),
-                    'line_in_log': entry.get('line_number'),
+                    'line_in_log': line_number,
                 }
 
                 # Preserve additional fields from original entry
@@ -38,7 +79,40 @@ class ErrorExtractor:
                         error[key] = entry[key]
 
                 errors.append(error)
+                seen_lines.add(line_number)
                 error_id += 1
+
+        # Second pass: Pattern-based error detection for shell/system errors
+        for entry in log_entries:
+            message = entry.get('message', '')
+            line_number = entry.get('line_number')
+
+            # Skip if we already extracted this line as an error
+            if line_number is None or line_number in seen_lines:
+                continue
+
+            # Check against shell error patterns
+            for pattern, description in self.SHELL_ERROR_PATTERNS:
+                if re.search(pattern, message, re.IGNORECASE):
+                    error = {
+                        'id': error_id,
+                        'severity': 'error',
+                        'message': message,
+                        'line_in_log': line_number,
+                        'pattern_name': 'shell_error',
+                        'description': description,
+                        'tags': ['shell', 'system_error'],
+                    }
+
+                    # Preserve additional fields from original entry
+                    for key in ('timestamp', 'format', 'file', 'file_line'):
+                        if key in entry:
+                            error[key] = entry[key]
+
+                    errors.append(error)
+                    seen_lines.add(line_number)
+                    error_id += 1
+                    break  # Only match first pattern per line
 
         return errors
 
