@@ -60,64 +60,43 @@ def _format_issue(issue: dict[str, Any], is_error: bool) -> str:
     """
     lines = []
 
-    # Issue header
-    severity = '🔴 ERROR' if is_error else '🟡 WARNING'
+    # Issue header (simplified - no emojis)
+    severity = 'Error' if is_error else 'Warning'
     issue_id = issue.get('id', '?')
     line_number = issue.get('line_in_log', '?')
 
     lines.append(f'### {severity} #{issue_id} (Line {line_number})\n')
 
-    # Message
+    # Message (no "Message:" label, just the message)
     message = issue.get('message', 'No message')
-    lines.append(f'**Message:** {message}\n')
+    lines.append(f'{message}\n')
 
-    # Pattern match info
-    pattern_name = issue.get('pattern_name')
-    if pattern_name:
-        lines.append(f'**Pattern:** `{pattern_name}`')
-
-    description = issue.get('description')
-    if description:
-        lines.append(f'**Description:** {description}')
-
-    # Tags
-    tags = issue.get('tags', [])
-    if tags:
-        tag_str = ', '.join(f'`{tag}`' for tag in tags)
-        lines.append(f'**Tags:** {tag_str}')
-
-    # File references
+    # File references (kept - actionable)
     file_refs = issue.get('file_references', [])
     if file_refs:
         refs_str = ', '.join(f'`{file}:{line}`' for file, line in file_refs)
-        lines.append(f'**Files:** {refs_str}')
+        lines.append(f'**Files:** {refs_str}\n')
 
-    # Suggestion
+    # Suggestion (kept - actionable, no emoji)
     suggestion = issue.get('suggestion')
     if suggestion:
-        lines.append(f'\n**💡 Suggestion:** {suggestion}')
+        lines.append(f'**Suggestion:** {suggestion}\n')
 
-    # Context
+    # Context (simplified to line range)
     context_before = issue.get('context_before', [])
     context_after = issue.get('context_after', [])
 
     if context_before or context_after:
-        lines.extend(('\n**Context:**', '```'))
+        # Calculate line range
+        start_line = line_number
+        end_line = line_number
 
-        for ctx in context_before:
-            ctx_line = ctx.get('line_number', '?')
-            ctx_msg = ctx.get('message', '')
-            lines.append(f'{ctx_line:>5} | {ctx_msg}')
+        if context_before:
+            start_line = min(ctx.get('line_number', line_number) for ctx in context_before)
+        if context_after:
+            end_line = max(ctx.get('line_number', line_number) for ctx in context_after)
 
-        # The error/warning line itself
-        lines.append(f'{line_number:>5} | ▶ {message}')
-
-        for ctx in context_after:
-            ctx_line = ctx.get('line_number', '?')
-            ctx_msg = ctx.get('message', '')
-            lines.append(f'{ctx_line:>5} | {ctx_msg}')
-
-        lines.append('```')
+        lines.append(f'**Context:** Lines {start_line}-{end_line}')
 
     lines.append('')  # Blank line between issues
 

@@ -89,7 +89,7 @@ def test_format_markdown_with_file_references():
 
 
 def test_format_markdown_with_pattern_match():
-    """Test Markdown output includes pattern match metadata."""
+    """Test Markdown output excludes pattern metadata (Phase 4 cleanup)."""
     analysis_result = {
         'errors': [
             {
@@ -110,11 +110,18 @@ def test_format_markdown_with_pattern_match():
 
     output = format_markdown(analysis_result)
 
-    assert 'connection_error' in output or 'Connection error detected' in output
+    # Pattern metadata should NOT be displayed (Phase 4 cleanup)
+    assert 'connection_error' not in output
+    assert 'Connection error detected' not in output
+    assert 'network' not in output
+
+    # But the error message should still be there
+    assert 'Connection failed' in output
+    assert 'Error #1' in output
 
 
 def test_format_markdown_with_context():
-    """Test Markdown output includes context lines."""
+    """Test Markdown output shows context as line range (Phase 4 cleanup)."""
     analysis_result = {
         'errors': [
             {
@@ -138,8 +145,11 @@ def test_format_markdown_with_context():
 
     output = format_markdown(analysis_result)
 
-    assert 'Line before 1' in output
-    assert 'Line after 1' in output
+    # Context should be shown as line range, not full text (Phase 4 cleanup)
+    assert 'Lines 8-12' in output
+    # Full context messages should NOT be shown
+    assert 'Line before 1' not in output
+    assert 'Line after 1' not in output
 
 
 def test_format_markdown_with_suggestion():
@@ -238,7 +248,7 @@ def test_format_markdown_contains_markdown_elements():
 
 
 def test_format_markdown_with_tags():
-    """Test Markdown output includes tags when available."""
+    """Test Markdown output excludes tags (Phase 4 cleanup)."""
     analysis_result = {
         'errors': [
             {
@@ -257,5 +267,9 @@ def test_format_markdown_with_tags():
 
     output = format_markdown(analysis_result)
 
-    # Tags should appear in some form
-    assert 'network' in output or 'connection' in output or 'fixable' in output
+    # Tags should NOT appear in markdown output (Phase 4 cleanup)
+    assert 'network' not in output
+    assert 'fixable' not in output
+    # But the error message should still be there
+    assert 'Connection failed' in output
+    assert 'Error #1' in output
