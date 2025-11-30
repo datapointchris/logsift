@@ -12,6 +12,7 @@ from typer.core import TyperGroup
 
 from logsift import __version__
 from logsift.cli_formatter import format_help_with_colors
+from logsift.commands.format_commands import create_format_commands
 
 
 class ColoredTyperGroup(TyperGroup):
@@ -793,6 +794,27 @@ def analyzed_clean(
             console.print(f'[green]No analysis files older than {days} days[/green]')
         else:
             console.print(f'[green]Deleted {deleted_count} analysis file(s) older than {days} days[/green]')
+
+
+# ============================================================================
+# Format-specific command groups (Phase 5: CLI redesign)
+# ============================================================================
+#
+# Create unified command groups for each log format using template function.
+# Each format (raw, json, toon, md) gets the same commands: browse, latest, list
+#
+
+# Create format command groups
+raw_app = create_format_commands('raw', '.log', 'raw_dir', 'txt')
+json_app = create_format_commands('json', '.json', 'json_dir', 'json')
+toon_app = create_format_commands('toon', '.toon', 'toon_dir', 'toon')
+md_app = create_format_commands('md', '.md', 'md_dir', 'markdown')
+
+# Register format commands
+app.add_typer(raw_app, name='raw')
+app.add_typer(json_app, name='json')
+app.add_typer(toon_app, name='toon')
+app.add_typer(md_app, name='md')
 
 
 @app.command()
