@@ -19,7 +19,6 @@ def detect_output_format() -> str:
     """Auto-detect appropriate output format based on terminal.
 
     Returns:
-        'markdown' for interactive terminals, 'json' for headless (LLM agents)
+        'markdown' for interactive terminals, 'toon' for headless (LLM agents)
     """
-    # TODO: Change to 'toon' once TOON encoder is fully implemented
-    return 'markdown' if is_interactive() else 'json'
+    return 'markdown' if is_interactive() else 'toon'
