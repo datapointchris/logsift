@@ -400,7 +400,7 @@ requires-dist = [
     { name = "sh", specifier = ">=2.0.0" },
     { name = "tomli-w", specifier = ">=1.0.0" },
     { name = "toon-format", git = "https://github.com/toon-format/toon-python" },
-    { name = "typer", extras = ["all"], specifier = ">=0.15.0" },
+    { name = "typer", specifier = ">=0.15.0" },
 ]
 
 [package.metadata.requires-dev]
