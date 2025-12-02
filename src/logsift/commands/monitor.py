@@ -24,6 +24,64 @@ console = Console()
 stderr_console = Console(stderr=True)
 
 
+def _generate_log_name(command: list[str]) -> str:
+    """Generate an informative log name from a command.
+
+    Handles common patterns intelligently:
+    - Shell commands: 'bash script.sh' → 'bash-script'
+    - Interpreters: 'python script.py arg1' → 'python-script'
+    - Direct commands: 'make test' → 'make-test'
+    - Single commands: 'ls' → 'ls'
+
+    Args:
+        command: Command list to generate name from
+
+    Returns:
+        Descriptive name for the log file
+    """
+    if not command:
+        return 'unknown'
+
+    # Common shell interpreters and commands that should include next argument
+    interpreters = {'bash', 'sh', 'zsh', 'fish', 'python', 'python3', 'node', 'ruby', 'perl', 'php'}
+
+    parts: list[str] = []
+    first_cmd = os.path.basename(command[0])  # Remove path, keep just command name
+
+    # Add first command
+    parts.append(first_cmd)
+
+    # If it's an interpreter and there's a script argument, include it
+    if first_cmd in interpreters and len(command) > 1:
+        script = command[1]
+        # Extract basename and remove common extensions
+        script_name = os.path.basename(script)
+        script_name = script_name.removesuffix('.sh')
+        script_name = script_name.removesuffix('.py')
+        script_name = script_name.removesuffix('.js')
+        script_name = script_name.removesuffix('.rb')
+        script_name = script_name.removesuffix('.pl')
+        script_name = script_name.removesuffix('.php')
+        parts.append(script_name)
+    # For non-interpreter commands, include next 1-2 meaningful arguments
+    elif len(command) > 1:
+        # Add first argument if it's not a flag
+        if not command[1].startswith('-'):
+            parts.append(command[1])
+        # Add second argument if first was a flag and second exists
+        elif len(command) > 2 and not command[2].startswith('-'):
+            parts.append(command[2])
+
+    # Join parts and sanitize (done by CacheManager.create_paths, but do basic cleanup)
+    name = '-'.join(parts)
+
+    # Limit length to 50 chars to keep filenames reasonable
+    if len(name) > 50:
+        name = name[:50]
+
+    return name
+
+
 def monitor_command(
     command: list[str],
     name: str | None = None,
@@ -50,7 +108,7 @@ def monitor_command(
     """
     # Use command name if no name provided
     if name is None:
-        name = command[0] if command else 'unknown'
+        name = _generate_log_name(command)
 
     # Determine log file paths
     log_file = None
@@ -250,7 +308,7 @@ def monitor_command(
             json.dump(analysis_result, f, indent=2)
 
         # Save TOON (compact for LLMs)
-        with suppress(OSError), log_paths['toon'].open('w', encoding='utf-8') as f:
+        with suppress(OSError, NotImplementedError), log_paths['toon'].open('w', encoding='utf-8') as f:
             f.write(format_toon(analysis_result))
 
         # Save Markdown (curated for humans)
