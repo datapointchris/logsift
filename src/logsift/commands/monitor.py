@@ -240,13 +240,6 @@ def monitor_command(
                                 f'[dim]Update #{update_count}: {len(output_lines)} lines captured, {elapsed:.0f}s elapsed[/dim]'
                             )
 
-                            # Show last 3 lines of output
-                            if len(output_lines) >= 3:
-                                stderr_console.print('[dim]Last 3 lines:[/dim]')
-                                for recent_line in output_lines[-3:]:
-                                    stderr_console.print(f'  [dim]{recent_line}[/dim]')
-                            stderr_console.print()
-
                             last_update_time = current_time
 
         # Wait for process to complete
