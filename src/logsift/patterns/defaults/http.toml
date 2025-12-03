@@ -1,0 +1,184 @@
+# HTTP error patterns for web requests, API calls, and network errors
+# IMPORTANT: Patterns must be specific to avoid false positives from package managers and other output
+
+# 4xx Client Errors (require explicit HTTP error indicators - status code + "Not Found", "Forbidden", etc.)
+
+[[patterns]]
+name = "http_400_bad_request"
+regex = "(?i)(HTTP status.*(400|bad request)|400 Bad Request)"
+severity = "error"
+description = "HTTP 400 Bad Request - Invalid request syntax"
+tags = ["http", "client_error", "4xx"]
+suggestion = "Check request parameters, headers, and body format"
+
+[[patterns]]
+name = "http_401_unauthorized"
+regex = "(?i)(HTTP status.*401|401 Unauthorized)"
+severity = "error"
+description = "HTTP 401 Unauthorized - Authentication required"
+tags = ["http", "auth", "client_error", "4xx"]
+suggestion = "Provide valid authentication credentials or token"
+
+[[patterns]]
+name = "http_403_forbidden"
+regex = "(?i)(HTTP status.*403|403 Forbidden)"
+severity = "error"
+description = "HTTP 403 Forbidden - Access denied"
+tags = ["http", "auth", "permissions", "client_error", "4xx"]
+suggestion = "Check permissions and authorization for the requested resource"
+
+[[patterns]]
+name = "http_404_not_found"
+regex = "(?i)(HTTP status.*(404|not found)|404 Not Found)"
+severity = "error"
+description = "HTTP 404 Not Found - Resource does not exist"
+tags = ["http", "client_error", "4xx", "fixable"]
+suggestion = "Verify URL or resource path is correct"
+
+[[patterns]]
+name = "http_405_method_not_allowed"
+regex = "(?i)(HTTP status.*405|405 Method Not Allowed)"
+severity = "error"
+description = "HTTP 405 Method Not Allowed - HTTP method not supported"
+tags = ["http", "client_error", "4xx"]
+suggestion = "Use correct HTTP method (GET, POST, PUT, DELETE, etc.)"
+
+[[patterns]]
+name = "http_408_request_timeout"
+regex = "(?i)(HTTP status.*408|408 Request Timeout)"
+severity = "error"
+description = "HTTP 408 Request Timeout - Server timed out waiting for request"
+tags = ["http", "timeout", "client_error", "4xx"]
+suggestion = "Retry request or check network connectivity"
+
+[[patterns]]
+name = "http_409_conflict"
+regex = "(?i)(HTTP status.*409|409 Conflict)"
+severity = "error"
+description = "HTTP 409 Conflict - Request conflicts with current state"
+tags = ["http", "client_error", "4xx"]
+suggestion = "Resolve conflicting state before retrying"
+
+[[patterns]]
+name = "http_422_unprocessable_entity"
+regex = "(?i)(HTTP status.*422|422 Unprocessable Entity)"
+severity = "error"
+description = "HTTP 422 Unprocessable Entity - Validation failed"
+tags = ["http", "validation", "client_error", "4xx"]
+suggestion = "Check request body for validation errors"
+
+[[patterns]]
+name = "http_429_too_many_requests"
+regex = "(?i)(HTTP status.*429|429 Too Many Requests|rate limit exceeded)"
+severity = "error"
+description = "HTTP 429 Too Many Requests - Rate limit exceeded"
+tags = ["http", "rate_limit", "client_error", "4xx"]
+suggestion = "Wait before retrying or implement exponential backoff"
+
+# 5xx Server Errors (require explicit HTTP error indicators)
+
+[[patterns]]
+name = "http_500_internal_server_error"
+regex = "(?i)(HTTP status.*500|500 Internal Server Error)"
+severity = "error"
+description = "HTTP 500 Internal Server Error - Server encountered an error"
+tags = ["http", "server_error", "5xx"]
+suggestion = "Check server logs for details, this is a server-side issue"
+
+[[patterns]]
+name = "http_502_bad_gateway"
+regex = "(?i)(HTTP status.*502|502 Bad Gateway)"
+severity = "error"
+description = "HTTP 502 Bad Gateway - Invalid response from upstream server"
+tags = ["http", "server_error", "gateway", "5xx"]
+suggestion = "Check upstream server status and connectivity"
+
+[[patterns]]
+name = "http_503_service_unavailable"
+regex = "(?i)(HTTP status.*503|503 Service Unavailable)"
+severity = "error"
+description = "HTTP 503 Service Unavailable - Server temporarily unavailable"
+tags = ["http", "server_error", "availability", "5xx"]
+suggestion = "Wait and retry, server may be under maintenance or overloaded"
+
+[[patterns]]
+name = "http_504_gateway_timeout"
+regex = "(?i)(HTTP status.*504|504 Gateway Timeout)"
+severity = "error"
+description = "HTTP 504 Gateway Timeout - Upstream server did not respond in time"
+tags = ["http", "timeout", "server_error", "gateway", "5xx"]
+suggestion = "Check upstream server performance and network latency"
+
+# Generic HTTP error patterns (require HTTP keyword context)
+
+[[patterns]]
+name = "http_status_client_error"
+regex = "HTTP status client error \\((\\d{3})[^)]*\\)"
+severity = "error"
+description = "HTTP client error (4xx status code)"
+tags = ["http", "client_error", "4xx"]
+
+[[patterns]]
+name = "http_status_server_error"
+regex = "HTTP status server error \\((\\d{3})[^)]*\\)"
+severity = "error"
+description = "HTTP server error (5xx status code)"
+tags = ["http", "server_error", "5xx"]
+
+# Connection errors
+
+[[patterns]]
+name = "connection_refused"
+regex = "(?i)connection refused"
+severity = "error"
+description = "Connection refused - Server not accepting connections"
+tags = ["http", "network", "connection"]
+suggestion = "Check server is running and firewall rules allow connections"
+
+[[patterns]]
+name = "connection_timeout"
+regex = "(?i)connection timeout|timed out"
+severity = "error"
+description = "Connection timeout - Server did not respond in time"
+tags = ["http", "network", "timeout"]
+suggestion = "Check network connectivity and server availability"
+
+[[patterns]]
+name = "connection_reset"
+regex = "(?i)(connection reset|reset by peer)"
+severity = "error"
+description = "Connection reset - Server closed connection unexpectedly"
+tags = ["http", "network", "connection"]
+suggestion = "Check server logs for errors or resource exhaustion"
+
+[[patterns]]
+name = "dns_resolution_failed"
+regex = "(?i)(name resolution failed|could not resolve|dns error|failed to resolve)"
+severity = "error"
+description = "DNS resolution failed - Could not resolve hostname"
+tags = ["http", "network", "dns"]
+suggestion = "Check hostname spelling and DNS configuration"
+
+[[patterns]]
+name = "ssl_certificate_error"
+regex = "(?i)(ssl|certificate|tls).*(error|invalid|expired)"
+severity = "error"
+description = "SSL/TLS certificate error"
+tags = ["http", "ssl", "certificate", "security"]
+suggestion = "Check certificate validity, trust chain, and hostname match"
+
+# Download/upload errors (require specific error keywords)
+
+[[patterns]]
+name = "download_failed"
+regex = "(?i)(failed to download|download (error|failed)|could not (GET|download))"
+severity = "error"
+description = "Download operation failed"
+tags = ["http", "download", "network"]
+
+[[patterns]]
+name = "upload_failed"
+regex = "(?i)(failed to upload|upload (error|failed)|could not (POST|PUT|upload))"
+severity = "error"
+description = "Upload operation failed"
+tags = ["http", "upload", "network"]

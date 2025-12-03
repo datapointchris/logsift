@@ -7,65 +7,40 @@ import re
 from typing import Any
 
 
-class ErrorExtractor:
-    """Extract error messages from log entries."""
+class IssueExtractor:
+    """Extract errors and warnings from log entries using TOML patterns."""
 
-    # Shell and system error patterns that indicate failures
-    # These are critical errors that often don't have explicit ERROR log levels
-    SHELL_ERROR_PATTERNS = [
-        # Command execution errors
-        (r': command not found\s*$', 'Command not found'),
-        (r': not found\s*$', 'Command not found'),
-        (r'bash: .+: command not found', 'Bash command not found'),
-        (r'sh: .+: command not found', 'Shell command not found'),
-        (r'zsh:\d+: .+: command not found', 'Zsh command not found'),
-        (r'zsh:\d+: .+: not found', 'Zsh command not found'),
-        # File system errors
-        (r': No such file or directory', 'File or directory not found'),
-        (r': cannot find .+', 'Cannot find file'),
-        (r': Permission denied', 'Permission denied'),
-        (r'cannot access .+: No such file or directory', 'File not found'),
-        # Compilation/build errors
-        (r'fatal error:', 'Fatal error'),
-        (r'compilation terminated', 'Compilation failed'),
-        (r'collect2: error:', 'Linker error'),
-        (r'cannot find -l\w+', 'Missing library'),
-        (r'undefined reference to', 'Undefined reference'),
-        # Runtime errors
-        (r'Segmentation fault', 'Segmentation fault'),
-        (r'core dumped', 'Core dumped'),
-        (r'Aborted', 'Process aborted'),
-        (r'Killed', 'Process killed'),
-        # Package manager errors
-        (r'E: Unable to locate package', 'Package not found'),
-        (r'Error: Package .+ not found', 'Package not found'),
-        (r'npm ERR!', 'NPM error'),
-        (r'error: failed to .+', 'Operation failed'),
-    ]
+    def extract_issues(
+        self, log_entries: list[dict[str, Any]], patterns: dict[str, list[dict[str, Any]]]
+    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        """Extract errors and warnings from parsed log data using TOML patterns.
 
-    def extract_errors(self, log_entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        """Extract error entries from parsed log data.
-
-        Extracts errors from two sources:
-        1. Explicit ERROR level log entries
-        2. Shell/system error patterns (command not found, permission denied, etc.)
+        Extracts issues from two sources:
+        1. Explicit ERROR/WARNING level log entries
+        2. Pattern-based detection using ALL TOML patterns
 
         Args:
             log_entries: List of normalized log entry dictionaries
+            patterns: Dictionary of patterns organized by category (from TOML files)
 
         Returns:
-            List of error dictionaries with metadata
+            Tuple of (errors, warnings) lists with metadata
         """
         errors = []
+        warnings = []
         error_id = 1
+        warning_id = 1
         seen_lines: set[int] = set()  # Track processed lines to avoid duplicates
 
-        # First pass: Extract explicit ERROR level entries
+        # First pass: Extract explicit ERROR/WARNING level entries
         for entry in log_entries:
             level = entry.get('level', '').upper()
             line_number = entry.get('line_number')
 
-            if level == 'ERROR' and line_number is not None and line_number not in seen_lines:
+            if line_number is None or line_number in seen_lines:
+                continue
+
+            if level == 'ERROR':
                 error = {
                     'id': error_id,
                     'severity': 'error',
@@ -82,64 +57,12 @@ class ErrorExtractor:
                 seen_lines.add(line_number)
                 error_id += 1
 
-        # Second pass: Pattern-based error detection for shell/system errors
-        for entry in log_entries:
-            message = entry.get('message', '')
-            line_number = entry.get('line_number')
-
-            # Skip if we already extracted this line as an error
-            if line_number is None or line_number in seen_lines:
-                continue
-
-            # Check against shell error patterns
-            for pattern, description in self.SHELL_ERROR_PATTERNS:
-                if re.search(pattern, message, re.IGNORECASE):
-                    error = {
-                        'id': error_id,
-                        'severity': 'error',
-                        'message': message,
-                        'line_in_log': line_number,
-                        'pattern_name': 'shell_error',
-                        'description': description,
-                        'tags': ['shell', 'system_error'],
-                    }
-
-                    # Preserve additional fields from original entry
-                    for key in ('timestamp', 'format', 'file', 'file_line'):
-                        if key in entry:
-                            error[key] = entry[key]
-
-                    errors.append(error)
-                    seen_lines.add(line_number)
-                    error_id += 1
-                    break  # Only match first pattern per line
-
-        return errors
-
-
-class WarningExtractor:
-    """Extract warning messages from log entries."""
-
-    def extract_warnings(self, log_entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        """Extract warning entries from parsed log data.
-
-        Args:
-            log_entries: List of normalized log entry dictionaries
-
-        Returns:
-            List of warning dictionaries with metadata
-        """
-        warnings = []
-        warning_id = 1
-
-        for entry in log_entries:
-            level = entry.get('level', '').upper()
-            if level in ('WARNING', 'WARN'):
+            elif level in ('WARNING', 'WARN'):
                 warning = {
                     'id': warning_id,
                     'severity': 'warning',
                     'message': entry.get('message', ''),
-                    'line_in_log': entry.get('line_number'),
+                    'line_in_log': line_number,
                 }
 
                 # Preserve additional fields from original entry
@@ -148,9 +71,69 @@ class WarningExtractor:
                         warning[key] = entry[key]
 
                 warnings.append(warning)
+                seen_lines.add(line_number)
                 warning_id += 1
 
-        return warnings
+        # Second pass: Pattern-based detection using ALL TOML patterns
+        # Flatten all patterns from all categories
+        all_patterns = []
+        for category_patterns in patterns.values():
+            all_patterns.extend(category_patterns)
+
+        # Check each log entry against all patterns
+        for entry in log_entries:
+            message = entry.get('message', '')
+            line_number = entry.get('line_number')
+
+            # Skip if we already extracted this line
+            if line_number is None or line_number in seen_lines:
+                continue
+
+            # Check against all patterns
+            for pattern in all_patterns:
+                regex = pattern.get('regex', '')
+                if not regex:
+                    continue
+
+                try:
+                    if re.search(regex, message):
+                        severity = pattern.get('severity', 'error')
+
+                        issue = {
+                            'severity': severity,
+                            'message': message,
+                            'line_in_log': line_number,
+                            'pattern_name': pattern.get('name', 'unknown'),
+                            'description': pattern.get('description', ''),
+                            'tags': pattern.get('tags', []),
+                        }
+
+                        # Add suggestion if available
+                        if 'suggestion' in pattern:
+                            issue['suggestion'] = pattern['suggestion']
+
+                        # Preserve additional fields from original entry
+                        for key in ('timestamp', 'format', 'file', 'file_line'):
+                            if key in entry:
+                                issue[key] = entry[key]
+
+                        # Add to appropriate list based on severity
+                        if severity == 'error':
+                            issue['id'] = error_id
+                            errors.append(issue)
+                            error_id += 1
+                        elif severity == 'warning':
+                            issue['id'] = warning_id
+                            warnings.append(issue)
+                            warning_id += 1
+
+                        seen_lines.add(line_number)
+                        break  # Only match first pattern per line
+                except re.error:
+                    # Skip invalid regex patterns
+                    continue
+
+        return errors, warnings
 
 
 class FileReferenceExtractor:

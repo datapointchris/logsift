@@ -1,0 +1,148 @@
+# Shell and system-specific error patterns
+# These patterns detect errors specific to shell command execution and system operations
+
+# Command execution errors
+
+[[patterns]]
+name = "shell_command_not_found"
+regex = ": command not found\\s*$"
+severity = "error"
+description = "Command not found"
+tags = ["shell", "command", "error"]
+suggestion = "Check command spelling and ensure it's installed and in PATH"
+
+[[patterns]]
+name = "shell_not_found_generic"
+regex = ": not found\\s*$"
+severity = "error"
+description = "Command or file not found"
+tags = ["shell", "error"]
+
+[[patterns]]
+name = "bash_command_not_found"
+regex = "bash: .+: command not found"
+severity = "error"
+description = "Bash command not found"
+tags = ["shell", "bash", "command", "error"]
+suggestion = "Verify command exists and is executable"
+
+[[patterns]]
+name = "sh_command_not_found"
+regex = "sh: .+: command not found"
+severity = "error"
+description = "Shell command not found"
+tags = ["shell", "sh", "command", "error"]
+
+[[patterns]]
+name = "zsh_command_not_found"
+regex = "zsh:\\d+: .+: command not found"
+severity = "error"
+description = "Zsh command not found"
+tags = ["shell", "zsh", "command", "error"]
+
+[[patterns]]
+name = "zsh_not_found"
+regex = "zsh:\\d+: .+: not found"
+severity = "error"
+description = "Zsh command not found"
+tags = ["shell", "zsh", "command", "error"]
+
+# File system errors (shell context)
+
+[[patterns]]
+name = "shell_no_such_file"
+regex = ": No such file or directory"
+severity = "error"
+description = "File or directory not found"
+tags = ["shell", "filesystem", "error"]
+suggestion = "Check file path and ensure file exists"
+
+[[patterns]]
+name = "shell_cannot_find"
+regex = ": cannot find .+"
+severity = "error"
+description = "Cannot find file"
+tags = ["shell", "filesystem", "error"]
+
+[[patterns]]
+name = "shell_permission_denied"
+regex = ": Permission denied"
+severity = "error"
+description = "Permission denied"
+tags = ["shell", "filesystem", "permissions", "error"]
+suggestion = "Check file permissions or run with appropriate privileges"
+
+[[patterns]]
+name = "shell_cannot_access"
+regex = "cannot access .+: No such file or directory"
+severity = "error"
+description = "Cannot access file"
+tags = ["shell", "filesystem", "error"]
+
+# Compilation and build errors
+
+[[patterns]]
+name = "compilation_fatal_error"
+regex = "fatal error:"
+severity = "error"
+description = "Fatal compilation error"
+tags = ["compilation", "build", "error"]
+
+[[patterns]]
+name = "compilation_terminated"
+regex = "compilation terminated"
+severity = "error"
+description = "Compilation failed"
+tags = ["compilation", "build", "error"]
+
+[[patterns]]
+name = "linker_error"
+regex = "collect2: error:"
+severity = "error"
+description = "Linker error"
+tags = ["compilation", "linker", "error"]
+
+[[patterns]]
+name = "missing_library"
+regex = "cannot find -l\\w+"
+severity = "error"
+description = "Missing library during linking"
+tags = ["compilation", "linker", "library", "error"]
+suggestion = "Install missing library development package"
+
+[[patterns]]
+name = "undefined_reference"
+regex = "undefined reference to"
+severity = "error"
+description = "Undefined reference during linking"
+tags = ["compilation", "linker", "error"]
+
+# Runtime errors (system-level)
+
+[[patterns]]
+name = "segmentation_fault"
+regex = "Segmentation fault"
+severity = "error"
+description = "Segmentation fault - invalid memory access"
+tags = ["runtime", "crash", "memory", "error"]
+
+[[patterns]]
+name = "core_dumped"
+regex = "core dumped"
+severity = "error"
+description = "Core dumped - program crashed"
+tags = ["runtime", "crash", "error"]
+
+[[patterns]]
+name = "process_aborted"
+regex = "Aborted"
+severity = "error"
+description = "Process aborted"
+tags = ["runtime", "process", "error"]
+
+[[patterns]]
+name = "process_killed"
+regex = "Killed"
+severity = "error"
+description = "Process killed (likely by OOM or signal)"
+tags = ["runtime", "process", "error"]

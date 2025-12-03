@@ -7,12 +7,10 @@ from contextlib import suppress
 from typing import Any
 
 from logsift.core.context import ContextExtractor
-from logsift.core.extractors import ErrorExtractor
 from logsift.core.extractors import FileReferenceExtractor
-from logsift.core.extractors import WarningExtractor
+from logsift.core.extractors import IssueExtractor
 from logsift.core.parser import LogParser
 from logsift.patterns.loader import PatternLoader
-from logsift.patterns.matcher import match_patterns
 
 
 class Analyzer:
@@ -27,8 +25,7 @@ class Analyzer:
         # Initialize all components
         self.parser = LogParser()
         self.pattern_loader = PatternLoader()
-        self.error_extractor = ErrorExtractor()
-        self.warning_extractor = WarningExtractor()
+        self.issue_extractor = IssueExtractor()
         self.file_reference_extractor = FileReferenceExtractor()
         self.context_extractor = ContextExtractor(context_lines=context_lines)
 
@@ -47,14 +44,14 @@ class Analyzer:
         # Parse log content
         log_entries = self.parser.parse(log_content)
 
-        # Extract errors and warnings
-        errors = self.error_extractor.extract_errors(log_entries)
-        warnings = self.warning_extractor.extract_warnings(log_entries)
+        # Extract errors and warnings using ALL TOML patterns
+        errors, warnings = self.issue_extractor.extract_issues(log_entries, self.patterns)
 
-        # Enhance errors with pattern matching, file references, and context
+        # Enhance errors with file references and context
+        # (pattern matching already happened during extraction)
         enhanced_errors = self._enhance_issues(errors, log_entries)
 
-        # Enhance warnings with pattern matching, file references, and context
+        # Enhance warnings with file references and context
         enhanced_warnings = self._enhance_issues(warnings, log_entries)
 
         # Build statistics
@@ -70,7 +67,11 @@ class Analyzer:
         }
 
     def _enhance_issues(self, issues: list[dict[str, Any]], log_entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        """Enhance issues with pattern matching, file references, and context.
+        """Enhance issues with file references and context.
+
+        Pattern matching already happened during extraction, so we only add:
+        - File references (file:line patterns in the message)
+        - Context lines (surrounding log entries)
 
         Args:
             issues: List of error or warning dictionaries
@@ -82,11 +83,6 @@ class Analyzer:
         enhanced = []
 
         for issue in issues:
-            # Try to match patterns
-            pattern_match = match_patterns(issue, self.patterns)
-            if pattern_match:
-                issue.update(pattern_match)
-
             # Extract file references from the message
             message = issue.get('message', '')
             file_refs = self.file_reference_extractor.extract_references(message)

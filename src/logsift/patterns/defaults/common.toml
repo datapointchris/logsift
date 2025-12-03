@@ -28,3 +28,21 @@ regex = "(?i)(permission denied|access denied):\\s*(.+)"
 severity = "error"
 description = "Permission/access denied error"
 tags = ["filesystem", "permissions", "error"]
+
+# Test failure patterns (universal - work across test frameworks)
+
+[[patterns]]
+name = "test_failed_cross_mark"
+regex = "✗.*FAILED"
+severity = "error"
+description = "Test failed (indicated by cross mark)"
+tags = ["test", "failure", "error"]
+suggestion = "Review test output and fix the failing test"
+
+[[patterns]]
+name = "test_suite_failures"
+regex = "FAILURES:\\s*\\d+\\s+passed,\\s*\\d+\\s+failed"
+severity = "error"
+description = "Test suite completed with failures"
+tags = ["test", "suite", "failure", "error"]
+suggestion = "Review failed tests and fix issues before proceeding"

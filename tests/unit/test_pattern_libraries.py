@@ -112,6 +112,8 @@ def test_all_pattern_files_exist():
         'cargo.toml',
         'make.toml',
         'pytest.toml',
+        'http.toml',
+        'shell.toml',
     ]
 
     for filename in expected_files:
@@ -257,3 +259,183 @@ def test_pytest_test_failed_pattern():
     test_line = 'FAILED tests/test_example.py::test_function - AssertionError: assert False'
     match = re.search(pattern['regex'], test_line)
     assert match is not None
+
+
+def test_http_patterns_valid():
+    """Test that http.toml is valid TOML and has correct structure."""
+    pattern_file = Path('src/logsift/patterns/defaults/http.toml')
+    assert pattern_file.exists()
+
+    with pattern_file.open('rb') as f:
+        data = tomllib.load(f)
+
+    assert 'patterns' in data
+    patterns = data['patterns']
+    assert len(patterns) > 0
+
+    # Verify common HTTP error patterns exist
+    pattern_names = [p['name'] for p in patterns]
+    assert 'http_404_not_found' in pattern_names
+    assert 'http_500_internal_server_error' in pattern_names
+    assert 'connection_refused' in pattern_names
+
+
+def test_http_404_pattern():
+    """Test HTTP 404 pattern regex."""
+    import re
+
+    pattern_file = Path('src/logsift/patterns/defaults/http.toml')
+    with pattern_file.open('rb') as f:
+        data = tomllib.load(f)
+
+    # Find the pattern
+    pattern = next((p for p in data['patterns'] if p['name'] == 'http_404_not_found'), None)
+    assert pattern is not None
+
+    # Test the regex with various formats
+    test_lines = [
+        'HTTP 404 Not Found',
+        'Error: 404',
+        'could not GET url: HTTP status client error (404 Not Found)',
+    ]
+    for test_line in test_lines:
+        match = re.search(pattern['regex'], test_line, re.IGNORECASE)
+        assert match is not None, f'Pattern should match: {test_line}'
+
+
+def test_http_500_pattern():
+    """Test HTTP 500 pattern regex."""
+    import re
+
+    pattern_file = Path('src/logsift/patterns/defaults/http.toml')
+    with pattern_file.open('rb') as f:
+        data = tomllib.load(f)
+
+    # Find the pattern
+    pattern = next((p for p in data['patterns'] if p['name'] == 'http_500_internal_server_error'), None)
+    assert pattern is not None
+
+    # Test the regex
+    test_lines = [
+        'HTTP 500 Internal Server Error',
+        'Error: 500',
+        'Server returned 500',
+    ]
+    for test_line in test_lines:
+        match = re.search(pattern['regex'], test_line, re.IGNORECASE)
+        assert match is not None, f'Pattern should match: {test_line}'
+
+
+def test_connection_refused_pattern():
+    """Test connection refused pattern regex."""
+    import re
+
+    pattern_file = Path('src/logsift/patterns/defaults/http.toml')
+    with pattern_file.open('rb') as f:
+        data = tomllib.load(f)
+
+    # Find the pattern
+    pattern = next((p for p in data['patterns'] if p['name'] == 'connection_refused'), None)
+    assert pattern is not None
+
+    # Test the regex
+    test_lines = [
+        'connection refused',
+        'could not connect to server',
+        'Connection refused',
+    ]
+    for test_line in test_lines:
+        match = re.search(pattern['regex'], test_line, re.IGNORECASE)
+        assert match is not None, f'Pattern should match: {test_line}'
+
+
+def test_test_failed_marker_pattern():
+    """Test cross mark test failure pattern regex."""
+    import re
+
+    pattern_file = Path('src/logsift/patterns/defaults/common.toml')
+    with pattern_file.open('rb') as f:
+        data = tomllib.load(f)
+
+    # Find the pattern
+    pattern = next((p for p in data['patterns'] if p['name'] == 'test_failed_cross_mark'), None)
+    assert pattern is not None
+
+    # Test the regex with ANSI-stripped lines
+    test_lines = [
+        '✗ notes help FAILED: notes --help',
+        '✗ ZDOTDIR set FAILED: test -n "$ZDOTDIR"',
+    ]
+    for test_line in test_lines:
+        match = re.search(pattern['regex'], test_line)
+        assert match is not None, f'Pattern should match: {test_line}'
+
+
+def test_test_summary_failures_pattern():
+    """Test test summary with failures pattern regex."""
+    import re
+
+    pattern_file = Path('src/logsift/patterns/defaults/common.toml')
+    with pattern_file.open('rb') as f:
+        data = tomllib.load(f)
+
+    # Find the pattern
+    pattern = next((p for p in data['patterns'] if p['name'] == 'test_suite_failures'), None)
+    assert pattern is not None
+
+    # Test the regex
+    test_lines = [
+        'FAILURES: 28 passed, 2 failed',
+        'failures: 10 passed, 5 failed',
+    ]
+    for test_line in test_lines:
+        match = re.search(pattern['regex'], test_line, re.IGNORECASE)
+        assert match is not None, f'Pattern should match: {test_line}'
+
+
+def test_shell_patterns_valid():
+    """Test that shell.toml is valid TOML and has correct structure."""
+    pattern_file = Path('src/logsift/patterns/defaults/shell.toml')
+    assert pattern_file.exists()
+
+    with pattern_file.open('rb') as f:
+        data = tomllib.load(f)
+
+    assert 'patterns' in data
+    patterns = data['patterns']
+    assert len(patterns) > 0
+
+    # Verify shell-specific patterns exist (not test patterns - those moved to common.toml)
+    pattern_names = [p['name'] for p in patterns]
+    assert 'bash_command_not_found' in pattern_names
+    assert 'shell_no_such_file' in pattern_names
+    assert 'segmentation_fault' in pattern_names
+
+
+def test_shell_command_not_found_pattern():
+    """Test shell command not found pattern regex."""
+    import re
+
+    pattern_file = Path('src/logsift/patterns/defaults/shell.toml')
+    with pattern_file.open('rb') as f:
+        data = tomllib.load(f)
+
+    # Find the pattern
+    pattern = next((p for p in data['patterns'] if p['name'] == 'bash_command_not_found'), None)
+    assert pattern is not None
+
+    # Test the regex
+    test_line = 'bash: foo: command not found'
+    match = re.search(pattern['regex'], test_line)
+    assert match is not None
+
+
+def test_common_patterns_include_tests():
+    """Test that common.toml includes universal test patterns."""
+    pattern_file = Path('src/logsift/patterns/defaults/common.toml')
+    with pattern_file.open('rb') as f:
+        data = tomllib.load(f)
+
+    pattern_names = [p['name'] for p in data['patterns']]
+    assert 'test_failed_cross_mark' in pattern_names
+    assert 'test_suite_failures' in pattern_names

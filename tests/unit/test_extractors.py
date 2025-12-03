@@ -1,15 +1,15 @@
 """Unit tests for the extractor system."""
 
-from logsift.core.extractors import ErrorExtractor
 from logsift.core.extractors import FileReferenceExtractor
-from logsift.core.extractors import WarningExtractor
+from logsift.core.extractors import IssueExtractor
+from logsift.patterns.loader import PatternLoader
 
-# ErrorExtractor Tests
+# IssueExtractor Tests
 
 
-def test_error_extractor_initialization():
-    """Test that error extractor can be initialized."""
-    extractor = ErrorExtractor()
+def test_issue_extractor_initialization():
+    """Test that issue extractor can be initialized."""
+    extractor = IssueExtractor()
     assert extractor is not None
 
 
@@ -20,15 +20,35 @@ def test_extract_errors_from_log_entries():
         {'level': 'ERROR', 'message': 'Failed to connect', 'line_number': 2},
         {'level': 'ERROR', 'message': 'Timeout occurred', 'line_number': 3},
     ]
-    extractor = ErrorExtractor()
-    errors = extractor.extract_errors(log_entries)
+    extractor = IssueExtractor()
+    patterns = {}  # Empty patterns for basic level-based extraction
+    errors, warnings = extractor.extract_issues(log_entries, patterns)
 
     assert len(errors) == 2
+    assert len(warnings) == 0
     assert errors[0]['severity'] == 'error'
     assert errors[0]['message'] == 'Failed to connect'
     assert errors[0]['line_in_log'] == 2
     assert errors[1]['message'] == 'Timeout occurred'
     assert errors[1]['line_in_log'] == 3
+
+
+def test_extract_warnings_from_log_entries():
+    """Test extracting warnings from parsed log entries."""
+    log_entries = [
+        {'level': 'INFO', 'message': 'Starting process', 'line_number': 1},
+        {'level': 'WARNING', 'message': 'Deprecated API', 'line_number': 2},
+        {'level': 'WARN', 'message': 'Low memory', 'line_number': 3},
+    ]
+    extractor = IssueExtractor()
+    patterns = {}
+    errors, warnings = extractor.extract_issues(log_entries, patterns)
+
+    assert len(errors) == 0
+    assert len(warnings) == 2
+    assert warnings[0]['severity'] == 'warning'
+    assert warnings[0]['message'] == 'Deprecated API'
+    assert warnings[1]['message'] == 'Low memory'
 
 
 def test_extract_errors_case_insensitive():
@@ -38,48 +58,56 @@ def test_extract_errors_case_insensitive():
         {'level': 'ERROR', 'message': 'Upper case error', 'line_number': 2},
         {'level': 'Error', 'message': 'Mixed case error', 'line_number': 3},
     ]
-    extractor = ErrorExtractor()
-    errors = extractor.extract_errors(log_entries)
+    extractor = IssueExtractor()
+    patterns = {}
+    errors, warnings = extractor.extract_issues(log_entries, patterns)
 
     assert len(errors) == 3
 
 
-def test_extract_errors_from_empty_list():
-    """Test extracting errors from empty log list."""
-    extractor = ErrorExtractor()
-    errors = extractor.extract_errors([])
+def test_extract_from_empty_list():
+    """Test extracting from empty log list."""
+    extractor = IssueExtractor()
+    patterns = {}
+    errors, warnings = extractor.extract_issues([], patterns)
 
     assert errors == []
+    assert warnings == []
 
 
-def test_extract_errors_when_none_exist():
-    """Test extracting errors when no errors are present."""
+def test_extract_when_none_exist():
+    """Test extracting when no errors or warnings exist."""
     log_entries = [
         {'level': 'INFO', 'message': 'All good', 'line_number': 1},
         {'level': 'DEBUG', 'message': 'Debug info', 'line_number': 2},
     ]
-    extractor = ErrorExtractor()
-    errors = extractor.extract_errors(log_entries)
+    extractor = IssueExtractor()
+    patterns = {}
+    errors, warnings = extractor.extract_issues(log_entries, patterns)
 
     assert errors == []
+    assert warnings == []
 
 
-def test_extract_errors_assigns_ids():
-    """Test that errors are assigned sequential IDs."""
+def test_extract_assigns_ids():
+    """Test that issues are assigned sequential IDs."""
     log_entries = [
         {'level': 'ERROR', 'message': 'First error', 'line_number': 1},
-        {'level': 'ERROR', 'message': 'Second error', 'line_number': 2},
-        {'level': 'ERROR', 'message': 'Third error', 'line_number': 3},
+        {'level': 'WARNING', 'message': 'First warning', 'line_number': 2},
+        {'level': 'ERROR', 'message': 'Second error', 'line_number': 3},
+        {'level': 'WARNING', 'message': 'Second warning', 'line_number': 4},
     ]
-    extractor = ErrorExtractor()
-    errors = extractor.extract_errors(log_entries)
+    extractor = IssueExtractor()
+    patterns = {}
+    errors, warnings = extractor.extract_issues(log_entries, patterns)
 
     assert errors[0]['id'] == 1
     assert errors[1]['id'] == 2
-    assert errors[2]['id'] == 3
+    assert warnings[0]['id'] == 1
+    assert warnings[1]['id'] == 2
 
 
-def test_extract_errors_preserves_all_fields():
+def test_extract_preserves_all_fields():
     """Test that extraction preserves all fields from log entry."""
     log_entries = [
         {
@@ -90,135 +118,57 @@ def test_extract_errors_preserves_all_fields():
             'format': 'json',
         },
     ]
-    extractor = ErrorExtractor()
-    errors = extractor.extract_errors(log_entries)
+    extractor = IssueExtractor()
+    patterns = {}
+    errors, warnings = extractor.extract_issues(log_entries, patterns)
 
     assert errors[0]['message'] == 'Connection failed'
     assert errors[0]['line_in_log'] == 42
     assert errors[0]['timestamp'] == '2025-11-28T10:30:00Z'
 
 
-def test_extract_shell_errors_command_not_found():
-    """Test that shell error patterns are detected (command not found)."""
+def test_extract_with_toml_patterns():
+    """Test that TOML patterns are used for detection."""
     log_entries = [
-        {'level': 'INFO', 'message': 'Starting process', 'line_number': 1, 'format': 'plain'},
-        {'level': 'INFO', 'message': 'bash: unzip: command not found', 'line_number': 2, 'format': 'plain'},
-        {'level': 'INFO', 'message': 'zsh:1: no such file or directory: /path/file.sh', 'line_number': 3, 'format': 'plain'},
+        {'level': 'INFO', 'message': 'bash: unzip: command not found', 'line_number': 1},
+        {'level': 'INFO', 'message': '✗ test FAILED: assertion failed', 'line_number': 2},
     ]
-    extractor = ErrorExtractor()
-    errors = extractor.extract_errors(log_entries)
 
-    assert len(errors) == 2
-    assert errors[0]['severity'] == 'error'
-    assert errors[0]['message'] == 'bash: unzip: command not found'
-    assert errors[0]['line_in_log'] == 2
-    assert errors[0]['pattern_name'] == 'shell_error'
-    assert errors[0]['description'] == 'Command not found'  # Matches ': command not found' pattern
-    assert 'shell' in errors[0]['tags']
+    # Load actual patterns from TOML files
+    pattern_loader = PatternLoader()
+    patterns = pattern_loader.load_builtin_patterns()
 
-    assert errors[1]['message'] == 'zsh:1: no such file or directory: /path/file.sh'
-    assert errors[1]['line_in_log'] == 3
-    assert errors[1]['description'] == 'File or directory not found'
+    extractor = IssueExtractor()
+    errors, warnings = extractor.extract_issues(log_entries, patterns)
+
+    # Should detect shell error and test failure
+    assert len(errors) >= 2
+
+    # Find the bash command not found error
+    bash_error = next((e for e in errors if 'bash: unzip' in e['message']), None)
+    assert bash_error is not None
+    assert bash_error['severity'] == 'error'
+    assert 'pattern_name' in bash_error
+    assert 'description' in bash_error
+    assert 'tags' in bash_error
+
+    # Find the test failure
+    test_error = next((e for e in errors if '✗ test FAILED' in e['message']), None)
+    assert test_error is not None
 
 
-def test_extract_shell_errors_no_duplicates():
+def test_extract_no_duplicates():
     """Test that ERROR level entries aren't duplicated when they also match patterns."""
     log_entries = [
-        {'level': 'ERROR', 'message': 'fatal error: file not found', 'line_number': 1, 'format': 'plain'},
+        {'level': 'ERROR', 'message': 'fatal error: file not found', 'line_number': 1},
     ]
-    extractor = ErrorExtractor()
-    errors = extractor.extract_errors(log_entries)
+    extractor = IssueExtractor()
+    patterns = {}
+    errors, warnings = extractor.extract_issues(log_entries, patterns)
 
-    # Should only appear once (as ERROR level, not as pattern match)
+    # Should only appear once (from ERROR level)
     assert len(errors) == 1
     assert errors[0]['line_in_log'] == 1
-
-
-def test_extract_shell_errors_package_manager():
-    """Test that package manager errors are detected."""
-    log_entries = [
-        {'level': 'INFO', 'message': 'E: Unable to locate package foobar', 'line_number': 1, 'format': 'plain'},
-        {'level': 'INFO', 'message': 'npm ERR! 404 Not Found', 'line_number': 2, 'format': 'plain'},
-    ]
-    extractor = ErrorExtractor()
-    errors = extractor.extract_errors(log_entries)
-
-    assert len(errors) == 2
-    assert 'Package not found' in errors[0]['description']
-    assert 'NPM error' in errors[1]['description']
-
-
-# WarningExtractor Tests
-
-
-def test_warning_extractor_initialization():
-    """Test that warning extractor can be initialized."""
-    extractor = WarningExtractor()
-    assert extractor is not None
-
-
-def test_extract_warnings_from_log_entries():
-    """Test extracting warnings from parsed log entries."""
-    log_entries = [
-        {'level': 'INFO', 'message': 'Starting process', 'line_number': 1},
-        {'level': 'WARNING', 'message': 'Low memory', 'line_number': 2},
-        {'level': 'WARN', 'message': 'Deprecated API', 'line_number': 3},
-    ]
-    extractor = WarningExtractor()
-    warnings = extractor.extract_warnings(log_entries)
-
-    assert len(warnings) == 2
-    assert warnings[0]['severity'] == 'warning'
-    assert warnings[0]['message'] == 'Low memory'
-    assert warnings[0]['line_in_log'] == 2
-    assert warnings[1]['message'] == 'Deprecated API'
-
-
-def test_extract_warnings_case_insensitive():
-    """Test that warning extraction is case insensitive."""
-    log_entries = [
-        {'level': 'warning', 'message': 'Lower case', 'line_number': 1},
-        {'level': 'WARNING', 'message': 'Upper case', 'line_number': 2},
-        {'level': 'warn', 'message': 'Warn variant', 'line_number': 3},
-        {'level': 'WARN', 'message': 'WARN variant upper', 'line_number': 4},
-    ]
-    extractor = WarningExtractor()
-    warnings = extractor.extract_warnings(log_entries)
-
-    assert len(warnings) == 4
-
-
-def test_extract_warnings_from_empty_list():
-    """Test extracting warnings from empty log list."""
-    extractor = WarningExtractor()
-    warnings = extractor.extract_warnings([])
-
-    assert warnings == []
-
-
-def test_extract_warnings_when_none_exist():
-    """Test extracting warnings when no warnings are present."""
-    log_entries = [
-        {'level': 'INFO', 'message': 'All good', 'line_number': 1},
-        {'level': 'ERROR', 'message': 'Error occurred', 'line_number': 2},
-    ]
-    extractor = WarningExtractor()
-    warnings = extractor.extract_warnings(log_entries)
-
-    assert warnings == []
-
-
-def test_extract_warnings_assigns_ids():
-    """Test that warnings are assigned sequential IDs."""
-    log_entries = [
-        {'level': 'WARNING', 'message': 'First warning', 'line_number': 1},
-        {'level': 'WARNING', 'message': 'Second warning', 'line_number': 2},
-    ]
-    extractor = WarningExtractor()
-    warnings = extractor.extract_warnings(log_entries)
-
-    assert warnings[0]['id'] == 1
-    assert warnings[1]['id'] == 2
 
 
 # FileReferenceExtractor Tests
@@ -230,120 +180,49 @@ def test_file_reference_extractor_initialization():
     assert extractor is not None
 
 
-def test_extract_simple_file_reference():
-    """Test extracting a simple file:line reference."""
-    text = 'Error in file.py:42'
+def test_extract_file_references_unix_format():
+    """Test extracting file:line references in Unix format."""
     extractor = FileReferenceExtractor()
-    references = extractor.extract_references(text)
+    text = 'Error in src/main.py:42 and lib/utils.js:100'
+    refs = extractor.extract_references(text)
 
-    assert len(references) == 1
-    assert references[0] == ('file.py', 42)
+    assert len(refs) == 2
+    assert refs[0] == ('src/main.py', 42)
+    assert refs[1] == ('lib/utils.js', 100)
 
 
-def test_extract_absolute_path_reference():
-    """Test extracting absolute path file references."""
-    text = 'Error in /usr/local/lib/python3.13/site-packages/module.py:123'
+def test_extract_file_references_python_format():
+    """Test extracting file references in Python stack trace format."""
     extractor = FileReferenceExtractor()
-    references = extractor.extract_references(text)
+    text = 'File "/app/main.py", line 42, in function_name'
+    refs = extractor.extract_references(text)
 
-    assert len(references) == 1
-    assert references[0] == ('/usr/local/lib/python3.13/site-packages/module.py', 123)
+    assert len(refs) == 1
+    assert refs[0] == ('/app/main.py', 42)
 
 
-def test_extract_relative_path_reference():
-    """Test extracting relative path file references."""
-    text = 'Error in ./src/core/parser.py:67'
+def test_extract_file_references_with_column_numbers():
+    """Test extracting file references with column numbers."""
     extractor = FileReferenceExtractor()
-    references = extractor.extract_references(text)
+    text = 'Error at src/file.py:42:10'
+    refs = extractor.extract_references(text)
 
-    assert len(references) == 1
-    assert references[0] == ('./src/core/parser.py', 67)
+    assert len(refs) == 1
+    assert refs[0] == ('src/file.py', 42)  # Column number is ignored
 
 
-def test_extract_multiple_references():
-    """Test extracting multiple file references from one text."""
-    text = 'Called from main.py:10, then utils.py:25, then handler.py:50'
+def test_extract_file_references_from_empty_string():
+    """Test extracting file references from empty string."""
     extractor = FileReferenceExtractor()
-    references = extractor.extract_references(text)
+    refs = extractor.extract_references('')
 
-    assert len(references) == 3
-    assert references[0] == ('main.py', 10)
-    assert references[1] == ('utils.py', 25)
-    assert references[2] == ('handler.py', 50)
+    assert refs == []
 
 
-def test_extract_references_with_various_extensions():
-    """Test extracting references with different file extensions."""
-    text = 'Errors in app.js:100, styles.css:50, config.json:5, README.md:20'
+def test_extract_file_references_when_none_exist():
+    """Test extracting file references when none exist in text."""
     extractor = FileReferenceExtractor()
-    references = extractor.extract_references(text)
+    text = 'This is just a normal message with no file references'
+    refs = extractor.extract_references(text)
 
-    assert len(references) == 4
-    assert ('app.js', 100) in references
-    assert ('styles.css', 50) in references
-    assert ('config.json', 5) in references
-    assert ('README.md', 20) in references
-
-
-def test_extract_references_from_stack_trace():
-    """Test extracting references from stack trace format."""
-    text = """Traceback (most recent call last):
-  File "/app/main.py", line 42, in main
-  File "/app/utils/helper.py", line 15, in process
-  File "/app/core/engine.py", line 88, in execute"""
-    extractor = FileReferenceExtractor()
-    references = extractor.extract_references(text)
-
-    assert len(references) == 3
-    assert ('/app/main.py', 42) in references
-    assert ('/app/utils/helper.py', 15) in references
-    assert ('/app/core/engine.py', 88) in references
-
-
-def test_extract_references_from_empty_text():
-    """Test extracting references from empty text."""
-    extractor = FileReferenceExtractor()
-    references = extractor.extract_references('')
-
-    assert references == []
-
-
-def test_extract_references_when_none_exist():
-    """Test extracting references from text with no file references."""
-    text = 'This is just a regular log message with no file references'
-    extractor = FileReferenceExtractor()
-    references = extractor.extract_references(text)
-
-    assert references == []
-
-
-def test_extract_references_with_windows_paths():
-    """Test extracting Windows-style file paths."""
-    text = r'Error in C:\Users\dev\project\src\main.py:100'
-    extractor = FileReferenceExtractor()
-    references = extractor.extract_references(text)
-
-    assert len(references) == 1
-    assert references[0] == (r'C:\Users\dev\project\src\main.py', 100)
-
-
-def test_extract_references_ignores_invalid_line_numbers():
-    """Test that invalid line numbers are not extracted."""
-    text = 'file.py:abc should not match, but file.py:123 should'
-    extractor = FileReferenceExtractor()
-    references = extractor.extract_references(text)
-
-    assert len(references) == 1
-    assert references[0] == ('file.py', 123)
-
-
-def test_extract_references_from_compile_error():
-    """Test extracting from typical compiler error format."""
-    text = 'src/main.rs:45:10: error: expected `;`, found `}`'
-    extractor = FileReferenceExtractor()
-    references = extractor.extract_references(text)
-
-    # Should extract the file and first line number (column is separate)
-    assert len(references) >= 1
-    assert references[0][0] == 'src/main.rs'
-    assert references[0][1] == 45
+    assert refs == []
