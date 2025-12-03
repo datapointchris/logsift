@@ -234,6 +234,13 @@ def analyze(
             help='Update interval in seconds when streaming (default: 1)',
         ),
     ] = 1,
+    no_save: Annotated[
+        bool,
+        typer.Option(
+            '--no-save',
+            help='Do not save analysis results to cache (useful for testing)',
+        ),
+    ] = False,
 ) -> None:
     """Analyze an existing log file for errors and patterns
 
@@ -241,17 +248,16 @@ def analyze(
     and actionable items using pattern matching. Works with any log format
     (JSON, structured, plain text).
 
-    Common Options:
-        --format    Output format: auto, json, markdown, plain
-        --stream    Continuously analyze as file grows
+    By default, analysis results are saved in all formats (JSON, TOON, Markdown).
+    Use --no-save to skip saving (useful when testing pattern changes).
 
     Examples:
         logsift analyze /var/log/app.log
         logsift analyze --format json build.log
         logsift analyze latest
+        logsift analyze latest --no-save
         logsift analyze latest --stream
         logsift analyze browse
-        logsift analyze browse --stream
     """
     from logsift.cli_formatter import format_help_with_colors
 
@@ -312,7 +318,7 @@ def analyze(
     if stream:
         stream_analyze_log(log_file, interval=interval)
     else:
-        analyze_log(log_file, output_format=format)
+        analyze_log(log_file, output_format=format, save=not no_save)
 
 
 # Create logs command group
@@ -807,7 +813,7 @@ def analyzed_clean(
 # Create format command groups
 raw_app = create_format_commands('raw', '.log', 'raw_dir', 'txt')
 json_app = create_format_commands('json', '.json', 'json_dir', 'json')
-toon_app = create_format_commands('toon', '.toon', 'toon_dir', 'toon')
+toon_app = create_format_commands('toon', '.toon', 'toon_dir', 'yaml')
 md_app = create_format_commands('md', '.md', 'md_dir', 'markdown')
 
 # Register format commands
