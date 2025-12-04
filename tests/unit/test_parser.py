@@ -209,3 +209,150 @@ def test_parse_handles_mixed_formats():
 
     # Should parse all entries, detecting format per line
     assert len(entries) == 3
+
+
+# Universal Log Level Detection Tests
+
+
+def test_parse_level_colon_format():
+    """Test parsing LEVEL: format."""
+    parser = LogParser()
+    log = 'WARNING: This is a warning message'
+    entries = parser.parse(log)
+
+    assert len(entries) == 1
+    assert entries[0]['level'] == 'WARNING'
+    assert entries[0]['message'] == 'This is a warning message'
+
+
+def test_parse_level_dash_format():
+    """Test parsing LEVEL - format (mkdocs style)."""
+    parser = LogParser()
+    log = 'WARNING -  Excluding "archive/README.md" from the site'
+    entries = parser.parse(log)
+
+    assert len(entries) == 1
+    assert entries[0]['level'] == 'WARNING'
+    assert entries[0]['message'] == 'Excluding "archive/README.md" from the site'
+
+
+def test_parse_level_pipe_format():
+    """Test parsing LEVEL | format."""
+    parser = LogParser()
+    log = 'ERROR | Database connection failed'
+    entries = parser.parse(log)
+
+    assert len(entries) == 1
+    assert entries[0]['level'] == 'ERROR'
+    assert entries[0]['message'] == 'Database connection failed'
+
+
+def test_parse_level_bracket_format():
+    """Test parsing [LEVEL] format."""
+    parser = LogParser()
+    log = '[WARNING] Deprecated API usage detected'
+    entries = parser.parse(log)
+
+    assert len(entries) == 1
+    assert entries[0]['level'] == 'WARNING'
+    assert entries[0]['message'] == 'Deprecated API usage detected'
+
+
+def test_parse_level_warn_variant():
+    """Test parsing WARN as WARNING."""
+    parser = LogParser()
+    log = 'WARN - Short form warning'
+    entries = parser.parse(log)
+
+    assert len(entries) == 1
+    assert entries[0]['level'] == 'WARN'
+    assert entries[0]['message'] == 'Short form warning'
+
+
+def test_parse_level_with_extra_spaces():
+    """Test parsing level with extra spaces."""
+    parser = LogParser()
+    log = '  WARNING  :  Message with spaces'
+    entries = parser.parse(log)
+
+    assert len(entries) == 1
+    assert entries[0]['level'] == 'WARNING'
+    assert entries[0]['message'] == 'Message with spaces'
+
+
+def test_parse_level_case_insensitive():
+    """Test parsing level is case insensitive."""
+    parser = LogParser()
+    log1 = 'warning: lowercase'
+    log2 = 'Warning: titlecase'
+    log3 = 'WARNING: uppercase'
+
+    entries1 = parser.parse(log1)
+    entries2 = parser.parse(log2)
+    entries3 = parser.parse(log3)
+
+    assert entries1[0]['level'] == 'WARNING'
+    assert entries2[0]['level'] == 'WARNING'
+    assert entries3[0]['level'] == 'WARNING'
+
+
+def test_parse_multiple_mkdocs_warnings():
+    """Test parsing multiple mkdocs-style warnings."""
+    parser = LogParser()
+    log = """\
+INFO    -  Cleaning site directory
+INFO    -  Building documentation to directory: /path/to/site
+WARNING -  Excluding 'archive/README.md' from the site because it conflicts
+WARNING -  A reference to 'material/cog' is not found
+ERROR   -  Failed to build"""
+
+    entries = parser.parse(log)
+
+    assert len(entries) == 5
+    assert entries[0]['level'] == 'INFO'
+    assert entries[1]['level'] == 'INFO'
+    assert entries[2]['level'] == 'WARNING'
+    assert entries[3]['level'] == 'WARNING'
+    assert entries[4]['level'] == 'ERROR'
+
+
+def test_parse_debug_level():
+    """Test parsing DEBUG level."""
+    parser = LogParser()
+    log = 'DEBUG - Verbose debugging information'
+    entries = parser.parse(log)
+
+    assert len(entries) == 1
+    assert entries[0]['level'] == 'DEBUG'
+
+
+def test_parse_fatal_level():
+    """Test parsing FATAL level."""
+    parser = LogParser()
+    log = 'FATAL: Critical system failure'
+    entries = parser.parse(log)
+
+    assert len(entries) == 1
+    assert entries[0]['level'] == 'FATAL'
+
+
+def test_parse_info_level_dash():
+    """Test parsing INFO level with dash separator."""
+    parser = LogParser()
+    log = 'INFO - Application started'
+    entries = parser.parse(log)
+
+    assert len(entries) == 1
+    assert entries[0]['level'] == 'INFO'
+    assert entries[0]['message'] == 'Application started'
+
+
+def test_parse_level_not_in_middle_of_line():
+    """Test that level keyword in middle of line doesn't match."""
+    parser = LogParser()
+    log = 'This line contains WARNING in the middle'
+    entries = parser.parse(log)
+
+    assert len(entries) == 1
+    assert entries[0]['level'] == 'INFO'  # Should default to INFO
+    assert 'WARNING' in entries[0]['message']  # WARNING should be in message

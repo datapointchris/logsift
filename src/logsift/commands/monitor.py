@@ -27,11 +27,12 @@ stderr_console = Console(stderr=True)
 def _generate_log_name(command: list[str]) -> str:
     """Generate an informative log name from a command.
 
-    Handles common patterns intelligently:
-    - Shell commands: 'bash script.sh' → 'bash-script'
-    - Interpreters: 'python script.py arg1' → 'python-script'
-    - Direct commands: 'make test' → 'make-test'
-    - Single commands: 'ls' → 'ls'
+    Includes all non-flag arguments up to 3 parts for descriptive names.
+    Examples:
+        ['uv', 'run', 'mkdocs', 'build'] → 'uv-run-mkdocs-build'
+        ['bash', 'script.sh'] → 'bash-script'
+        ['pytest', '-v', 'tests'] → 'pytest-tests'
+        ['make', 'test'] → 'make-test'
 
     Args:
         command: Command list to generate name from
@@ -42,40 +43,27 @@ def _generate_log_name(command: list[str]) -> str:
     if not command:
         return 'unknown'
 
-    # Common shell interpreters and commands that should include next argument
-    interpreters = {'bash', 'sh', 'zsh', 'fish', 'python', 'python3', 'node', 'ruby', 'perl', 'php'}
-
     parts: list[str] = []
-    first_cmd = os.path.basename(command[0])  # Remove path, keep just command name
 
-    # Add first command
+    # Add first command (basename only, no path)
+    first_cmd = os.path.basename(command[0])
     parts.append(first_cmd)
 
-    # If it's an interpreter and there's a script argument, include it
-    if first_cmd in interpreters and len(command) > 1:
-        script = command[1]
-        # Extract basename and remove common extensions
-        script_name = os.path.basename(script)
-        script_name = script_name.removesuffix('.sh')
-        script_name = script_name.removesuffix('.py')
-        script_name = script_name.removesuffix('.js')
-        script_name = script_name.removesuffix('.rb')
-        script_name = script_name.removesuffix('.pl')
-        script_name = script_name.removesuffix('.php')
-        parts.append(script_name)
-    # For non-interpreter commands, include next 1-2 meaningful arguments
-    elif len(command) > 1:
-        # Add first argument if it's not a flag
-        if not command[1].startswith('-'):
-            parts.append(command[1])
-        # Add second argument if first was a flag and second exists
-        elif len(command) > 2 and not command[2].startswith('-'):
-            parts.append(command[2])
+    # Add up to 3 more non-flag arguments
+    for arg in command[1:]:
+        if len(parts) >= 4:  # First cmd + 3 args = 4 total
+            break
+        if not arg.startswith('-'):
+            # Strip common script extensions and path
+            clean_arg = os.path.basename(arg)
+            for ext in ('.sh', '.py', '.js', '.rb', '.pl', '.php'):
+                clean_arg = clean_arg.removesuffix(ext)
+            parts.append(clean_arg)
 
-    # Join parts and sanitize (done by CacheManager.create_paths, but do basic cleanup)
+    # Join and sanitize
     name = '-'.join(parts)
 
-    # Limit length to 50 chars to keep filenames reasonable
+    # Limit length to keep filenames reasonable
     if len(name) > 50:
         name = name[:50]
 
