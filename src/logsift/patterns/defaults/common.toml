@@ -1,6 +1,24 @@
 # Common error patterns for universal detection
 # These patterns match common error indicators across different tools
+# IMPORTANT: These patterns must match the FULL log message including level indicators
+# The parser does NOT strip level prefixes - all detection happens here
 
+# Universal error level detection - matches any format
+[[patterns]]
+name = "level_error_any_format"
+regex = "(?i)^\\s*\\[?\\s*(ERROR|FATAL)\\s*\\]?\\s*[:\\-\\|\\s]"
+severity = "error"
+description = "Error level indicator in any format (ERROR:, [ERROR], ERROR -, etc.)"
+tags = ["level", "error"]
+
+[[patterns]]
+name = "level_warning_any_format"
+regex = "(?i)^\\s*\\[?\\s*(WARNING|WARN)\\s*\\]?\\s*[:\\-\\|\\s]"
+severity = "warning"
+description = "Warning level indicator in any format (WARNING:, [WARN], WARNING -, etc.)"
+tags = ["level", "warning"]
+
+# Generic error keywords (fallback when no level indicator present)
 [[patterns]]
 name = "generic_error"
 regex = "(?i)(error|failed|failure|exception):\\s*(.+)"

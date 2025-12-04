@@ -6,9 +6,8 @@ Coordinates the analysis pipeline: parsing, pattern matching, and context extrac
 from contextlib import suppress
 from typing import Any
 
-from logsift.core.context import ContextExtractor
-from logsift.core.extractors import FileReferenceExtractor
-from logsift.core.extractors import IssueExtractor
+from logsift.core.detectors import FileReferenceDetector
+from logsift.core.detectors import IssueDetector
 from logsift.core.parser import LogParser
 from logsift.patterns.loader import PatternLoader
 
@@ -25,9 +24,9 @@ class Analyzer:
         # Initialize all components
         self.parser = LogParser()
         self.pattern_loader = PatternLoader()
-        self.issue_extractor = IssueExtractor()
-        self.file_reference_extractor = FileReferenceExtractor()
-        self.context_extractor = ContextExtractor(context_lines=context_lines)
+        self.issue_detector = IssueDetector()
+        self.file_reference_detector = FileReferenceDetector()
+        self.context_lines = context_lines
 
         # Load built-in patterns
         self.patterns = self.pattern_loader.load_builtin_patterns()
@@ -44,11 +43,10 @@ class Analyzer:
         # Parse log content
         log_entries = self.parser.parse(log_content)
 
-        # Extract errors and warnings using ALL TOML patterns
-        errors, warnings = self.issue_extractor.extract_issues(log_entries, self.patterns)
+        # Detect errors and warnings using TOML patterns (single pass)
+        errors, warnings = self.issue_detector.detect_issues(log_entries, self.patterns)
 
         # Enhance errors with file references and context
-        # (pattern matching already happened during extraction)
         enhanced_errors = self._enhance_issues(errors, log_entries)
 
         # Enhance warnings with file references and context
@@ -69,7 +67,7 @@ class Analyzer:
     def _enhance_issues(self, issues: list[dict[str, Any]], log_entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Enhance issues with file references and context.
 
-        Pattern matching already happened during extraction, so we only add:
+        Pattern matching already happened during detection, so we only add:
         - File references (file:line patterns in the message)
         - Context lines (surrounding log entries)
 
@@ -85,19 +83,18 @@ class Analyzer:
         for issue in issues:
             # Extract file references from the message
             message = issue.get('message', '')
-            file_refs = self.file_reference_extractor.extract_references(message)
+            file_refs = self.file_reference_detector.detect_references(message)
             if file_refs:
                 issue['file_references'] = file_refs
 
             # Extract context around this issue
-            # Find the issue in log_entries by line number
             line_number = issue.get('line_in_log')
             if line_number is not None:
                 # Find index in log_entries
                 for idx, entry in enumerate(log_entries):
                     if entry.get('line_number') == line_number:
                         with suppress(IndexError, ValueError):
-                            context = self.context_extractor.extract_context(log_entries, idx)
+                            context = self._extract_context(log_entries, idx)
                             issue['context_before'] = context['context_before']
                             issue['context_after'] = context['context_after']
                         break
@@ -105,3 +102,37 @@ class Analyzer:
             enhanced.append(issue)
 
         return enhanced
+
+    def _extract_context(
+        self,
+        log_entries: list[dict[str, Any]],
+        error_index: int,
+    ) -> dict[str, Any]:
+        """Extract context lines around an error entry.
+
+        Args:
+            log_entries: List of all log entries
+            error_index: Index of the error in log_entries
+
+        Returns:
+            Dictionary with before and after context
+
+        Raises:
+            IndexError: If error_index is out of bounds
+        """
+        # Validate error_index
+        if error_index < 0 or error_index >= len(log_entries):
+            raise IndexError(f'Error index {error_index} out of bounds for log entries of length {len(log_entries)}')
+
+        # Calculate start and end indices for context
+        start_index = max(0, error_index - self.context_lines)
+        end_index = min(len(log_entries), error_index + self.context_lines + 1)
+
+        # Extract context before and after the error
+        context_before = log_entries[start_index:error_index]
+        context_after = log_entries[error_index + 1 : end_index]
+
+        return {
+            'context_before': context_before,
+            'context_after': context_after,
+        }

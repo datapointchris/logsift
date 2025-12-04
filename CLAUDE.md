@@ -43,6 +43,57 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - DRY principles - avoid duplication and unnecessary abstractions
 - When debugging, check existing patterns and similar code first
 
+### Pattern Matching - Single Source of Truth (⚠️ CRITICAL - NEVER VIOLATE)
+
+**NEVER duplicate pattern matching logic between Python code and TOML files**:
+
+- ❌ WRONG: Hardcode regex patterns in `parser.py`, `detectors.py`, or any Python module
+- ✅ RIGHT: ALL pattern matching must be defined exclusively in TOML files under `src/logsift/patterns/defaults/`
+
+**Parser Responsibilities** (`core/parser.py`):
+
+- Detect log format (JSON, structured, syslog, plain text)
+- Normalize to common structure (extract timestamp if present)
+- Preserve FULL original message - never strip level indicators
+- Always set `level='INFO'` as default
+- NO pattern matching for errors/warnings - that's the TOML's job
+
+**Detector Responsibilities** (`core/detectors.py` - IssueDetector):
+
+- For JSON/structured logs: Use explicit `level` field if available
+- For plain text logs: Apply TOML patterns to detect errors/warnings
+- Single-pass detection (not two separate passes)
+- Build issue dictionaries with all metadata
+
+**Pattern Responsibilities** (via TOML files in `patterns/defaults/`):
+
+- Detect error/warning severity from message content (plain text logs)
+- Identify specific error types (404, connection refused, etc.)
+- Provide suggestions for known error patterns
+- Tag issues with categories for filtering
+
+**Why This Rule Exists**:
+
+1. TOML patterns are the contract with users for customization
+2. Users can add custom patterns in `~/.config/logsift/patterns/`
+3. Hardcoding patterns in Python makes the tool inflexible and non-extensible
+4. Violates DRY - maintaining two sources of truth causes bugs
+5. Parser changes break user's custom patterns
+
+**Testing Requirements**:
+
+- Parser tests must verify message preservation, NOT level detection
+- Pattern tests must verify TOML regex works as expected
+- Integration tests must use both parser + patterns together
+
+**Historical Context**: We previously had hardcoded level detection in `parser.py` (lines 231-239) that duplicated logic in `common.toml`. This caused:
+
+- mkdocs warnings not being detected (parser stripped "WARNING -" before patterns could match)
+- Inability to customize detection behavior
+- Fragile coupling between parser and specific log formats
+
+This rule prevents that recurring. The parser is a format normalizer, NOT a pattern matcher.
+
 ## Development Commands
 
 ### Environment Setup
@@ -132,13 +183,10 @@ src/logsift/
 ├── commands/           # CLI command implementations (monitor, analyze, watch, patterns, logs)
 ├── core/               # Analysis pipeline
 │   ├── parser.py       # Auto-detect format, normalize to internal representation
-│   ├── extractors.py   # Extract errors, warnings, file:line references
-│   ├── matchers.py     # Apply pattern rules to detect known error types
-│   ├── context.py      # Extract ±N lines around errors
+│   ├── detectors.py    # IssueDetector, FileReferenceDetector
 │   └── analyzer.py     # Orchestrates the analysis pipeline
 ├── patterns/           # Pattern library system
 │   ├── loader.py       # Load TOML pattern files
-│   ├── matcher.py      # Apply patterns to logs
 │   ├── validator.py    # Validate pattern file format
 │   └── defaults/       # Built-in patterns (common.toml, brew.toml, apt.toml)
 ├── output/             # Dual output formatters
@@ -168,11 +216,19 @@ src/logsift/
 ### Data Flow (Critical to Understand)
 
 ```
-Input → Parser (auto-detect format) → Pattern Matching (apply .toml rules) →
-Context Extraction (±2 lines) → Dual Output (JSON for LLMs, Markdown for humans)
+Input → Parser (format detection, normalization) →
+IssueDetector (single-pass detection using TOML patterns) →
+Analyzer (add file references + context) →
+Dual Output (JSON for LLMs, Markdown for humans)
 ```
 
-**Key insight**: Analysis happens in `core/`, output format selection in `utils/tty.py`, actual formatting in `output/`. Commands in `commands/` orchestrate but don't implement logic.
+**Key insight**:
+
+- Parser: Format-agnostic normalization
+- IssueDetector: Single-pass error/warning detection (JSON explicit levels OR TOML patterns)
+- Analyzer: Orchestrates pipeline, enhances issues with context
+- Output format selection in `utils/tty.py`, actual formatting in `output/`
+- Commands in `commands/` orchestrate but don't implement logic
 
 ## Pattern Library System
 

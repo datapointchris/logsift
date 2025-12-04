@@ -9,13 +9,15 @@ from typing import Any
 
 
 class LogParser:
-    """Parser for detecting and parsing various log formats."""
+    """Parser for detecting and parsing various log formats.
 
-    # Regex patterns for log parsing
+    IMPORTANT: This parser only normalizes log formats to a common structure.
+    It does NOT detect error/warning levels - that is done by TOML patterns.
+    """
+
+    # Regex patterns for format detection and normalization only
     ANSI_ESCAPE = re.compile(r'\x1b\[[0-9;]*m')
     TIMESTAMP_ISO = re.compile(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})?')
-    LEVEL_MARKER = re.compile(r'\[(DEBUG|INFO|WARN|WARNING|ERROR|FATAL)\]', re.IGNORECASE)
-    LEVEL_COLON = re.compile(r'(DEBUG|INFO|WARN|WARNING|ERROR|FATAL):', re.IGNORECASE)
     KEY_VALUE_PAIR = re.compile(r'(\w+)=("(?:[^"\\]|\\.)*"|\S+)')
     SYSLOG_PATTERN = re.compile(r'^<\d+>')
 
@@ -202,42 +204,42 @@ class LogParser:
     def _parse_plain_line(self, line: str, line_num: int) -> dict[str, Any]:
         """Parse a plain text log line.
 
+        IMPORTANT: This method only normalizes format - it does NOT detect error/warning levels.
+        Level detection is done by TOML patterns in IssueExtractor.
+
         Args:
             line: Plain text log line
             line_num: Original line number
 
         Returns:
-            Parsed entry dictionary
+            Parsed entry dictionary with:
+            - format: 'plain'
+            - line_number: Original line number
+            - level: Always 'INFO' (TOML patterns will determine actual severity)
+            - message: Full original message (after removing ANSI and optionally timestamp)
+            - timestamp: ISO8601 timestamp if present
         """
         # Remove ANSI color codes
         clean_line = self.ANSI_ESCAPE.sub('', line)
 
+        # Start with full message - DO NOT remove level indicators
+        # TOML patterns need to match against the complete message
+        full_message = clean_line.strip()
+
         entry: dict[str, Any] = {
             'format': 'plain',
             'line_number': line_num,
-            'level': 'INFO',
-            'message': clean_line,
+            'level': 'INFO',  # Default level - TOML patterns will override
+            'message': full_message,
         }
 
-        # Extract timestamp
+        # Extract timestamp if present (optional - keep message with timestamp if not found)
         timestamp_match = self.TIMESTAMP_ISO.match(clean_line)
         if timestamp_match:
             entry['timestamp'] = timestamp_match.group(0)
-            clean_line = clean_line[timestamp_match.end() :].strip()
-
-        # Extract level - match level word at start of line with any separator
-        # Matches: WARNING:, [WARNING], WARNING -, WARNING |, [ERROR], etc.
-        # Note: Put WARNING before WARN to match the longer string first
-        level_match = re.match(
-            r'^\s*\[?\s*(DEBUG|INFO|WARNING|WARN|ERROR|FATAL)\s*\]?\s*[:\-\|\s]+',
-            clean_line,
-            re.IGNORECASE,
-        )
-        if level_match and level_match.group(1):
-            entry['level'] = level_match.group(1).upper()
-            # Remove level prefix from message
-            clean_line = clean_line[level_match.end() :].strip()
-
-        entry['message'] = clean_line.strip()
+            # Store message without timestamp, but preserve everything else
+            remaining = clean_line[timestamp_match.end() :].strip()
+            if remaining:  # Only update message if there's content after timestamp
+                entry['message'] = remaining
 
         return entry

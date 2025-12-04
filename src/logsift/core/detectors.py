@@ -1,23 +1,31 @@
-"""Extract errors, warnings, and file references from logs.
+"""Detect errors, warnings, and file references from logs.
 
-Provides various extraction strategies for identifying important information in log files.
+Provides detection strategies for identifying important information in log files.
 """
 
 import re
 from typing import Any
 
 
-class IssueExtractor:
-    """Extract errors and warnings from log entries using TOML patterns."""
+class IssueDetector:
+    """Detect errors and warnings from log entries using TOML patterns.
 
-    def extract_issues(
+    Handles two types of detection:
+    1. Explicit levels from structured formats (JSON/structured logs with level fields)
+    2. Pattern-based detection for plain text logs (using TOML patterns)
+    """
+
+    def detect_issues(
         self, log_entries: list[dict[str, Any]], patterns: dict[str, list[dict[str, Any]]]
     ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-        """Extract errors and warnings from parsed log data using TOML patterns.
+        """Detect errors and warnings from parsed log data.
 
-        Extracts issues from two sources:
-        1. Explicit ERROR/WARNING level log entries
-        2. Pattern-based detection using ALL TOML patterns
+        Uses two detection methods in a single pass:
+        1. Explicit levels from structured formats (JSON, structured logs with level= field)
+        2. TOML pattern matching for plain text logs
+
+        IMPORTANT: For plain text, parser does NOT detect levels - patterns do.
+        For JSON/structured, the level field is explicit data in the log format.
 
         Args:
             log_entries: List of normalized log entry dictionaries
@@ -30,66 +38,37 @@ class IssueExtractor:
         warnings = []
         error_id = 1
         warning_id = 1
-        seen_lines: set[int] = set()  # Track processed lines to avoid duplicates
 
-        # First pass: Extract explicit ERROR/WARNING level entries
-        for entry in log_entries:
-            level = entry.get('level', '').upper()
-            line_number = entry.get('line_number')
-
-            if line_number is None or line_number in seen_lines:
-                continue
-
-            if level == 'ERROR':
-                error = {
-                    'id': error_id,
-                    'severity': 'error',
-                    'message': entry.get('message', ''),
-                    'line_in_log': line_number,
-                }
-
-                # Preserve additional fields from original entry
-                for key in ('timestamp', 'format', 'file', 'file_line'):
-                    if key in entry:
-                        error[key] = entry[key]
-
-                errors.append(error)
-                seen_lines.add(line_number)
-                error_id += 1
-
-            elif level in ('WARNING', 'WARN'):
-                warning = {
-                    'id': warning_id,
-                    'severity': 'warning',
-                    'message': entry.get('message', ''),
-                    'line_in_log': line_number,
-                }
-
-                # Preserve additional fields from original entry
-                for key in ('timestamp', 'format', 'file', 'file_line'):
-                    if key in entry:
-                        warning[key] = entry[key]
-
-                warnings.append(warning)
-                seen_lines.add(line_number)
-                warning_id += 1
-
-        # Second pass: Pattern-based detection using ALL TOML patterns
-        # Flatten all patterns from all categories
+        # Flatten patterns for easier iteration
         all_patterns = []
         for category_patterns in patterns.values():
             all_patterns.extend(category_patterns)
 
-        # Check each log entry against all patterns
+        # Single pass through all log entries
         for entry in log_entries:
-            message = entry.get('message', '')
+            format_type = entry.get('format', 'plain')
+            level = entry.get('level', '').upper()
             line_number = entry.get('line_number')
 
-            # Skip if we already extracted this line
-            if line_number is None or line_number in seen_lines:
+            if line_number is None:
                 continue
 
-            # Check against all patterns
+            # Method 1: Explicit levels from JSON/structured formats
+            if format_type in ('json', 'structured'):
+                if level == 'ERROR':
+                    error = self._build_issue(entry, 'error', error_id)
+                    errors.append(error)
+                    error_id += 1
+                    continue  # Don't try pattern matching
+
+                if level in ('WARNING', 'WARN'):
+                    warning = self._build_issue(entry, 'warning', warning_id)
+                    warnings.append(warning)
+                    warning_id += 1
+                    continue  # Don't try pattern matching
+
+            # Method 2: Pattern-based detection (for plain text or additional detection)
+            message = entry.get('message', '')
             for pattern in all_patterns:
                 regex = pattern.get('regex', '')
                 if not regex:
@@ -99,35 +78,16 @@ class IssueExtractor:
                     if re.search(regex, message):
                         severity = pattern.get('severity', 'error')
 
-                        issue = {
-                            'severity': severity,
-                            'message': message,
-                            'line_in_log': line_number,
-                            'pattern_name': pattern.get('name', 'unknown'),
-                            'description': pattern.get('description', ''),
-                            'tags': pattern.get('tags', []),
-                        }
-
-                        # Add suggestion if available
-                        if 'suggestion' in pattern:
-                            issue['suggestion'] = pattern['suggestion']
-
-                        # Preserve additional fields from original entry
-                        for key in ('timestamp', 'format', 'file', 'file_line'):
-                            if key in entry:
-                                issue[key] = entry[key]
-
-                        # Add to appropriate list based on severity
+                        # Build issue with pattern metadata
                         if severity == 'error':
-                            issue['id'] = error_id
+                            issue = self._build_issue(entry, 'error', error_id, pattern)
                             errors.append(issue)
                             error_id += 1
                         elif severity == 'warning':
-                            issue['id'] = warning_id
+                            issue = self._build_issue(entry, 'warning', warning_id, pattern)
                             warnings.append(issue)
                             warning_id += 1
 
-                        seen_lines.add(line_number)
                         break  # Only match first pattern per line
                 except re.error:
                     # Skip invalid regex patterns
@@ -135,9 +95,51 @@ class IssueExtractor:
 
         return errors, warnings
 
+    def _build_issue(
+        self,
+        entry: dict[str, Any],
+        severity: str,
+        issue_id: int,
+        pattern: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Build an issue dictionary from a log entry.
 
-class FileReferenceExtractor:
-    """Extract file:line references from log entries."""
+        Args:
+            entry: Log entry dictionary
+            severity: 'error' or 'warning'
+            issue_id: ID for this issue
+            pattern: Optional pattern metadata if matched via TOML pattern
+
+        Returns:
+            Issue dictionary with all metadata
+        """
+        issue = {
+            'id': issue_id,
+            'severity': severity,
+            'message': entry.get('message', ''),
+            'line_in_log': entry.get('line_number'),
+        }
+
+        # Add pattern metadata if available
+        if pattern:
+            issue['pattern_name'] = pattern.get('name', 'unknown')
+            issue['description'] = pattern.get('description', '')
+            issue['tags'] = pattern.get('tags', [])
+
+            # Add suggestion if available
+            if 'suggestion' in pattern:
+                issue['suggestion'] = pattern['suggestion']
+
+        # Preserve additional fields from original entry
+        for key in ('timestamp', 'format', 'file', 'file_line'):
+            if key in entry:
+                issue[key] = entry[key]
+
+        return issue
+
+
+class FileReferenceDetector:
+    """Detect file:line references from log entries."""
 
     # Regex pattern to match file:line references (standard format)
     # Matches: file.py:42, /path/to/file.js:123, ./relative/path.py:67
@@ -158,10 +160,10 @@ class FileReferenceExtractor:
 
     # Regex pattern for Windows paths
     # Matches: C:\Users\dev\project\src\main.py:100
-    WINDOWS_PATH_PATTERN = re.compile(r'([A-Za-z]:[\\\/][\w\\\/.-]+\.\w+):(\d+)(?::\d+)?')
+    WINDOWS_PATH_PATTERN = re.compile(r'([A-Za-z]:[\\/][\w\\/.-]+\.\w+):(\d+)(?::\d+)?')
 
-    def extract_references(self, text: str) -> list[tuple[str, int]]:
-        """Extract file:line references from text.
+    def detect_references(self, text: str) -> list[tuple[str, int]]:
+        """Detect file:line references from text.
 
         Args:
             text: Text to search for file references
