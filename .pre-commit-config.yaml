@@ -90,6 +90,7 @@ repos:
     rev: v2.4.1
     hooks:
       - id: codespell
+        exclude: ^tests/(fixtures/pre-commit-violations/|unit/test_precommit_patterns.py)
         args: ["--toml", "pyproject.toml"]
         stages: [pre-commit]
 

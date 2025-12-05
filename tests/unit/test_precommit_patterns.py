@@ -172,3 +172,28 @@ def test_ruff_error_pattern():
     match2 = re.search(pattern['regex'], test_line2)
     assert match2 is not None, f"Pattern didn't match: {test_line2}"
     assert match2.group(4) == 'F821'
+
+
+def test_codespell_typo_pattern():
+    """Test codespell spelling error pattern."""
+    pattern_file = Path('src/logsift/patterns/defaults/pre-commit.toml')
+    with pattern_file.open('rb') as f:
+        data = tomllib.load(f)
+
+    pattern = next((p for p in data['patterns'] if p['name'] == 'codespell_typo'), None)
+    assert pattern is not None, 'codespell_typo pattern not found'
+
+    # Real codespell output lines
+    test_line1 = 'tests/pre-commit-testing/violations/codespell_typos.txt:3: develoment ==> development'
+    match1 = re.search(pattern['regex'], test_line1)
+    assert match1 is not None, f"Pattern didn't match: {test_line1}"
+    assert match1.group(1) == 'tests/pre-commit-testing/violations/codespell_typos.txt'
+    assert match1.group(2) == '3'
+    assert match1.group(3) == 'develoment'
+    assert match1.group(4) == 'development'
+
+    test_line2 = 'tests/pre-commit-testing/violations/codespell_typos.txt:3: feture ==> feature, future'
+    match2 = re.search(pattern['regex'], test_line2)
+    assert match2 is not None, f"Pattern didn't match: {test_line2}"
+    assert match2.group(3) == 'feture'
+    assert 'feature' in match2.group(4)

@@ -115,3 +115,15 @@ regex = "^(.+?):(\\d+):(\\d+): ([A-Z]\\d+)"
 severity = "error"
 description = "Ruff linting error (code only)"
 tags = ["pre-commit", "ruff", "python", "linting", "error"]
+
+# ============================================================================
+# Spell Checking - codespell
+# ============================================================================
+
+[[patterns]]
+name = "codespell_typo"
+regex = "^(.+?):(\\d+): (.+?) ==> (.+)"
+severity = "warning"
+description = "Codespell spelling error"
+tags = ["pre-commit", "codespell", "spelling", "typo"]
+suggestion = "Fix spelling mistake"

@@ -1,0 +1,6 @@
+This file contains several typos for testing codespell.
+
+The develoment team is workign on the new feture.
+We need to seperate the concers and refence the documantation.
+The algrithm is efficent but has a performace issue.
+Please reivew the implmentation and provde feedback.
