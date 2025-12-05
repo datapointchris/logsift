@@ -157,6 +157,13 @@ def monitor(
             help='Append to existing log instead of creating new (useful for iterative debugging)',
         ),
     ] = False,
+    minimal: Annotated[
+        bool,
+        typer.Option(
+            '--minimal',
+            help='Suppress all progress output, only show final analysis result (ideal for LLM workflows)',
+        ),
+    ] = False,
 ) -> None:
     """Monitor a command and analyze its output for errors
 
@@ -172,6 +179,7 @@ def monitor(
         --format            Output format: auto, json, markdown, plain
         --stream            Stream all output in real-time
         --update-interval   Seconds between updates (default: 60)
+        --minimal           Suppress progress output (for LLM workflows)
         --notify            Send desktop notification on completion
         --external-log      Tail external log file while monitoring
         --append            Append to existing log
@@ -179,7 +187,7 @@ def monitor(
     Examples:
         logsift monitor -- make build
         logsift monitor --stream -- npm install
-        logsift monitor --update-interval 10 -- pytest tests/
+        logsift monitor --minimal -- pre-commit run --files file.py
         logsift monitor --format json -- docker build -t myapp .
     """
     from logsift.cli_formatter import format_help_with_colors
@@ -198,6 +206,7 @@ def monitor(
         output_format=format,
         stream=stream,
         update_interval=update_interval,
+        minimal=minimal,
         notify=notify,
         external_log=external_log,
         append=append,

@@ -76,6 +76,7 @@ def monitor_command(
     output_format: str = 'auto',
     stream: bool = False,
     update_interval: int = 60,
+    minimal: bool = False,
     save_log: bool = True,
     notify: bool = False,
     external_log: str | None = None,
@@ -86,9 +87,10 @@ def monitor_command(
     Args:
         command: Command to monitor as list of strings
         name: Optional name for the monitoring session
-        output_format: Desired output format (auto, json, markdown)
+        output_format: Desired output format (auto, json, markdown, toon)
         stream: Whether to stream all output in real-time (default: False, show periodic updates)
         update_interval: Seconds between progress updates when not streaming (default: 60)
+        minimal: Suppress all progress output, only show final analysis result (default: False)
         save_log: Whether to save the log to cache
         notify: Whether to send desktop notification on completion
         external_log: Optional path to external log file to tail while monitoring
@@ -113,15 +115,15 @@ def monitor_command(
             log_paths = cache.create_paths(name)
             log_file = log_paths['raw']
 
-    # Determine output format early to decide on interactive output
+    # Determine output format early
     final_format = output_format
     if output_format == 'auto':
         final_format = detect_output_format()
 
-    # Always show progress unless explicitly using --format=json or --format=toon
-    # json and toon formats are for programmatic/LLM consumption, so suppress interactive output
-    # This ensures users see streaming output even when stdout is piped, but LLMs get clean output
-    show_progress = output_format not in ('json', 'toon')
+    # Show progress output unless explicitly suppressed with --minimal
+    # Progress goes to stderr so it doesn't interfere with piping stdout
+    # Use --minimal for LLM workflows that need only the analysis result
+    show_progress = not minimal
 
     # Print initial banner (like run-and-summarize.sh) - only in interactive mode
     if show_progress:
