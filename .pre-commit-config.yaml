@@ -29,11 +29,14 @@ repos:
     rev: v5.0.0
     hooks:
       - id: check-yaml
+        exclude: ^tests/fixtures/pre-commit-violations/
         args: [--unsafe]
         stages: [pre-commit]
       - id: check-toml
+        exclude: ^tests/fixtures/pre-commit-violations/
         stages: [pre-commit]
       - id: check-json
+        exclude: ^tests/fixtures/pre-commit-violations/
         stages: [pre-commit]
       - id: end-of-file-fixer
         stages: [pre-commit]
@@ -62,6 +65,7 @@ repos:
     rev: v1.0.0
     hooks:
       - id: check-json5
+        exclude: ^tests/fixtures/pre-commit-violations/
         stages: [pre-commit]
 
   # Python docstring formatting

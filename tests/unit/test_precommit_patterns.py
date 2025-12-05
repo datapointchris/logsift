@@ -197,3 +197,34 @@ def test_codespell_typo_pattern():
     assert match2 is not None, f"Pattern didn't match: {test_line2}"
     assert match2.group(3) == 'feture'
     assert 'feature' in match2.group(4)
+
+
+def test_file_validation_patterns():
+    """Test file format validation patterns (YAML, TOML, JSON)."""
+    pattern_file = Path('src/logsift/patterns/defaults/pre-commit.toml')
+    with pattern_file.open('rb') as f:
+        data = tomllib.load(f)
+
+    # Test YAML pattern
+    yaml_pattern = next((p for p in data['patterns'] if p['name'] == 'check_yaml_error'), None)
+    assert yaml_pattern is not None
+    yaml_line = '  in "tests/pre-commit-testing/violations/bad.yaml", line 7, column 10'
+    match = re.search(yaml_pattern['regex'], yaml_line)
+    assert match is not None
+    assert match.group(2) == '7'
+
+    # Test TOML pattern
+    toml_pattern = next((p for p in data['patterns'] if p['name'] == 'check_toml_error'), None)
+    assert toml_pattern is not None
+    toml_line = "tests/pre-commit-testing/violations/bad.toml: Expected '=' after a key in a key/value pair (at line 3, column 9)"
+    match = re.search(toml_pattern['regex'], toml_line)
+    assert match is not None
+    assert match.group(3) == '3'
+
+    # Test JSON pattern
+    json_pattern = next((p for p in data['patterns'] if p['name'] == 'check_json_error'), None)
+    assert json_pattern is not None
+    json_line = 'tests/pre-commit-testing/violations/bad.json: Failed to json decode (Expecting value: line 4 column 14 (char 53))'
+    match = re.search(json_pattern['regex'], json_line)
+    assert match is not None
+    assert match.group(1) == 'tests/pre-commit-testing/violations/bad.json'

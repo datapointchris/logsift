@@ -127,3 +127,28 @@ severity = "warning"
 description = "Codespell spelling error"
 tags = ["pre-commit", "codespell", "spelling", "typo"]
 suggestion = "Fix spelling mistake"
+
+# ============================================================================
+# File Format Validation - check-yaml, check-toml, check-json
+# ============================================================================
+
+[[patterns]]
+name = "check_yaml_error"
+regex = "^  in \"(.+?)\", line (\\d+), column (\\d+)"
+severity = "error"
+description = "YAML syntax error location"
+tags = ["pre-commit", "yaml", "syntax", "validation"]
+
+[[patterns]]
+name = "check_toml_error"
+regex = "^(.+?): (.+?) \\(at line (\\d+), column (\\d+)\\)"
+severity = "error"
+description = "TOML syntax error"
+tags = ["pre-commit", "toml", "syntax", "validation"]
+
+[[patterns]]
+name = "check_json_error"
+regex = "^(.+?): Failed to json decode \\((.+?)\\)"
+severity = "error"
+description = "JSON syntax error"
+tags = ["pre-commit", "json", "syntax", "validation"]

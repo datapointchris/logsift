@@ -1,0 +1,7 @@
+name: test
+version: 1.0
+items:
+  - item1
+  - item2
+    - nested_wrong_indent
+invalid: [unclosed bracket
