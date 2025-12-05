@@ -51,3 +51,15 @@ regex = "SC(\\d+) \\(note\\): (.+)"
 severity = "warning"
 description = "Shellcheck informational note"
 tags = ["pre-commit", "shellcheck", "shell", "note"]
+
+# ============================================================================
+# Python Refactoring Suggestions - refurb
+# ============================================================================
+
+[[patterns]]
+name = "refurb_suggestion"
+regex = "^(.+?):(\\d+):(\\d+) \\[FURB(\\d+)\\]: (.+)"
+severity = "warning"
+description = "Refurb refactoring suggestion"
+tags = ["pre-commit", "refurb", "python", "refactoring", "style"]
+suggestion = "Apply refurb suggestion to modernize Python code"

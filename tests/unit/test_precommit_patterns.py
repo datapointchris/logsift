@@ -93,3 +93,34 @@ def test_shellcheck_warning_pattern():
     match2 = re.search(pattern['regex'], test_line2)
     assert match2 is not None, f"Pattern didn't match: {test_line2}"
     assert match2.group(1) == '2154'
+
+
+def test_refurb_suggestion_pattern():
+    """Test refurb suggestion pattern."""
+    pattern_file = Path('src/logsift/patterns/defaults/pre-commit.toml')
+    with pattern_file.open('rb') as f:
+        data = tomllib.load(f)
+
+    pattern = next((p for p in data['patterns'] if p['name'] == 'refurb_suggestion'), None)
+    assert pattern is not None, 'refurb_suggestion pattern not found'
+
+    # Real refurb output lines
+    test_line1 = (
+        'tests/pre-commit-testing/violations/refurb_pathlib.py:6:1 [FURB101]: '
+        'Replace `with open(x) as f: y = f.read()` with `y = Path(x).read_text()`'
+    )
+    match1 = re.search(pattern['regex'], test_line1)
+    assert match1 is not None, f"Pattern didn't match: {test_line1}"
+    assert match1.group(1) == 'tests/pre-commit-testing/violations/refurb_pathlib.py'
+    assert match1.group(2) == '6'
+    assert match1.group(3) == '1'
+    assert match1.group(4) == '101'
+    assert 'Replace' in match1.group(5)
+
+    test_line2 = (
+        'tests/pre-commit-testing/violations/refurb_pathlib.py:10:1 [FURB103]: '
+        'Replace `with open(x, ...) as f: f.write(y)` with `Path(x).write_text(y)`'
+    )
+    match2 = re.search(pattern['regex'], test_line2)
+    assert match2 is not None, f"Pattern didn't match: {test_line2}"
+    assert match2.group(4) == '103'

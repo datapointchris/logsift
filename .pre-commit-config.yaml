@@ -121,6 +121,7 @@ repos:
     rev: v2.1.0
     hooks:
       - id: refurb
+        exclude: ^tests/fixtures/pre-commit-violations/
         stages: [pre-commit]
 
   # Python syntax upgrading
