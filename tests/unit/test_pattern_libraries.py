@@ -21,6 +21,7 @@ def test_all_pattern_files_exist():
         'pytest.toml',
         'http.toml',
         'shell.toml',
+        'pre-commit.toml',
     ]
 
     for filename in expected_files:

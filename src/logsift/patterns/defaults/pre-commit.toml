@@ -152,3 +152,23 @@ regex = "^(.+?): Failed to json decode \\((.+?)\\)"
 severity = "error"
 description = "JSON syntax error"
 tags = ["pre-commit", "json", "syntax", "validation"]
+
+# ============================================================================
+# File Safety Checks
+# ============================================================================
+
+[[patterns]]
+name = "check_executable_no_shebang"
+regex = "^(.+?): marked executable but has no \\(or invalid\\) shebang!"
+severity = "warning"
+description = "Executable file missing shebang"
+tags = ["pre-commit", "shebang", "executable", "shell"]
+suggestion = "Add shebang line or remove executable permission"
+
+[[patterns]]
+name = "detect_private_key"
+regex = "^Private key found: (.+)"
+severity = "error"
+description = "Private key detected in repository"
+tags = ["pre-commit", "security", "private-key", "secrets"]
+suggestion = "Remove private key from repository immediately"
