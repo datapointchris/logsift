@@ -63,3 +63,36 @@ severity = "warning"
 description = "Refurb refactoring suggestion"
 tags = ["pre-commit", "refurb", "python", "refactoring", "style"]
 suggestion = "Apply refurb suggestion to modernize Python code"
+
+# ============================================================================
+# Python Type Checking - mypy
+# ============================================================================
+
+[[patterns]]
+name = "mypy_error"
+regex = "^(.+?):(\\d+): error: (.+?)  \\[(.+?)\\]"
+severity = "error"
+description = "Mypy type checking error"
+tags = ["pre-commit", "mypy", "python", "type-checking", "error"]
+suggestion = "Fix type annotation or type incompatibility"
+
+[[patterns]]
+name = "mypy_error_no_code"
+regex = "^(.+?):(\\d+): error: (.+)$"
+severity = "error"
+description = "Mypy type checking error (no error code)"
+tags = ["pre-commit", "mypy", "python", "type-checking", "error"]
+
+[[patterns]]
+name = "mypy_note"
+regex = "^(.+?):(\\d+): note: (.+)"
+severity = "warning"
+description = "Mypy informational note"
+tags = ["pre-commit", "mypy", "python", "type-checking", "note"]
+
+[[patterns]]
+name = "mypy_warning"
+regex = "^(.+?):(\\d+): warning: (.+)"
+severity = "warning"
+description = "Mypy warning"
+tags = ["pre-commit", "mypy", "python", "type-checking", "warning"]

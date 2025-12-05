@@ -124,3 +124,26 @@ def test_refurb_suggestion_pattern():
     match2 = re.search(pattern['regex'], test_line2)
     assert match2 is not None, f"Pattern didn't match: {test_line2}"
     assert match2.group(4) == '103'
+
+
+def test_mypy_error_pattern():
+    """Test mypy error pattern (first line of multi-line error)."""
+    pattern_file = Path('src/logsift/patterns/defaults/pre-commit.toml')
+    with pattern_file.open('rb') as f:
+        data = tomllib.load(f)
+
+    pattern = next((p for p in data['patterns'] if p['name'] == 'mypy_error_no_code'), None)
+    assert pattern is not None, 'mypy_error_no_code pattern not found'
+
+    # Real mypy output - first line of error (message wraps to next line)
+    test_line1 = 'tests/pre-commit-testing/violations/mypy_types.py:10: error: Argument 1 to'
+    match1 = re.search(pattern['regex'], test_line1)
+    assert match1 is not None, f"Pattern didn't match: {test_line1}"
+    assert match1.group(1) == 'tests/pre-commit-testing/violations/mypy_types.py'
+    assert match1.group(2) == '10'
+    assert 'Argument' in match1.group(3)
+
+    test_line2 = 'tests/pre-commit-testing/violations/mypy_types.py:15: error: Incompatible'
+    match2 = re.search(pattern['regex'], test_line2)
+    assert match2 is not None, f"Pattern didn't match: {test_line2}"
+    assert match2.group(2) == '15'

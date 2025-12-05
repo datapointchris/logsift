@@ -136,6 +136,7 @@ repos:
     rev: v1.17.0
     hooks:
       - id: mypy
+        exclude: ^tests/fixtures/pre-commit-violations/
         args:
           [
             "--config-file",
