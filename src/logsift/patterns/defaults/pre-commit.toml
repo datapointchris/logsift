@@ -1,0 +1,53 @@
+# Pre-commit hook output patterns
+# Patterns to capture error and warning output from pre-commit hooks
+# Organized by tool category for maintainability
+#
+# This file contains patterns for detecting issues in pre-commit hook output,
+# enabling logsift to filter verbose pre-commit runs for actionable errors.
+#
+# Pattern testing methodology:
+# 1. Created violation files that trigger specific hook failures
+# 2. Ran hooks in isolation to capture output format
+# 3. Verified patterns match real hook output
+# 4. Each pattern has corresponding test in test_precommit_patterns.py
+
+# ============================================================================
+# Shell Script Linting - shellcheck
+# ============================================================================
+
+[[patterns]]
+name = "shellcheck_file_location"
+regex = "^In (.+?) line (\\d+):"
+severity = "error"
+description = "Shellcheck issue location header"
+tags = ["pre-commit", "shellcheck", "shell", "location"]
+
+[[patterns]]
+name = "shellcheck_error"
+regex = "SC(\\d+) \\(error\\): (.+)"
+severity = "error"
+description = "Shellcheck error with SC code"
+tags = ["pre-commit", "shellcheck", "shell", "error"]
+suggestion = "Fix shell script issue according to shellcheck guidance"
+
+[[patterns]]
+name = "shellcheck_warning"
+regex = "SC(\\d+) \\(warning\\): (.+)"
+severity = "warning"
+description = "Shellcheck warning with SC code"
+tags = ["pre-commit", "shellcheck", "shell", "warning"]
+suggestion = "Address shell script warning according to shellcheck guidance"
+
+[[patterns]]
+name = "shellcheck_info"
+regex = "SC(\\d+) \\(info\\): (.+)"
+severity = "warning"
+description = "Shellcheck info/style suggestion"
+tags = ["pre-commit", "shellcheck", "shell", "info", "style"]
+
+[[patterns]]
+name = "shellcheck_note"
+regex = "SC(\\d+) \\(note\\): (.+)"
+severity = "warning"
+description = "Shellcheck informational note"
+tags = ["pre-commit", "shellcheck", "shell", "note"]

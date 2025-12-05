@@ -113,6 +113,7 @@ repos:
     rev: v0.10.0
     hooks:
       - id: shellcheck
+        exclude: ^tests/fixtures/pre-commit-violations/
         stages: [pre-commit]
 
   # Python refactoring suggestions
