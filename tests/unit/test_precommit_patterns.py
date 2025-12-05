@@ -268,3 +268,37 @@ def test_bandit_patterns():
     assert match.group(1) == './.venv/lib/python3.13/site-packages/_pytest/_code/code.py'
     assert match.group(2) == '170'
     assert match.group(3) == '15'
+
+
+def test_markdownlint_error_pattern():
+    """Test markdownlint rule violation pattern."""
+    pattern_file = Path('src/logsift/patterns/defaults/pre-commit.toml')
+    with pattern_file.open('rb') as f:
+        data = tomllib.load(f)
+
+    pattern = next((p for p in data['patterns'] if p['name'] == 'markdownlint_error'), None)
+    assert pattern is not None, 'markdownlint_error pattern not found'
+
+    # Real markdownlint output with context
+    test_line1 = (
+        'docs/hook-final-test.md:1 MD041/first-line-heading/first-line-h1 '
+        'First line in a file should be a top-level heading [Context: "Final test"]'
+    )
+    match1 = re.search(pattern['regex'], test_line1)
+    assert match1 is not None, f"Pattern didn't match: {test_line1}"
+    assert match1.group(1) == 'docs/hook-final-test.md'
+    assert match1.group(2) == '1'
+    assert match1.group(3) == 'MD041'
+    assert match1.group(4) == 'first-line-heading/first-line-h1'
+    assert 'First line in a file' in match1.group(5)
+    assert match1.group(6) == 'Final test'
+
+    # Real markdownlint output without context
+    test_line2 = 'README.md:42 MD033/no-inline-html Inline HTML [Element: br]'
+    match2 = re.search(pattern['regex'], test_line2)
+    assert match2 is not None, f"Pattern didn't match: {test_line2}"
+    assert match2.group(1) == 'README.md'
+    assert match2.group(2) == '42'
+    assert match2.group(3) == 'MD033'
+    assert match2.group(4) == 'no-inline-html'
+    assert 'Inline HTML' in match2.group(5)

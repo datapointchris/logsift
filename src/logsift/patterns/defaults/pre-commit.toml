@@ -205,3 +205,15 @@ regex = "^   Location: (.+?):(\\d+):(\\d+)"
 severity = "warning"
 description = "Bandit issue location"
 tags = ["pre-commit", "bandit", "security", "location"]
+
+# ============================================================================
+# Markdown Linting - markdownlint
+# ============================================================================
+
+[[patterns]]
+name = "markdownlint_error"
+regex = "^(.+?):(\\d+) (MD\\d+)/([^\\s]+) (.+?)(?:\\s+\\[Context: \"(.+?)\"\\])?$"
+severity = "error"
+description = "Markdownlint rule violation"
+tags = ["pre-commit", "markdownlint", "markdown", "style"]
+suggestion = "Fix markdown style issue according to markdownlint rule"
