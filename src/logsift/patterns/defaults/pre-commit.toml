@@ -96,3 +96,22 @@ regex = "^(.+?):(\\d+): warning: (.+)"
 severity = "warning"
 description = "Mypy warning"
 tags = ["pre-commit", "mypy", "python", "type-checking", "warning"]
+
+# ============================================================================
+# Python Linting - ruff
+# ============================================================================
+
+[[patterns]]
+name = "ruff_error"
+regex = "^(.+?):(\\d+):(\\d+): ([A-Z]\\d+) (.+)"
+severity = "error"
+description = "Ruff linting error"
+tags = ["pre-commit", "ruff", "python", "linting", "error"]
+suggestion = "Fix code style or logic issue according to ruff guidance"
+
+[[patterns]]
+name = "ruff_error_simple"
+regex = "^(.+?):(\\d+):(\\d+): ([A-Z]\\d+)"
+severity = "error"
+description = "Ruff linting error (code only)"
+tags = ["pre-commit", "ruff", "python", "linting", "error"]

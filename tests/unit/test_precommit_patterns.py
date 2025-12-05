@@ -147,3 +147,28 @@ def test_mypy_error_pattern():
     match2 = re.search(pattern['regex'], test_line2)
     assert match2 is not None, f"Pattern didn't match: {test_line2}"
     assert match2.group(2) == '15'
+
+
+def test_ruff_error_pattern():
+    """Test ruff linting error pattern."""
+    pattern_file = Path('src/logsift/patterns/defaults/pre-commit.toml')
+    with pattern_file.open('rb') as f:
+        data = tomllib.load(f)
+
+    pattern = next((p for p in data['patterns'] if p['name'] == 'ruff_error'), None)
+    assert pattern is not None, 'ruff_error pattern not found'
+
+    # Real ruff output lines
+    test_line1 = 'tests/pre-commit-testing/violations/ruff_errors.py:9:141: E501 Line too long (142 > 140)'
+    match1 = re.search(pattern['regex'], test_line1)
+    assert match1 is not None, f"Pattern didn't match: {test_line1}"
+    assert match1.group(1) == 'tests/pre-commit-testing/violations/ruff_errors.py'
+    assert match1.group(2) == '9'
+    assert match1.group(3) == '141'
+    assert match1.group(4) == 'E501'
+    assert 'Line too long' in match1.group(5)
+
+    test_line2 = 'tests/pre-commit-testing/violations/ruff_errors.py:18:10: F821 Undefined name `undefined_variable`'
+    match2 = re.search(pattern['regex'], test_line2)
+    assert match2 is not None, f"Pattern didn't match: {test_line2}"
+    assert match2.group(4) == 'F821'

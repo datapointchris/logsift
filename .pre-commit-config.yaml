@@ -78,9 +78,11 @@ repos:
     rev: v0.12.5
     hooks:
       - id: ruff-check
+        exclude: ^tests/fixtures/pre-commit-violations/
         args: [--fix]
         stages: [pre-commit]
       - id: ruff-format
+        exclude: ^tests/fixtures/pre-commit-violations/
         stages: [pre-commit]
 
   # Spell checking
