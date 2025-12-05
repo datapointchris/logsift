@@ -172,3 +172,36 @@ severity = "error"
 description = "Private key detected in repository"
 tags = ["pre-commit", "security", "private-key", "secrets"]
 suggestion = "Remove private key from repository immediately"
+
+# ============================================================================
+# Python Security Scanning - bandit
+# ============================================================================
+
+[[patterns]]
+name = "bandit_issue_header"
+regex = "^>> Issue: \\[([A-Z]\\d+):[^\\]]+\\] (.+)"
+severity = "warning"
+description = "Bandit security issue header"
+tags = ["pre-commit", "bandit", "security", "python"]
+
+[[patterns]]
+name = "bandit_severity_high"
+regex = "^   Severity: High"
+severity = "error"
+description = "Bandit high severity security issue"
+tags = ["pre-commit", "bandit", "security", "python", "high-severity"]
+suggestion = "Address high severity security issue immediately"
+
+[[patterns]]
+name = "bandit_severity_medium"
+regex = "^   Severity: Medium"
+severity = "warning"
+description = "Bandit medium severity security issue"
+tags = ["pre-commit", "bandit", "security", "python", "medium-severity"]
+
+[[patterns]]
+name = "bandit_location"
+regex = "^   Location: (.+?):(\\d+):(\\d+)"
+severity = "warning"
+description = "Bandit issue location"
+tags = ["pre-commit", "bandit", "security", "location"]

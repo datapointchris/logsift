@@ -228,3 +228,43 @@ def test_file_validation_patterns():
     match = re.search(json_pattern['regex'], json_line)
     assert match is not None
     assert match.group(1) == 'tests/pre-commit-testing/violations/bad.json'
+
+
+def test_bandit_patterns():
+    """Test bandit security scanning patterns."""
+    pattern_file = Path('src/logsift/patterns/defaults/pre-commit.toml')
+    with pattern_file.open('rb') as f:
+        data = tomllib.load(f)
+
+    # Test issue header pattern
+    issue_pattern = next((p for p in data['patterns'] if p['name'] == 'bandit_issue_header'), None)
+    assert issue_pattern is not None
+    issue_line = '>> Issue: [B307:blacklist] Use of possibly insecure function - consider using safer ast.literal_eval.'
+    match = re.search(issue_pattern['regex'], issue_line)
+    assert match is not None
+    assert match.group(1) == 'B307'
+    assert 'insecure function' in match.group(2)
+
+    # Test high severity pattern
+    high_pattern = next((p for p in data['patterns'] if p['name'] == 'bandit_severity_high'), None)
+    assert high_pattern is not None
+    high_line = '   Severity: High   Confidence: High'
+    match = re.search(high_pattern['regex'], high_line)
+    assert match is not None
+
+    # Test medium severity pattern
+    medium_pattern = next((p for p in data['patterns'] if p['name'] == 'bandit_severity_medium'), None)
+    assert medium_pattern is not None
+    medium_line = '   Severity: Medium   Confidence: High'
+    match = re.search(medium_pattern['regex'], medium_line)
+    assert match is not None
+
+    # Test location pattern
+    location_pattern = next((p for p in data['patterns'] if p['name'] == 'bandit_location'), None)
+    assert location_pattern is not None
+    location_line = '   Location: ./.venv/lib/python3.13/site-packages/_pytest/_code/code.py:170:15'
+    match = re.search(location_pattern['regex'], location_line)
+    assert match is not None
+    assert match.group(1) == './.venv/lib/python3.13/site-packages/_pytest/_code/code.py'
+    assert match.group(2) == '170'
+    assert match.group(3) == '15'
