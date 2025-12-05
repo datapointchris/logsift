@@ -5,7 +5,7 @@ How log analysis works internally in logsift.
 ## Overview
 
 ```
-Input → Parser → Extractors → Pattern Matcher → Context Extractor → Formatter → Output
+Input → Parser → IssueDetector → Analyzer → Formatter → Output
 ```
 
 ## Detailed Pipeline
@@ -37,62 +37,77 @@ def parse(log_content: str) -> list[LogLine]:
         return parse_plain_text(log_content)
 ```
 
+**Critical**: Parser preserves FULL original message content and always sets `level='INFO'` as default. It does NOT detect error/warning levels from message content - that's the IssueDetector's job.
+
 Output: List of `LogLine` objects with:
 
 - `line_number`
-- `content`
-- `timestamp` (if detected)
-- `level` (if detected)
+- `content` (full original message preserved)
+- `timestamp` (if detected from structured format)
+- `level` (explicit field from JSON/structured, or 'INFO' default)
 
-### 3. Extractors
+### 3. IssueDetector
 
-Extract errors, warnings, and file references:
+Single-pass detection of errors, warnings, and issues using TOML patterns:
 
 ```python
-errors = extract_errors(log_lines)
-warnings = extract_warnings(log_lines)
-file_refs = extract_file_references(log_lines)
+detector = IssueDetector(patterns)
+issues = detector.detect(log_lines)
 ```
 
-Uses regex patterns to identify:
+Detection strategy:
 
-- Error indicators (`ERROR:`, `FATAL:`, exception types)
-- Warning indicators (`WARNING:`, `WARN:`)
-- File:line patterns (`file.py:42`, `"file.js", line 123`)
+- **For JSON/structured logs**: Use explicit `level` field if present
+- **For plain text logs**: Apply TOML pattern regex to message content
+- **Single pass**: All pattern matching happens in one iteration
+- **First match wins**: Patterns are ordered by specificity
 
-### 4. Pattern Matcher
-
-Apply TOML pattern libraries to detected errors:
+Pattern matching:
 
 ```python
-for error in errors:
+for line in log_lines:
     for pattern in patterns:
-        if re.match(pattern.regex, error.message):
-            error.pattern_matched = pattern.name
-            error.suggestion = pattern.suggestion
-            error.tags = pattern.tags
+        if re.match(pattern.regex, line.content):
+            issue = create_issue(line, pattern)
+            issue.pattern_matched = pattern.name
+            issue.suggestion = pattern.suggestion
+            issue.tags = pattern.tags
             break  # First match wins
 ```
 
-Patterns tried in order:
+Patterns loaded from:
 
 1. Built-in patterns (`src/logsift/patterns/defaults/*.toml`)
 2. Custom patterns (`~/.config/logsift/patterns/*.toml`)
 
-### 5. Context Extractor
+### 4. Analyzer
 
-Extract ±N lines around each error:
+Orchestrates the analysis pipeline and enhances issues with context:
 
 ```python
-for error in errors:
-    line_idx = error.line_in_log - 1
-    error.context_before = log_lines[max(0, line_idx - context_lines):line_idx]
-    error.context_after = log_lines[line_idx + 1:line_idx + 1 + context_lines]
+analyzer = Analyzer(parser, detector, file_detector)
+result = analyzer.analyze(log_content)
+```
+
+Responsibilities:
+
+- Extract file references from error messages
+- Add ±N lines of context around each issue
+- Generate actionable items from suggestions
+- Calculate statistics
+
+Context extraction:
+
+```python
+for issue in issues:
+    line_idx = issue.line_in_log - 1
+    issue.context_before = log_lines[max(0, line_idx - context_lines):line_idx]
+    issue.context_after = log_lines[line_idx + 1:line_idx + 1 + context_lines]
 ```
 
 Default: `context_lines = 2`
 
-### 6. Formatter
+### 5. Formatter
 
 Convert to JSON or Markdown based on format:
 
@@ -106,7 +121,7 @@ else:
 JSON formatter creates stable schema.
 Markdown formatter creates colored, formatted text.
 
-### 7. Output
+### 6. Output
 
 Write to stdout (and optionally save to cache):
 

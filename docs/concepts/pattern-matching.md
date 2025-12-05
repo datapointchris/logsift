@@ -36,35 +36,83 @@ suggestion = "Install the missing module using pip install <module>"
 
 ## Built-in Patterns
 
-logsift includes patterns for common tools:
+logsift includes patterns for common tools in `src/logsift/patterns/defaults/`:
 
-### Python (`patterns/defaults/python.toml`)
+### Common (`common.toml`)
 
-- Import errors
-- Syntax errors
-- Type errors
-- Module not found
-- Attribute errors
+- Generic errors and warnings
+- File not found errors
+- Permission denied
+- Connection errors
 
-### npm/Node.js (`patterns/defaults/npm.toml`)
+### HTTP (`http.toml`)
+
+- HTTP status codes (404, 500, etc.)
+- API errors
+- Request failures
+
+### Shell (`shell.toml`)
+
+- Command not found
+- Exit codes
+- Script errors
+
+### Pytest (`pytest.toml`)
+
+- Test failures
+- Assertion errors
+- Fixture issues
+
+### npm/Node.js (`npm.toml`)
 
 - Module not found
 - Package version conflicts
 - Build errors
 - Dependency issues
 
-### Rust/Cargo (`patterns/defaults/rust.toml`)
+### Cargo/Rust (`cargo.toml`)
 
 - Compilation errors
 - Type mismatches
 - Borrow checker errors
 - Missing dependencies
 
-### Pytest (`patterns/defaults/pytest.toml`)
+### Make (`make.toml`)
 
-- Test failures
-- Assertion errors
-- Fixture issues
+- Build errors
+- Target failures
+- Missing dependencies
+
+### Docker (`docker.toml`)
+
+- Container errors
+- Build failures
+- Network issues
+
+### Pre-commit (`pre-commit.toml`)
+
+- Hook failures
+- File safety violations
+- Validation errors
+
+### Brew (`brew.toml`)
+
+- Installation errors
+- Package conflicts
+
+### APT (`apt.toml`)
+
+- Package manager errors
+- Dependency issues
+
+### Unicode (`unicode.toml`)
+
+- Encoding errors
+- Unicode issues
+
+### Emoji (`emoji.toml`)
+
+- Emoji-related errors
 
 ## Pattern Matching Process
 

@@ -10,13 +10,32 @@ Available for all commands:
 logsift [OPTIONS] COMMAND [ARGS]...
 ```
 
-### `--version`
+### Cache Options
 
-Display version information:
+- `--cache-dir PATH` - Path to the cache directory (env: `LOGSIFT_CACHE_DIR`)
+- `--no-cache` - Avoid reading from or writing to the cache (env: `LOGSIFT_NO_CACHE`)
+
+### Configuration Options
+
+- `-V, --version` - Display the logsift version
+- `--config-file PATH` - Path to a logsift.toml configuration file (env: `LOGSIFT_CONFIG_FILE`)
+- `--no-config` - Avoid loading configuration files (env: `LOGSIFT_NO_CONFIG`)
+
+**Examples:**
 
 ```bash
+# Display version
 logsift --version
-# Output: logsift version 0.1.0
+logsift -V
+
+# Use custom config file
+logsift --config-file /path/to/config.toml monitor -- make build
+
+# Disable caching
+logsift --no-cache monitor -- npm test
+
+# Custom cache directory
+logsift --cache-dir /tmp/logsift-cache monitor -- pytest
 ```
 
 ### `--help`
@@ -26,6 +45,7 @@ Show help message:
 ```bash
 logsift --help        # Global help
 logsift monitor --help  # Command-specific help
+logsift help monitor  # Alternative help syntax
 ```
 
 ## Commands
@@ -45,8 +65,14 @@ logsift monitor [OPTIONS] -- COMMAND [ARGS]...
 
 **Options:**
 
-- `-n, --name NAME` - Custom name for monitoring session (default: command name)
-- `--format FORMAT` - Output format: `auto`, `json`, `markdown` (default: `auto`)
+- `-n, --name NAME` - Custom name for monitoring session (default: auto-generated timestamp)
+- `--format FORMAT` - Output format: `auto`, `json`, `markdown`, `plain` (default: `auto`)
+- `--stream` - Stream all output to terminal in real-time (default: show periodic updates)
+- `--update-interval SECONDS` - Seconds between progress updates when not streaming (default: 60)
+- `--minimal` - Suppress all progress output, only show final analysis (ideal for LLM workflows)
+- `--notify` - Send desktop notification on completion (requires notify-send or osascript)
+- `--external-log PATH` - Tail external log file while monitoring (merges with command output)
+- `--append` - Append to existing log instead of creating new (useful for iterative debugging)
 
 **Examples:**
 
@@ -60,12 +86,20 @@ logsift monitor -n my-app-build -- npm run build
 # Force JSON output
 logsift monitor --format=json -- pytest tests/
 
-# Force Markdown output
-logsift monitor --format=markdown -- cargo test
+# Stream all output in real-time
+logsift monitor --stream -- npm install
 
-# Monitor complex commands
-logsift monitor -- uv run pytest --cov=myapp tests/
-logsift monitor -- bash scripts/deploy.sh --env=staging
+# Minimal output for LLM workflows
+logsift monitor --minimal -- pre-commit run --files file.py
+
+# Desktop notification on completion
+logsift monitor --notify -- make build
+
+# Monitor with external log file
+logsift monitor --external-log /var/log/app.log -- ./script.sh
+
+# Append to existing log for debugging
+logsift monitor --append -- pytest tests/test_feature.py
 ```
 
 **Behavior:**
@@ -142,42 +176,68 @@ logsift analyze build-output.txt
 - Build tool outputs (npm, cargo, pytest, etc.)
 - System logs (syslog, journalctl)
 
-### `watch`
+### `logs`
 
-Watch a log file in real-time (Phase 3 - Not Yet Implemented).
-
-```bash
-logsift watch [OPTIONS] LOG_FILE
-```
-
-**Arguments:**
-
-- `LOG_FILE` - Path to log file to watch (required)
-
-**Options:**
-
-- `--format FORMAT` - Output format: `auto`, `json`, `markdown` (default: `auto`)
-- `--interval SECONDS` - Polling interval in seconds (default: 1)
-
-**Examples (Future):**
+Manage cached log files.
 
 ```bash
-# Watch a log file
-logsift watch /var/log/app.log
-
-# Watch with custom interval
-logsift watch --interval=5 /var/log/app.log
-
-# Watch with JSON output
-logsift watch --format=json /var/log/app.log
+logsift logs [SUBCOMMAND]
 ```
 
-**Planned Behavior:**
+**Subcommands:**
 
-1. Monitors log file for new lines
-2. Analyzes new content as it arrives
-3. Outputs incremental analysis
-4. Continues until interrupted (Ctrl+C)
+- `list` - List all cached log files
+- `clean` - Clean old log files (planned)
+- `show` - Show a specific log file (planned)
+
+**Examples:**
+
+```bash
+# List cached logs
+logsift logs list
+
+# Clean old logs (planned)
+logsift logs clean --days=30
+```
+
+### `analyzed`
+
+Manage saved analysis results.
+
+```bash
+logsift analyzed [SUBCOMMAND]
+```
+
+View previously saved analysis results in various formats.
+
+### `raw`, `json`, `toon`, `md`
+
+View format-specific files from cache.
+
+```bash
+logsift raw    # View raw log files
+logsift json   # View JSON analysis results
+logsift toon   # View toon format files
+logsift md     # View markdown analysis results
+```
+
+### `help`
+
+Display help information for logsift commands.
+
+```bash
+logsift help [COMMAND]
+```
+
+**Examples:**
+
+```bash
+# General help
+logsift help
+
+# Command-specific help
+logsift help monitor
+```
 
 ## Output Formats
 
@@ -389,16 +449,43 @@ fi
 
 ## Environment Variables
 
-Currently, logsift does not use environment variables. Configuration is via:
+logsift supports the following environment variables:
 
-- Command-line flags
-- Config file (`~/.config/logsift/config.toml`)
+### Configuration
 
-Planned environment variables (Phase 3):
+- `LOGSIFT_CONFIG_FILE` - Custom config file path (overrides default `~/.config/logsift/config.toml`)
+- `LOGSIFT_NO_CONFIG` - Set to `1` or `true` to avoid loading configuration files
 
-- `LOGSIFT_CONFIG` - Custom config file path
-- `LOGSIFT_CACHE_DIR` - Custom cache directory
-- `LOGSIFT_NO_COLOR` - Disable colored output
+### Cache
+
+- `LOGSIFT_CACHE_DIR` - Custom cache directory (overrides default `~/.cache/logsift`)
+- `LOGSIFT_NO_CACHE` - Set to `1` or `true` to avoid reading from or writing to cache
+
+### Monitor Command
+
+- `LOGSIFT_SESSION_NAME` - Default session name for monitor command
+- `LOGSIFT_OUTPUT_FORMAT` - Default output format: `auto`, `json`, `markdown`, `plain`
+- `LOGSIFT_UPDATE_INTERVAL` - Default update interval in seconds (default: 60)
+
+**Examples:**
+
+```bash
+# Use custom cache directory
+export LOGSIFT_CACHE_DIR=/tmp/logsift-cache
+logsift monitor -- make build
+
+# Disable caching for CI/CD
+export LOGSIFT_NO_CACHE=1
+logsift monitor -- pytest
+
+# Force JSON output globally
+export LOGSIFT_OUTPUT_FORMAT=json
+logsift monitor -- npm test
+
+# Use custom config file
+export LOGSIFT_CONFIG_FILE=/etc/logsift/config.toml
+logsift analyze app.log
+```
 
 ## Performance Considerations
 

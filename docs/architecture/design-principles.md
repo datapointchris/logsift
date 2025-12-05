@@ -78,10 +78,9 @@ Reasoning:
 - Built-in Python support (tomllib)
 - Explicit arrays with `[[patterns]]`
 
-### Why subprocess, not sh Library?
+### Why subprocess for Process Monitoring?
 
 **Chosen:** subprocess.run()
-**Rejected:** sh library
 
 Reasoning:
 
@@ -89,6 +88,7 @@ Reasoning:
 - More predictable behavior
 - Better timeout handling
 - Simpler for MVP
+- Works well for capturing command output
 
 ### Why No Streaming (Phase 1/2)?
 
