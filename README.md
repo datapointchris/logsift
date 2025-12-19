@@ -153,7 +153,7 @@ default_format = "auto"  # auto, json, markdown
 
 Logs are automatically saved to `~/.cache/logsift/`:
 
-```
+```text
 ~/.cache/logsift/
   ├── monitor/          # Logs from monitored commands
   │   └── make-20231128_143022.log
@@ -241,9 +241,10 @@ chmod 755 ~/.cache/logsift
 
 - **Dual Output Modes**: JSON for LLMs, beautiful Markdown for humans
 - **Smart Pattern Matching**: Built-in patterns for common tools (Python, npm, cargo, etc.)
-- **Context Extraction**: Automatically extracts ±2 lines around errors
+- **Context Extraction**: Automatically extracts context around errors (configurable per-pattern)
 - **File References**: Extracts file:line references for direct editing
-- **Actionable Suggestions**: Provides fix suggestions when patterns are recognized
+- **Error Code Extraction**: Automatically extracts linter codes (F401, SC2086, FURB101, etc.)
+- **Hook Detection**: Identifies which pre-commit hooks passed/failed
 - **Process Monitoring**: Run commands and automatically analyze output
 - **Log Caching**: Automatic log storage with configurable retention
 - **Custom Patterns**: Extensible pattern system for domain-specific errors
@@ -256,7 +257,7 @@ chmod 755 ~/.cache/logsift
 ✅ **Phase 1 Complete**: Core Analyzer + Basic Monitor (MVP)
 ✅ **Phase 2 Complete**: Enhanced features (pattern validation, monitoring, cache rotation)
 
-**Test Coverage**: 85% (245 tests passing)
+**Test Coverage**: 85% (372 tests passing)
 
 See [PLANNING.md](PLANNING.md) for the complete roadmap and implementation plan.
 
@@ -316,7 +317,7 @@ logsift is built with a modular architecture:
 
 **Data Flow:**
 
-```
+```bash
 Input → Parser (auto-detect format) → Pattern Matching (TOML rules) →
 Context Extraction (±2 lines) → Dual Output (JSON for LLMs, Markdown for humans)
 ```

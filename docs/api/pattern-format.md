@@ -140,6 +140,16 @@ Valid values:
 - `"medium"` - Likely correct, verify first
 - `"low"` - Suggestion only, needs human review
 
+### context_lines_after
+
+Number of lines to extract after this pattern (integer):
+
+```toml
+context_lines_after = 10
+```
+
+Use for multi-line errors where the root cause appears in subsequent lines (e.g., CalledProcessError with stdout/stderr sections). When set, the analyzer extracts this many lines after the match instead of the default context window.
+
 ## Complete Example
 
 ```toml
@@ -220,7 +230,7 @@ tags = ["general"]
 
 Located in `src/logsift/patterns/defaults/`:
 
-```
+```text
 src/logsift/patterns/defaults/
 ├── common.toml      # Generic errors
 ├── python.toml      # Python-specific
@@ -233,7 +243,7 @@ src/logsift/patterns/defaults/
 
 Located in `~/.config/logsift/patterns/`:
 
-```
+```text
 ~/.config/logsift/patterns/
 ├── myapp.toml       # Application-specific
 ├── cicd.toml        # CI/CD pipelines
