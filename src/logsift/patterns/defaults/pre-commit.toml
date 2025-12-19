@@ -217,3 +217,71 @@ severity = "error"
 description = "Markdownlint rule violation"
 tags = ["pre-commit", "markdownlint", "markdown", "style"]
 suggestion = "Fix markdown style issue according to markdownlint rule"
+
+# ============================================================================
+# Multi-line Error Patterns - CalledProcessError and subprocess failures
+# ============================================================================
+# These patterns capture errors that span multiple lines, where the actual
+# root cause appears in subsequent lines (stdout/stderr sections).
+# context_lines_after tells logsift to extract additional lines for context.
+
+[[patterns]]
+name = "pre_commit_called_process_error"
+regex = "An unexpected error has occurred: CalledProcessError"
+severity = "error"
+description = "Pre-commit hook encountered subprocess error"
+tags = ["pre-commit", "subprocess", "multi-line"]
+suggestion = "Check stderr and stdout in following lines for root cause"
+context_lines_after = 10
+
+[[patterns]]
+name = "stderr_section_error"
+regex = "^stderr:\\s*$"
+severity = "error"
+description = "Marks beginning of stderr output section"
+tags = ["stderr", "multi-line", "section-marker"]
+suggestion = "Extract following lines - they contain actual error message"
+context_lines_after = 5
+
+[[patterns]]
+name = "pre_commit_hook_failed"
+regex = "^- hook id: (.+)$"
+severity = "warning"
+description = "Pre-commit hook identifier"
+tags = ["pre-commit", "hook-id"]
+
+[[patterns]]
+name = "pre_commit_exit_code"
+regex = "^- exit code: (\\d+)$"
+severity = "error"
+description = "Pre-commit hook exit code"
+tags = ["pre-commit", "exit-code"]
+
+# ============================================================================
+# Docker and Infrastructure Errors
+# ============================================================================
+# Patterns for docker-related failures that often appear in pre-commit hooks
+
+[[patterns]]
+name = "docker_socket_connection_failure"
+regex = "failed to connect to the docker API at unix://([^;\\s]+)"
+severity = "error"
+description = "Docker daemon not reachable via socket"
+tags = ["docker", "infrastructure", "socket"]
+suggestion = "Start Docker daemon: check if Docker Desktop or Colima is running"
+
+[[patterns]]
+name = "docker_daemon_not_running"
+regex = "Cannot connect to the Docker daemon"
+severity = "error"
+description = "Docker daemon is not running"
+tags = ["docker", "infrastructure", "daemon"]
+suggestion = "Start Docker: 'open -a Docker' or 'colima start'"
+
+[[patterns]]
+name = "pre_commit_check_log"
+regex = "Check the log at (.+\\.log)"
+severity = "warning"
+description = "Pre-commit suggests checking detailed log"
+tags = ["pre-commit", "log-reference"]
+suggestion = "Additional diagnostic info available in referenced log file"

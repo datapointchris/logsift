@@ -130,6 +130,10 @@ class IssueDetector:
             if 'suggestion' in pattern:
                 issue['suggestion'] = pattern['suggestion']
 
+            # Add context_lines_after if specified (for multi-line error extraction)
+            if 'context_lines_after' in pattern:
+                issue['pattern_context_lines_after'] = pattern['context_lines_after']
+
         # Preserve additional fields from original entry
         for key in ('timestamp', 'format', 'file', 'file_line'):
             if key in entry:

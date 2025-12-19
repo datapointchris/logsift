@@ -68,7 +68,10 @@ def _compact_error(error: dict[str, Any]) -> dict[str, Any]:
     """Strip non-actionable fields from an error/warning.
 
     Keeps only: id, severity, line_in_log, message, file, file_line, suggestion
-    Removes: pattern_matched, description, tags, context_before, context_after
+    Removes: pattern_matched, description, tags, context_before
+
+    For multi-line errors (pattern_context_lines_after is set), context_after
+    is preserved as a simple list of message strings for LLM consumption.
 
     Args:
         error: Error/warning dictionary
@@ -89,6 +92,13 @@ def _compact_error(error: dict[str, Any]) -> dict[str, Any]:
 
     # Filter to keep only actionable fields, then strip nulls
     compact = {k: v for k, v in error.items() if k in keep_fields}
+
+    # For multi-line errors, include context_after as simple list of messages
+    if error.get('pattern_context_lines_after') and error.get('context_after'):
+        context_messages = [entry.get('message', '') for entry in error['context_after'] if isinstance(entry, dict)]
+        if context_messages:
+            compact['context_after'] = context_messages
+
     return _strip_nulls(compact)
 
 
