@@ -75,16 +75,17 @@ class IssueDetector:
                     continue
 
                 try:
-                    if re.search(regex, message):
+                    match = re.search(regex, message)
+                    if match:
                         severity = pattern.get('severity', 'error')
 
-                        # Build issue with pattern metadata
+                        # Build issue with pattern metadata and match groups
                         if severity == 'error':
-                            issue = self._build_issue(entry, 'error', error_id, pattern)
+                            issue = self._build_issue(entry, 'error', error_id, pattern, match)
                             errors.append(issue)
                             error_id += 1
                         elif severity == 'warning':
-                            issue = self._build_issue(entry, 'warning', warning_id, pattern)
+                            issue = self._build_issue(entry, 'warning', warning_id, pattern, match)
                             warnings.append(issue)
                             warning_id += 1
 
@@ -95,12 +96,23 @@ class IssueDetector:
 
         return errors, warnings
 
+    # Common error code patterns for extraction
+    ERROR_CODE_PATTERNS = [
+        re.compile(r'\b([A-Z]\d{3,4})\b'),  # Ruff/Flake8: F401, E501, W503
+        re.compile(r'\b(SC\d{4})\b'),  # Shellcheck: SC2086, SC2155
+        re.compile(r'\[(FURB\d+)\]'),  # Refurb: [FURB101]
+        re.compile(r'\[([a-z][-a-z]+)\]$'),  # Mypy: [arg-type], [return-value]
+        re.compile(r'\b(MD\d{3})\b'),  # Markdownlint: MD001, MD033
+        re.compile(r'\b(B\d{3})\b'),  # Bandit: B101, B307
+    ]
+
     def _build_issue(
         self,
         entry: dict[str, Any],
         severity: str,
         issue_id: int,
         pattern: dict[str, Any] | None = None,
+        match: re.Match[str] | None = None,
     ) -> dict[str, Any]:
         """Build an issue dictionary from a log entry.
 
@@ -109,14 +121,16 @@ class IssueDetector:
             severity: 'error' or 'warning'
             issue_id: ID for this issue
             pattern: Optional pattern metadata if matched via TOML pattern
+            match: Optional regex match object with captured groups
 
         Returns:
             Issue dictionary with all metadata
         """
+        message = entry.get('message', '')
         issue = {
             'id': issue_id,
             'severity': severity,
-            'message': entry.get('message', ''),
+            'message': message,
             'line_in_log': entry.get('line_number'),
         }
 
@@ -134,12 +148,32 @@ class IssueDetector:
             if 'context_lines_after' in pattern:
                 issue['pattern_context_lines_after'] = pattern['context_lines_after']
 
+        # Extract error code from message using common patterns
+        error_code = self._extract_error_code(message)
+        if error_code:
+            issue['code'] = error_code
+
         # Preserve additional fields from original entry
         for key in ('timestamp', 'format', 'file', 'file_line'):
             if key in entry:
                 issue[key] = entry[key]
 
         return issue
+
+    def _extract_error_code(self, message: str) -> str | None:
+        """Extract error code from a message using common patterns.
+
+        Args:
+            message: Log message to extract code from
+
+        Returns:
+            Error code string or None if not found
+        """
+        for pattern in self.ERROR_CODE_PATTERNS:
+            match = pattern.search(message)
+            if match:
+                return match.group(1)
+        return None
 
 
 class FileReferenceDetector:

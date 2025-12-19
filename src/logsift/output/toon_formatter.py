@@ -95,6 +95,7 @@ def _compact_error(error: dict[str, Any]) -> dict[str, Any]:
         'message',
         'file',
         'file_line',
+        'code',
         'suggestion',
     }
 
