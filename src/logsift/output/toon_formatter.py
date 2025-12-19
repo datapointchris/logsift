@@ -53,6 +53,14 @@ def _prepare_for_toon(data: dict[str, Any]) -> dict[str, Any]:
     if 'stats' in data:
         result['stats'] = data['stats']
 
+    # Include hooks if there are failed hooks (actionable for LLMs)
+    if 'hooks' in data:
+        hooks = data['hooks']
+        failed_hooks = hooks.get('failed', [])
+        if failed_hooks:
+            # Only include failed hooks for token efficiency
+            result['hooks'] = {'failed': failed_hooks}
+
     # Process errors - strip metadata and nulls
     if 'errors' in data:
         result['errors'] = [_compact_error(error) for error in data['errors']]

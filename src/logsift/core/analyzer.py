@@ -3,6 +3,7 @@
 Coordinates the analysis pipeline: parsing, pattern matching, and context extraction.
 """
 
+import re
 from contextlib import suppress
 from typing import Any
 
@@ -52,6 +53,9 @@ class Analyzer:
         # Enhance warnings with file references and context
         enhanced_warnings = self._enhance_issues(warnings, log_entries)
 
+        # Detect pre-commit hooks from log entries
+        hooks = self._detect_hooks(log_entries)
+
         # Build statistics
         stats = {
             'total_errors': len(errors),
@@ -61,6 +65,7 @@ class Analyzer:
         return {
             'errors': enhanced_errors,
             'warnings': enhanced_warnings,
+            'hooks': hooks,
             'stats': stats,
         }
 
@@ -142,4 +147,41 @@ class Analyzer:
         return {
             'context_before': context_before,
             'context_after': context_after,
+        }
+
+    def _detect_hooks(self, log_entries: list[dict[str, Any]]) -> dict[str, list[str]]:
+        """Detect pre-commit hook names from log entries.
+
+        Looks for patterns like:
+        - "hookname...Passed" or "hookname...Failed"
+        - "- hook id: hookname"
+
+        Args:
+            log_entries: Parsed log entries
+
+        Returns:
+            Dictionary with 'passed' and 'failed' lists of hook names
+        """
+        passed: list[str] = []
+        failed: list[str] = []
+
+        # Pattern to match: hookname followed by dots and Passed/Failed
+        # Examples: "ruff.....................................................................Failed"
+        #           "check yaml...............................................................Passed"
+        hook_status_pattern = re.compile(r'^(.+?)\.{3,}(Passed|Failed)\s*$')
+
+        for entry in log_entries:
+            message = entry.get('message', '')
+            match = hook_status_pattern.match(message)
+            if match:
+                hook_name = match.group(1).strip()
+                status = match.group(2)
+                if status == 'Passed' and hook_name not in passed:
+                    passed.append(hook_name)
+                elif status == 'Failed' and hook_name not in failed:
+                    failed.append(hook_name)
+
+        return {
+            'passed': passed,
+            'failed': failed,
         }
