@@ -2,14 +2,9 @@
 # Patterns to capture error and warning output from pre-commit hooks
 # Organized by tool category for maintainability
 #
-# This file contains patterns for detecting issues in pre-commit hook output,
-# enabling logsift to filter verbose pre-commit runs for actionable errors.
-#
-# Pattern testing methodology:
-# 1. Created violation files that trigger specific hook failures
-# 2. Ran hooks in isolation to capture output format
-# 3. Verified patterns match real hook output
-# 4. Each pattern has corresponding test in test_precommit_patterns.py
+# NOTE: We intentionally omit generic "suggestions" that just restate what
+# the linter output says. Suggestions are only included for infrastructure
+# issues where the fix involves running specific commands that aren't obvious.
 
 # ============================================================================
 # Shell Script Linting - shellcheck
@@ -28,7 +23,6 @@ regex = "SC(\\d+) \\(error\\): (.+)"
 severity = "error"
 description = "Shellcheck error with SC code"
 tags = ["pre-commit", "shellcheck", "shell", "error"]
-suggestion = "Fix shell script issue according to shellcheck guidance"
 
 [[patterns]]
 name = "shellcheck_warning"
@@ -36,7 +30,6 @@ regex = "SC(\\d+) \\(warning\\): (.+)"
 severity = "warning"
 description = "Shellcheck warning with SC code"
 tags = ["pre-commit", "shellcheck", "shell", "warning"]
-suggestion = "Address shell script warning according to shellcheck guidance"
 
 [[patterns]]
 name = "shellcheck_info"
@@ -52,6 +45,42 @@ severity = "warning"
 description = "Shellcheck informational note"
 tags = ["pre-commit", "shellcheck", "shell", "note"]
 
+# Specific shellcheck codes for better detection
+[[patterns]]
+name = "shellcheck_sc2086_quoting"
+regex = "SC2086.*Double quote to prevent globbing"
+severity = "warning"
+description = "Variable expansion needs quoting"
+tags = ["pre-commit", "shellcheck", "quoting", "SC2086"]
+
+[[patterns]]
+name = "shellcheck_sc2155_declare_assign"
+regex = "SC2155.*Declare and assign separately"
+severity = "warning"
+description = "Declaration and assignment should be separate"
+tags = ["pre-commit", "shellcheck", "variables", "SC2155"]
+
+[[patterns]]
+name = "shellcheck_sc2034_unused_var"
+regex = "SC2034.*appears unused"
+severity = "warning"
+description = "Variable defined but not used"
+tags = ["pre-commit", "shellcheck", "unused", "SC2034"]
+
+[[patterns]]
+name = "shellcheck_sc2154_undefined_var"
+regex = "SC2154.*is referenced but not assigned"
+severity = "warning"
+description = "Variable used but not defined"
+tags = ["pre-commit", "shellcheck", "undefined", "SC2154"]
+
+[[patterns]]
+name = "shellcheck_sc2164_cd_fail"
+regex = "SC2164.*Use.*\\|\\| exit.*in case cd fails"
+severity = "warning"
+description = "cd command should handle failure"
+tags = ["pre-commit", "shellcheck", "cd", "SC2164"]
+
 # ============================================================================
 # Python Refactoring Suggestions - refurb
 # ============================================================================
@@ -62,7 +91,6 @@ regex = "^(.+?):(\\d+):(\\d+) \\[FURB(\\d+)\\]: (.+)"
 severity = "warning"
 description = "Refurb refactoring suggestion"
 tags = ["pre-commit", "refurb", "python", "refactoring", "style"]
-suggestion = "Apply refurb suggestion to modernize Python code"
 
 # ============================================================================
 # Python Type Checking - mypy
@@ -74,7 +102,6 @@ regex = "^(.+?):(\\d+): error: (.+?)  \\[(.+?)\\]"
 severity = "error"
 description = "Mypy type checking error"
 tags = ["pre-commit", "mypy", "python", "type-checking", "error"]
-suggestion = "Fix type annotation or type incompatibility"
 
 [[patterns]]
 name = "mypy_error_no_code"
@@ -107,7 +134,6 @@ regex = "^(.+?):(\\d+):(\\d+): ([A-Z]\\d+) (.+)"
 severity = "error"
 description = "Ruff linting error"
 tags = ["pre-commit", "ruff", "python", "linting", "error"]
-suggestion = "Fix code style or logic issue according to ruff guidance"
 
 [[patterns]]
 name = "ruff_error_simple"
@@ -115,6 +141,35 @@ regex = "^(.+?):(\\d+):(\\d+): ([A-Z]\\d+)"
 severity = "error"
 description = "Ruff linting error (code only)"
 tags = ["pre-commit", "ruff", "python", "linting", "error"]
+
+# Specific ruff codes for better detection
+[[patterns]]
+name = "ruff_f401_unused_import"
+regex = "F401.*imported but unused"
+severity = "error"
+description = "Module imported but never used"
+tags = ["pre-commit", "ruff", "import", "F401"]
+
+[[patterns]]
+name = "ruff_e501_line_too_long"
+regex = "E501.*line too long"
+severity = "error"
+description = "Line exceeds maximum length"
+tags = ["pre-commit", "ruff", "formatting", "E501"]
+
+[[patterns]]
+name = "ruff_f841_unused_variable"
+regex = "F841.*local variable.*is assigned to but never used"
+severity = "error"
+description = "Variable assigned but never used"
+tags = ["pre-commit", "ruff", "unused", "F841"]
+
+[[patterns]]
+name = "ruff_f821_undefined_name"
+regex = "F821.*Undefined name"
+severity = "error"
+description = "Name used but not defined"
+tags = ["pre-commit", "ruff", "undefined", "F821"]
 
 # ============================================================================
 # Spell Checking - codespell
@@ -126,7 +181,6 @@ regex = "^(.+?):(\\d+): (.+?) ==> (.+)"
 severity = "warning"
 description = "Codespell spelling error"
 tags = ["pre-commit", "codespell", "spelling", "typo"]
-suggestion = "Fix spelling mistake"
 
 # ============================================================================
 # File Format Validation - check-yaml, check-toml, check-json
@@ -163,7 +217,6 @@ regex = "^(.+?): marked executable but has no \\(or invalid\\) shebang!"
 severity = "warning"
 description = "Executable file missing shebang"
 tags = ["pre-commit", "shebang", "executable", "shell"]
-suggestion = "Add shebang line or remove executable permission"
 
 [[patterns]]
 name = "detect_private_key"
@@ -171,7 +224,6 @@ regex = "^Private key found: (.+)"
 severity = "error"
 description = "Private key detected in repository"
 tags = ["pre-commit", "security", "private-key", "secrets"]
-suggestion = "Remove private key from repository immediately"
 
 # ============================================================================
 # Python Security Scanning - bandit
@@ -190,7 +242,6 @@ regex = "^   Severity: High"
 severity = "error"
 description = "Bandit high severity security issue"
 tags = ["pre-commit", "bandit", "security", "python", "high-severity"]
-suggestion = "Address high severity security issue immediately"
 
 [[patterns]]
 name = "bandit_severity_medium"
@@ -216,13 +267,10 @@ regex = "^(.+?):(\\d+) (MD\\d+)/([^\\s]+) (.+?)(?:\\s+\\[Context: \"(.+?)\"\\])?
 severity = "error"
 description = "Markdownlint rule violation"
 tags = ["pre-commit", "markdownlint", "markdown", "style"]
-suggestion = "Fix markdown style issue according to markdownlint rule"
 
 # ============================================================================
 # Multi-line Error Patterns - CalledProcessError and subprocess failures
 # ============================================================================
-# These patterns capture errors that span multiple lines, where the actual
-# root cause appears in subsequent lines (stdout/stderr sections).
 # context_lines_after tells logsift to extract additional lines for context.
 
 [[patterns]]
@@ -231,7 +279,6 @@ regex = "An unexpected error has occurred: CalledProcessError"
 severity = "error"
 description = "Pre-commit hook encountered subprocess error"
 tags = ["pre-commit", "subprocess", "multi-line"]
-suggestion = "Check stderr and stdout in following lines for root cause"
 context_lines_after = 10
 
 [[patterns]]
@@ -240,7 +287,6 @@ regex = "^stderr:\\s*$"
 severity = "error"
 description = "Marks beginning of stderr output section"
 tags = ["stderr", "multi-line", "section-marker"]
-suggestion = "Extract following lines - they contain actual error message"
 context_lines_after = 5
 
 [[patterns]]
@@ -260,7 +306,7 @@ tags = ["pre-commit", "exit-code"]
 # ============================================================================
 # Docker and Infrastructure Errors
 # ============================================================================
-# Patterns for docker-related failures that often appear in pre-commit hooks
+# Suggestions included here because the fix involves specific commands
 
 [[patterns]]
 name = "docker_socket_connection_failure"
@@ -268,7 +314,7 @@ regex = "failed to connect to the docker API at unix://([^;\\s]+)"
 severity = "error"
 description = "Docker daemon not reachable via socket"
 tags = ["docker", "infrastructure", "socket"]
-suggestion = "Start Docker daemon: check if Docker Desktop or Colima is running"
+suggestion = "Start Docker: 'open -a Docker' or 'colima start'"
 
 [[patterns]]
 name = "docker_daemon_not_running"
@@ -284,4 +330,77 @@ regex = "Check the log at (.+\\.log)"
 severity = "warning"
 description = "Pre-commit suggests checking detailed log"
 tags = ["pre-commit", "log-reference"]
-suggestion = "Additional diagnostic info available in referenced log file"
+
+# ============================================================================
+# Git and Pre-commit Infrastructure Errors
+# ============================================================================
+# Suggestions included for commands that aren't obvious
+
+[[patterns]]
+name = "git_hook_failure"
+regex = "git hook .* failed"
+severity = "error"
+description = "Git hook execution failed"
+tags = ["git", "hook", "failure"]
+
+[[patterns]]
+name = "pre_commit_environment_error"
+regex = "An error has occurred.*environment"
+severity = "error"
+description = "Pre-commit environment setup failed"
+tags = ["pre-commit", "environment", "setup"]
+suggestion = "Run: pre-commit clean && pre-commit install --install-hooks"
+
+[[patterns]]
+name = "pre_commit_hook_install_failed"
+regex = "Failed to install.*hook"
+severity = "error"
+description = "Hook installation failed"
+tags = ["pre-commit", "install", "hook"]
+suggestion = "Run: pre-commit install --install-hooks"
+
+# ============================================================================
+# Python Build and Package Errors
+# ============================================================================
+
+[[patterns]]
+name = "pip_install_failed"
+regex = "pip.*install.*failed"
+severity = "error"
+description = "pip package installation failed"
+tags = ["python", "pip", "install"]
+
+[[patterns]]
+name = "module_not_found"
+regex = "ModuleNotFoundError: No module named '(.+)'"
+severity = "error"
+description = "Python module not installed"
+tags = ["python", "import", "module"]
+
+[[patterns]]
+name = "syntax_error_python"
+regex = "SyntaxError: (.+)"
+severity = "error"
+description = "Python syntax error"
+tags = ["python", "syntax", "error"]
+
+# ============================================================================
+# uv Package Manager Patterns
+# ============================================================================
+# Suggestions included for specific commands
+
+[[patterns]]
+name = "uv_sync_failed"
+regex = "uv.*sync.*failed"
+severity = "error"
+description = "uv dependency sync failed"
+tags = ["uv", "sync", "dependencies"]
+suggestion = "Run: uv sync"
+
+[[patterns]]
+name = "uv_lock_outdated"
+regex = "uv.lock.*out of date"
+severity = "warning"
+description = "Lock file needs update"
+tags = ["uv", "lock", "dependencies"]
+suggestion = "Run: uv lock"
