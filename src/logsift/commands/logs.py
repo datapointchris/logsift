@@ -104,7 +104,8 @@ def clean_logs(days: int = 90, dry_run: bool = False) -> None:
 
         console.print(f'[yellow]Would delete {len(to_delete)} log file(s) older than {days} days:[/yellow]')
         for log_file in to_delete[:10]:  # Show first 10
-            console.print(f'  - {log_file}')
+            # soft_wrap prevents Rich from wrapping long paths mid-filename on narrow/non-TTY output
+            console.print(f'  - {log_file}', soft_wrap=True)
         if len(to_delete) > 10:
             console.print(f'  ... and {len(to_delete) - 10} more')
 
