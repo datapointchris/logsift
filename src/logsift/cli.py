@@ -623,7 +623,7 @@ def analyzed_list(
         for analysis in analyses:
             size_kb = int(analysis['size_bytes']) / 1024
             size_str = f'{size_kb:.1f} KB' if size_kb < 1024 else f'{size_kb / 1024:.1f} MB'
-            table.add_row(analysis['name'], size_str, analysis['modified_iso'])
+            table.add_row(str(analysis['name']), size_str, str(analysis['modified_iso']))
 
         console.print(table)
         console.print(f'\n[dim]Total: {len(analyses)} analysis result(s)[/dim]')

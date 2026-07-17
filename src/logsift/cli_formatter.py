@@ -5,6 +5,8 @@ Provides colored, well-structured help output without boxes or excessive formatt
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 import click
 from click import Context
 
@@ -26,7 +28,7 @@ class UVStyleHelpFormatter(click.HelpFormatter):
 
     def write_dl(
         self,
-        rows: list[tuple[str, str]],
+        rows: Sequence[tuple[str, str]],
         col_max: int = 30,
         col_spacing: int = 2,
     ) -> None:
