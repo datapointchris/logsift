@@ -156,6 +156,8 @@ exclude = [
     ".venv",
     "build",
     "dist",
+    # Fixtures that intentionally contain lint violations for testing pattern detection
+    "tests/fixtures/pre-commit-violations",
 ]
 
 [tool.ruff.format]
