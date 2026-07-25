@@ -9,6 +9,9 @@ requires-python = ">=3.13"
 dependencies = [
     # CLI and UI
     "typer>=0.15.0",
+    # Used directly for Context/HelpFormatter and colour-preserving echo.
+    # Typer dropped its own click dependency in 0.27, so declare it explicitly.
+    "click>=8.0.0",
     # TOML handling
     "tomli-w>=1.0.0",
     # Process handling

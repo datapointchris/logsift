@@ -360,6 +360,7 @@ name = "logsift"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "click" },
     { name = "python-dateutil" },
     { name = "sh" },
     { name = "tomli-w" },
@@ -396,6 +397,7 @@ test = [
 
 [package.metadata]
 requires-dist = [
+    { name = "click", specifier = ">=8.0.0" },
     { name = "python-dateutil", specifier = ">=2.8.0" },
     { name = "sh", specifier = ">=2.0.0" },
     { name = "tomli-w", specifier = ">=1.0.0" },
