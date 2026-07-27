@@ -19,6 +19,8 @@ dependencies = [
     # Date parsing
     "python-dateutil>=2.8.0",
     "toon-format",
+    # Self-update and the daily update notice
+    "pyselfupdate[typer]>=0.1.0",
 ]
 keywords = ["log-analysis", "monitoring", "llm", "automation", "cli"]
 classifiers = [
@@ -206,3 +208,16 @@ module-root = "src"
 
 [tool.uv.sources]
 toon-format = { git = "https://github.com/toon-format/toon-python" }
+
+[tool.semantic_release]
+version_toml = ["pyproject.toml:project.version"]
+branch = "main"
+commit_message = "build(release): {version}"
+# The package name is hardcoded on purpose. python-semantic-release sets no
+# $PACKAGE_NAME, so `uv lock --upgrade-package "$PACKAGE_NAME"` silently no-ops
+# and ships a stale lock file in the release commit.
+build_command = """
+    pip install uv
+    uv lock --upgrade-package logsift
+    git add uv.lock
+"""

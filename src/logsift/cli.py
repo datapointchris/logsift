@@ -7,6 +7,9 @@ from typing import Annotated
 
 import click
 import typer
+from pyselfupdate import Config
+from pyselfupdate import notify
+from pyselfupdate.typercmd import add_update_command
 from rich.console import Console
 from typer.core import TyperGroup
 
@@ -35,6 +38,11 @@ app = typer.Typer(
     cls=ColoredTyperGroup,  # Use our custom colored formatter
 )
 console = Console()
+
+# Shared by the `update` command and the daily check in the callback below, so
+# the notice cannot name a release the update command would not install.
+UPDATE_CONFIG = Config(tool='logsift', owner='datapointchris')
+add_update_command(app, UPDATE_CONFIG)
 
 
 def version_callback(value: bool) -> None:
@@ -93,6 +101,13 @@ def main(
         'config_file': config_file,
         'no_config': no_config,
     }
+
+    # Never raises and never prints an error; the notice is deferred to exit so
+    # it lands after the command's own output. `logsift update` is the only
+    # place an update failure is reported, and is skipped here because it is
+    # about to do the thing the notice would suggest.
+    if ctx.invoked_subcommand != 'update':
+        notify(UPDATE_CONFIG)
 
     # If no subcommand is provided, show help (like uv does)
     if ctx.invoked_subcommand is None:
