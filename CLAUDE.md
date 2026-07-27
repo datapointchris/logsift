@@ -120,13 +120,16 @@ Required: name, regex, severity, description, tags. Optional: suggestion.
 }
 ```
 
-## Conventions
+## Conventions specific to logsift
 
-- **Fail fast**: `config.key` not `getattr(config, 'key', 'default')`. Validation happens once at startup in `config/validator.py`.
-- **Type hints**: Modern syntax — `list[str]`, `str | None` (not `Optional[str]`)
-- **Process monitoring**: Uses `sh` library, not `subprocess`
-- **Coverage**: Currently 40% (Phase 1 stubs). Target 80%.
-- **Pre-commit**: 15 hooks including conventional commits, ruff, mypy, bandit, codespell, markdownlint
+- **Process monitoring**: uses the `sh` library, not `subprocess`.
+- **Validation happens once at startup** in `config/validator.py` — the fail-fast rule in
+  `~/dev/standards/python.md` is what makes that the only place it needs to happen.
+- **Coverage**: currently 40% (Phase 1 stubs). Target 80%.
+
+Python conventions and the pre-commit hook set are fleet standards — see
+`~/dev/standards/python.md` and `~/dev/standards/ci.md`. The hook inventory is generated from
+`~/tools/forge/pre-commit/toolchain.yml`; do not restate it here, it drifts.
 
 ## Implementation Status
 
