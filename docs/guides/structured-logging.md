@@ -12,48 +12,48 @@ Write scripts and applications that produce clear, parseable logs optimized for 
 
 ```python
 # ✓ GOOD - Predictable output
-print("Starting build...")  # stdout
-print("ERROR: Build failed", file=sys.stderr)  # stderr
+print('Starting build...')  # stdout
+print('ERROR: Build failed', file=sys.stderr)  # stderr
 
 # ✗ BAD - Logs to file, logsift can't capture
 with open('build.log', 'a') as f:
-    f.write("ERROR: Build failed\n")
+    f.write('ERROR: Build failed\n')
 ```
 
 ### 2. Use Clear Error Prefixes
 
 ```python
 # ✓ GOOD - Easy to detect
-print("ERROR: Connection timeout")
-print("WARNING: Deprecated API used")
-print("FATAL: Database connection failed")
+print('ERROR: Connection timeout')
+print('WARNING: Deprecated API used')
+print('FATAL: Database connection failed')
 
 # ✗ BAD - Ambiguous
-print("Something went wrong")
-print("Oops!")
+print('Something went wrong')
+print('Oops!')
 ```
 
 ### 3. Include File References
 
 ```python
 # ✓ GOOD - file:line format
-print(f"ERROR: Syntax error in {filepath}:{line_number}")
-print(f"  File \"{filepath}\", line {line_number}")
+print(f'ERROR: Syntax error in {filepath}:{line_number}')
+print(f'  File "{filepath}", line {line_number}')
 
 # ✗ BAD - No location
-print("ERROR: Syntax error")
+print('ERROR: Syntax error')
 ```
 
 ### 4. Provide Context
 
 ```python
 # ✓ GOOD - Shows surrounding code
-print(f"  {prev_line}")
-print(f"→ {error_line}  # Error here")
-print(f"  {next_line}")
+print(f'  {prev_line}')
+print(f'→ {error_line}  # Error here')
+print(f'  {next_line}')
 
 # ✗ BAD - No context
-print(f"Error: {error_line}")
+print(f'Error: {error_line}')
 ```
 
 ## Recommended Formats
@@ -119,29 +119,31 @@ import sys
 import traceback
 from pathlib import Path
 
+
 def log_error(message: str, exc: Exception | None = None, file: str | None = None, line: int | None = None):
     """Log error in logsift-friendly format."""
 
     # Basic error
-    print(f"ERROR: {message}", file=sys.stderr)
+    print(f'ERROR: {message}', file=sys.stderr)
 
     # File reference if available
     if file and line:
-        print(f"  File \"{file}\", line {line}", file=sys.stderr)
+        print(f'  File "{file}", line {line}', file=sys.stderr)
 
     # Exception details
     if exc:
-        print(f"  {type(exc).__name__}: {exc}", file=sys.stderr)
+        print(f'  {type(exc).__name__}: {exc}', file=sys.stderr)
 
     # Stack trace for debugging
     if exc and __debug__:
         traceback.print_exc(file=sys.stderr)
 
+
 # Usage
 try:
     result = risky_operation()
 except ValueError as e:
-    log_error("Failed to process data", exc=e, file="app.py", line=42)
+    log_error('Failed to process data', exc=e, file='app.py', line=42)
     sys.exit(1)
 ```
 
@@ -273,28 +275,28 @@ clean:
 print("ERROR: Database connection failed: host 'db.example.com' port 5432 - Connection refused")
 
 # ✗ BAD - Vague
-print("ERROR: Database error")
+print('ERROR: Database error')
 ```
 
 ### 2. Include Values
 
 ```python
 # ✓ GOOD - Shows actual values
-print(f"ERROR: Expected 3 arguments, got {len(args)}")
+print(f'ERROR: Expected 3 arguments, got {len(args)}')
 
 # ✗ BAD - No context
-print("ERROR: Wrong number of arguments")
+print('ERROR: Wrong number of arguments')
 ```
 
 ### 3. Suggest Fixes
 
 ```python
 # ✓ GOOD - Tells user what to do
-print("ERROR: Config file not found at /etc/app/config.yaml")
-print("  Create config file or set APP_CONFIG environment variable")
+print('ERROR: Config file not found at /etc/app/config.yaml')
+print('  Create config file or set APP_CONFIG environment variable')
 
 # ✗ BAD - No guidance
-print("ERROR: Config file not found")
+print('ERROR: Config file not found')
 ```
 
 ### 4. Use Standard Formats
@@ -302,11 +304,11 @@ print("ERROR: Config file not found")
 ```python
 # ✓ GOOD - Standard traceback format
 print(f'  File "{filepath}", line {line_number}, in {function_name}')
-print(f"    {error_line}")
-print(f"{error_type}: {error_message}")
+print(f'    {error_line}')
+print(f'{error_type}: {error_message}')
 
 # ✗ BAD - Non-standard format
-print(f"{filepath}({line_number}): error {error_message}")
+print(f'{filepath}({line_number}): error {error_message}')
 ```
 
 ## Testing Your Logs
@@ -347,7 +349,7 @@ except Exception:
 try:
     result = operation()
 except Exception as e:
-    print(f"ERROR: Operation failed: {e}", file=sys.stderr)
+    print(f'ERROR: Operation failed: {e}', file=sys.stderr)
     raise
 ```
 
@@ -355,24 +357,24 @@ except Exception as e:
 
 ```python
 # ✗ BAD - Different formats
-print("Error: something failed")
-print("ERROR - another failure")
-print("[ERR] yet another failure")
+print('Error: something failed')
+print('ERROR - another failure')
+print('[ERR] yet another failure')
 
 # ✓ GOOD - Consistent format
-print("ERROR: something failed")
-print("ERROR: another failure")
-print("ERROR: yet another failure")
+print('ERROR: something failed')
+print('ERROR: another failure')
+print('ERROR: yet another failure')
 ```
 
 ### 3. Missing stderr
 
 ```python
 # ✗ BAD - Errors to stdout
-print("ERROR: Build failed")
+print('ERROR: Build failed')
 
 # ✓ GOOD - Errors to stderr
-print("ERROR: Build failed", file=sys.stderr)
+print('ERROR: Build failed', file=sys.stderr)
 ```
 
 ### 4. Unclear Context
@@ -400,11 +402,8 @@ import structlog
 log = structlog.get_logger()
 
 # Structured logging that logsift can parse
-log.info("application_started", version="1.0.0")
-log.error("database_connection_failed",
-          host="db.example.com",
-          port=5432,
-          error="Connection refused")
+log.info('application_started', version='1.0.0')
+log.error('database_connection_failed', host='db.example.com', port=5432, error='Connection refused')
 ```
 
 ### Node.js: winston
@@ -441,53 +440,53 @@ import sys
 import subprocess
 from pathlib import Path
 
+
 def log_info(message: str):
-    print(f"[INFO] {message}")
+    print(f'[INFO] {message}')
+
 
 def log_error(message: str, file: str | None = None, line: int | None = None):
-    print(f"[ERROR] {message}", file=sys.stderr)
+    print(f'[ERROR] {message}', file=sys.stderr)
     if file and line:
-        print(f"  at {file}:{line}", file=sys.stderr)
+        print(f'  at {file}:{line}', file=sys.stderr)
+
 
 def run_command(command: list[str], description: str) -> bool:
     """Run command with clear logging."""
-    log_info(f"{description}...")
+    log_info(f'{description}...')
 
     try:
-        result = subprocess.run(
-            command,
-            capture_output=True,
-            text=True,
-            check=True
-        )
-        log_info(f"{description} completed successfully")
+        result = subprocess.run(command, capture_output=True, text=True, check=True)
+        log_info(f'{description} completed successfully')
         return True
 
     except subprocess.CalledProcessError as e:
-        log_error(f"{description} failed with exit code {e.returncode}")
+        log_error(f'{description} failed with exit code {e.returncode}')
         if e.stderr:
             print(e.stderr, file=sys.stderr)
         return False
 
+
 def main():
-    log_info("Starting build process")
+    log_info('Starting build process')
 
     steps = [
-        (["npm", "install"], "Installing dependencies"),
-        (["npm", "run", "lint"], "Linting code"),
-        (["npm", "run", "test"], "Running tests"),
-        (["npm", "run", "build"], "Building application"),
+        (['npm', 'install'], 'Installing dependencies'),
+        (['npm', 'run', 'lint'], 'Linting code'),
+        (['npm', 'run', 'test'], 'Running tests'),
+        (['npm', 'run', 'build'], 'Building application'),
     ]
 
     for command, description in steps:
         if not run_command(command, description):
-            log_error("Build process failed")
+            log_error('Build process failed')
             return 1
 
-    log_info("Build process completed successfully")
+    log_info('Build process completed successfully')
     return 0
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     sys.exit(main())
 ```
 

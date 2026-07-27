@@ -229,7 +229,7 @@ from pathlib import Path
 
 # Clean logs older than 30 days
 deleted = clean_old_logs(Path.home() / '.cache' / 'logsift', retention_days=30)
-print(f"Deleted {deleted} old log files")
+print(f'Deleted {deleted} old log files')
 ```
 
 ## Next Steps

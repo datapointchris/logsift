@@ -167,7 +167,7 @@ from logsift.cache.rotation import clean_old_logs
 from pathlib import Path
 
 deleted = clean_old_logs(Path.home() / '.cache' / 'logsift', retention_days=30)
-print(f"Deleted {deleted} old log files")
+print(f'Deleted {deleted} old log files')
 ```
 
 ## Installation

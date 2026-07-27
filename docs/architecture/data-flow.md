@@ -101,8 +101,8 @@ Context extraction:
 ```python
 for issue in issues:
     line_idx = issue.line_in_log - 1
-    issue.context_before = log_lines[max(0, line_idx - context_lines):line_idx]
-    issue.context_after = log_lines[line_idx + 1:line_idx + 1 + context_lines]
+    issue.context_before = log_lines[max(0, line_idx - context_lines) : line_idx]
+    issue.context_after = log_lines[line_idx + 1 : line_idx + 1 + context_lines]
 ```
 
 Default: `context_lines = 2`

@@ -149,20 +149,16 @@ import json
 import subprocess
 
 # Run logsift and parse JSON
-result = subprocess.run(
-    ['logsift', 'analyze', 'app.log', '--format=json'],
-    capture_output=True,
-    text=True
-)
+result = subprocess.run(['logsift', 'analyze', 'app.log', '--format=json'], capture_output=True, text=True)
 analysis = json.loads(result.stdout)
 
 # Process errors
 for error in analysis['errors']:
-    print(f"Error at {error.get('file')}:{error.get('file_line')}")
-    print(f"  {error['message']}")
+    print(f'Error at {error.get("file")}:{error.get("file_line")}')
+    print(f'  {error["message"]}')
 
     if error.get('suggestion'):
-        print(f"  Fix: {error['suggestion']['description']}")
+        print(f'  Fix: {error["suggestion"]["description"]}')
 ```
 
 #### With Node.js

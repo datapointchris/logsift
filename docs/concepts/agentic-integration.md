@@ -135,22 +135,20 @@ Claude Code can use logsift natively to enable fully autonomous workflows.
 import subprocess
 import json
 
+
 def run_with_logsift(command: list[str]) -> dict:
     """Run command through logsift and parse JSON output."""
-    result = subprocess.run(
-        ['logsift', 'monitor', '--format=json', '--'] + command,
-        capture_output=True,
-        text=True
-    )
+    result = subprocess.run(['logsift', 'monitor', '--format=json', '--'] + command, capture_output=True, text=True)
     return json.loads(result.stdout)
+
 
 # Use it
 analysis = run_with_logsift(['npm', 'run', 'build'])
 if analysis['summary']['status'] == 'failed':
     for error in analysis['errors']:
-        print(f"Error: {error['message']}")
+        print(f'Error: {error["message"]}')
         if error.get('suggestion'):
-            print(f"Fix: {error['suggestion']['description']}")
+            print(f'Fix: {error["suggestion"]["description"]}')
 ```
 
 ### Autonomous Fix Loop
@@ -168,8 +166,7 @@ def autonomous_fix_loop(command: list[str], max_attempts: int = 3) -> bool:
             return True
 
         # Extract fixable errors
-        fixable = [e for e in analysis['errors']
-                  if e.get('suggestion', {}).get('automated_fix')]
+        fixable = [e for e in analysis['errors'] if e.get('suggestion', {}).get('automated_fix')]
 
         if not fixable:
             # No automated fixes available - escalate to human
@@ -186,6 +183,7 @@ def autonomous_fix_loop(command: list[str], max_attempts: int = 3) -> bool:
     # Max attempts reached - escalate
     escalate_to_human(analysis)
     return False
+
 
 # Use it
 success = autonomous_fix_loop(['npm', 'run', 'build'])
@@ -216,6 +214,7 @@ def handle_error(error: dict) -> None:
         # Generic handler
         apply_generic_fix(error)
 
+
 # Process all errors
 analysis = run_with_logsift(['pytest', 'tests/'])
 for error in analysis['errors']:
@@ -239,8 +238,7 @@ def incremental_fix(command: list[str]) -> bool:
             return True
 
         # Get highest priority fixable error
-        fixable = [e for e in analysis['errors']
-                  if e.get('suggestion', {}).get('automated_fix')]
+        fixable = [e for e in analysis['errors'] if e.get('suggestion', {}).get('automated_fix')]
 
         if not fixable:
             return False
@@ -306,17 +304,17 @@ def multi_stage_workflow():
     ]
 
     for command, description in stages:
-        print(f"Running: {description}")
+        print(f'Running: {description}')
 
         analysis = run_with_logsift(command)
 
         if analysis['summary']['status'] == 'failed':
             # Try to fix this stage
             if not autonomous_fix_loop(command):
-                print(f"Failed at stage: {description}")
+                print(f'Failed at stage: {description}')
                 return False
 
-        print(f"✓ {description} succeeded")
+        print(f'✓ {description} succeeded')
 
     return True
 ```
@@ -541,6 +539,7 @@ import subprocess
 import json
 from typing import Optional
 
+
 class AutonomousFixAgent:
     """Autonomous error-fixing agent using logsift."""
 
@@ -549,11 +548,7 @@ class AutonomousFixAgent:
 
     def run_command(self, command: list[str]) -> dict:
         """Run command through logsift and parse JSON."""
-        result = subprocess.run(
-            ['logsift', 'monitor', '--format=json', '--'] + command,
-            capture_output=True,
-            text=True
-        )
+        result = subprocess.run(['logsift', 'monitor', '--format=json', '--'] + command, capture_output=True, text=True)
         return json.loads(result.stdout)
 
     def fix_error(self, error: dict) -> bool:
@@ -577,29 +572,30 @@ class AutonomousFixAgent:
         """Autonomously build project, fixing errors as needed."""
 
         for attempt in range(self.max_attempts):
-            print(f"Attempt {attempt + 1}/{self.max_attempts}")
+            print(f'Attempt {attempt + 1}/{self.max_attempts}')
 
             # Run through logsift
             analysis = self.run_command(command)
 
             # Success
             if analysis['summary']['status'] == 'success':
-                print("✓ Build succeeded")
+                print('✓ Build succeeded')
                 return True
 
             # Try to fix errors
             fixed_any = False
             for error in analysis['errors']:
                 if self.fix_error(error):
-                    print(f"✓ Fixed: {error['message'][:50]}...")
+                    print(f'✓ Fixed: {error["message"][:50]}...')
                     fixed_any = True
 
             if not fixed_any:
-                print("✗ No fixable errors found")
+                print('✗ No fixable errors found')
                 return False
 
-        print("✗ Max attempts reached")
+        print('✗ Max attempts reached')
         return False
+
 
 # Use it
 agent = AutonomousFixAgent(max_attempts=5)

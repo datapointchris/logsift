@@ -49,27 +49,30 @@ Test individual components in isolation:
 ```python
 from logsift.core.parser import Parser
 
+
 def test_parser_initialization():
     """Test that Parser initializes correctly."""
     parser = Parser()
     assert parser is not None
 
+
 def test_parse_plain_text():
     """Test parsing plain text logs."""
     parser = Parser()
-    log_content = "ERROR: Something failed\nWARNING: Be careful"
+    log_content = 'ERROR: Something failed\nWARNING: Be careful'
 
     lines = parser.parse(log_content)
 
     assert len(lines) == 2
-    assert lines[0].content == "ERROR: Something failed"
-    assert lines[1].content == "WARNING: Be careful"
+    assert lines[0].content == 'ERROR: Something failed'
+    assert lines[1].content == 'WARNING: Be careful'
 ```
 
 ### Using Fixtures
 
 ```python
 import pytest
+
 
 @pytest.fixture
 def sample_log():
@@ -80,6 +83,7 @@ def sample_log():
     [WARNING] Retry attempt 1
     """
 
+
 def test_extract_errors(sample_log):
     """Test error extraction."""
     from logsift.core.extractors import extract_errors
@@ -87,7 +91,7 @@ def test_extract_errors(sample_log):
     errors = extract_errors(sample_log)
 
     assert len(errors) == 1
-    assert "Connection failed" in errors[0].message
+    assert 'Connection failed' in errors[0].message
 ```
 
 ## Writing Integration Tests
@@ -100,18 +104,17 @@ from logsift.cli import app
 
 runner = CliRunner()
 
+
 def test_monitor_command_end_to_end():
     """Test complete monitor workflow."""
-    result = runner.invoke(
-        app,
-        ['monitor', '--format=json', '--', 'echo', 'test']
-    )
+    result = runner.invoke(app, ['monitor', '--format=json', '--', 'echo', 'test'])
 
     assert result.exit_code == 0
     assert 'summary' in result.stdout
 
     # Parse JSON
     import json
+
     analysis = json.loads(result.stdout)
     assert analysis['summary']['status'] == 'success'
 ```
@@ -137,8 +140,9 @@ uv run pytest --cov=logsift --cov-report=html  # HTML report
 # ✓ GOOD - Test behavior
 def test_parser_handles_empty_input():
     parser = Parser()
-    result = parser.parse("")
+    result = parser.parse('')
     assert result == []
+
 
 # ✗ BAD - Test implementation
 def test_parser_calls_internal_method():
@@ -150,12 +154,11 @@ def test_parser_calls_internal_method():
 
 ```python
 # ✓ GOOD
-def test_extract_errors_from_python_traceback():
-    ...
+def test_extract_errors_from_python_traceback(): ...
+
 
 # ✗ BAD
-def test_extractor():
-    ...
+def test_extractor(): ...
 ```
 
 ### 3. One Assertion Per Concept
@@ -164,18 +167,20 @@ def test_extractor():
 # ✓ GOOD
 def test_error_has_correct_message():
     error = extract_first_error(log)
-    assert error.message == "Expected message"
+    assert error.message == 'Expected message'
+
 
 def test_error_has_correct_line_number():
     error = extract_first_error(log)
     assert error.line_number == 42
 
+
 # ✗ BAD
 def test_error():
     error = extract_first_error(log)
-    assert error.message == "Expected message"
+    assert error.message == 'Expected message'
     assert error.line_number == 42
-    assert error.severity == "error"
+    assert error.severity == 'error'
     # Too many unrelated assertions
 ```
 
@@ -186,17 +191,17 @@ def test_parser_handles_edge_cases():
     parser = Parser()
 
     # Empty input
-    assert parser.parse("") == []
+    assert parser.parse('') == []
 
     # Single line
-    assert len(parser.parse("one line")) == 1
+    assert len(parser.parse('one line')) == 1
 
     # Very long line
-    long_line = "x" * 10000
+    long_line = 'x' * 10000
     assert len(parser.parse(long_line)) == 1
 
     # Unicode
-    assert len(parser.parse("日本語")) == 1
+    assert len(parser.parse('日本語')) == 1
 ```
 
 ## Mocking
@@ -208,11 +213,7 @@ def test_process_monitor_handles_command_failure(mocker):
     """Test that ProcessMonitor handles failed commands."""
     # Mock subprocess.run to return failure
     mock_run = mocker.patch('subprocess.run')
-    mock_run.return_value = mocker.Mock(
-        returncode=1,
-        stdout="",
-        stderr="Command failed"
-    )
+    mock_run.return_value = mocker.Mock(returncode=1, stdout='', stderr='Command failed')
 
     monitor = ProcessMonitor(['false'])
     result = monitor.run()
@@ -252,6 +253,7 @@ Use in tests:
 
 ```python
 from pathlib import Path
+
 
 def test_analyze_real_python_traceback():
     """Test analyzing real Python traceback."""

@@ -10,20 +10,20 @@ Use Python 3.13+ modern syntax:
 
 ```python
 # ✓ GOOD - Modern syntax
-def parse(log_content: str) -> list[LogLine]:
-    ...
+def parse(log_content: str) -> list[LogLine]: ...
 
-def get_config(key: str) -> str | None:
-    ...
+
+def get_config(key: str) -> str | None: ...
+
 
 # ✗ BAD - Old syntax
 from typing import List, Optional
 
-def parse(log_content: str) -> List[LogLine]:
-    ...
 
-def get_config(key: str) -> Optional[str]:
-    ...
+def parse(log_content: str) -> List[LogLine]: ...
+
+
+def get_config(key: str) -> Optional[str]: ...
 ```
 
 ### Fail Fast
@@ -67,11 +67,11 @@ Be specific with exceptions:
 ```python
 # ✓ GOOD - Specific exception
 if not log_file.exists():
-    raise FileNotFoundError(f"Log file not found: {log_file}")
+    raise FileNotFoundError(f'Log file not found: {log_file}')
 
 # ✗ BAD - Generic exception
 if not log_file.exists():
-    raise Exception(f"File not found: {log_file}")
+    raise Exception(f'File not found: {log_file}')
 ```
 
 ## Architecture Patterns
@@ -82,6 +82,7 @@ Use dataclasses for data structures:
 
 ```python
 from dataclasses import dataclass, field
+
 
 @dataclass
 class Error:
@@ -108,9 +109,9 @@ class Analyzer:
         errors = self.extractor.extract(lines)
         return self.matcher.match(errors)
 
+
 # ✗ BAD - Deep inheritance
-class SpecificAnalyzer(BaseAnalyzer):
-    ...
+class SpecificAnalyzer(BaseAnalyzer): ...
 ```
 
 ### Dependency Injection
@@ -119,8 +120,8 @@ Pass dependencies explicitly:
 
 ```python
 # ✓ GOOD - Explicit dependencies
-def format_json(analysis: dict, output_path: Path | None = None) -> str:
-    ...
+def format_json(analysis: dict, output_path: Path | None = None) -> str: ...
+
 
 # ✗ BAD - Hidden dependencies
 def format_json(analysis: dict) -> str:
@@ -135,7 +136,7 @@ def format_json(analysis: dict) -> str:
 ```python
 def test_parser_extracts_errors():
     # Arrange
-    log_content = "ERROR: Something failed"
+    log_content = 'ERROR: Something failed'
     parser = Parser()
 
     # Act
@@ -143,7 +144,7 @@ def test_parser_extracts_errors():
 
     # Assert
     assert len(result) == 1
-    assert "failed" in result[0].message
+    assert 'failed' in result[0].message
 ```
 
 ### Fixtures for Reusability
@@ -156,9 +157,10 @@ def sample_error_log():
     File "app.py", line 42
     """
 
+
 def test_extract_file_reference(sample_error_log):
     errors = extract_errors(sample_error_log)
-    assert errors[0].file == "app.py"
+    assert errors[0].file == 'app.py'
     assert errors[0].file_line == 42
 ```
 
@@ -181,16 +183,17 @@ from logsift.core.parser import Parser
 # Constants
 DEFAULT_CONTEXT_LINES = 2
 
+
 # Classes
-class Analyzer:
-    ...
+class Analyzer: ...
+
 
 # Functions
-def analyze_log(log_path: Path) -> dict:
-    ...
+def analyze_log(log_path: Path) -> dict: ...
+
 
 # Main guard
-if __name__ == "__main__":
+if __name__ == '__main__':
     ...
 ```
 
@@ -243,6 +246,7 @@ def validate_pattern(pattern: dict[str, Any]) -> None:
 ```python
 from pathlib import Path
 
+
 def load_config(config_path: Path | str | None = None) -> dict:
     """Load configuration from file."""
     if config_path is None:
@@ -254,7 +258,7 @@ def load_config(config_path: Path | str | None = None) -> dict:
     config_path = config_path.expanduser()
 
     if not config_path.exists():
-        raise FileNotFoundError(f"Config not found: {config_path}")
+        raise FileNotFoundError(f'Config not found: {config_path}')
 
     return load_toml(config_path)
 ```
@@ -263,6 +267,7 @@ def load_config(config_path: Path | str | None = None) -> dict:
 
 ```python
 import sys
+
 
 def detect_output_format() -> str:
     """Detect optimal output format based on TTY."""
@@ -280,13 +285,14 @@ def detect_output_format() -> str:
 # ✗ BAD
 GLOBAL_CONFIG = load_config()
 
+
 def analyze(log: str) -> dict:
     context_lines = GLOBAL_CONFIG.context_lines
     ...
 
+
 # ✓ GOOD
-def analyze(log: str, context_lines: int = 2) -> dict:
-    ...
+def analyze(log: str, context_lines: int = 2) -> dict: ...
 ```
 
 ### 2. Defensive Coding

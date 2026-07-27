@@ -907,6 +907,7 @@ import pytest
 from logsift.core.analyzer import Analyzer
 from logsift.core.parser import LogParser
 
+
 def test_analyzer_detects_errors():
     """Test that analyzer correctly identifies errors in logs"""
     log_content = """
@@ -922,8 +923,9 @@ def test_analyzer_detects_errors():
     results = analyzer.analyze(parsed)
 
     assert len(results.errors) == 1
-    assert "already installed" in results.errors[0].message
-    assert results.errors[0].severity == "error"
+    assert 'already installed' in results.errors[0].message
+    assert results.errors[0].severity == 'error'
+
 
 def test_analyzer_extracts_file_references():
     """Test file:line reference extraction"""
@@ -938,7 +940,7 @@ def test_analyzer_extracts_file_references():
     results = analyzer.analyze(parsed)
 
     assert len(results.errors) == 1
-    assert results.errors[0].file == "src/main.py"
+    assert results.errors[0].file == 'src/main.py'
     assert results.errors[0].file_line == 123
 ```
 
@@ -1173,18 +1175,14 @@ Repeats until success ✅
 import subprocess
 import json
 
-result = subprocess.run(
-    ["logsift", "monitor", "--format=json", "--", "task", "install"],
-    capture_output=True,
-    text=True
-)
+result = subprocess.run(['logsift', 'monitor', '--format=json', '--', 'task', 'install'], capture_output=True, text=True)
 
 data = json.loads(result.stdout)
 
-for error in data["errors"]:
+for error in data['errors']:
     # Claude edits: error["file"] at line error["file_line"]
-    print(f"Fix needed: {error['file']}:{error['file_line']}")
-    print(f"Suggestion: {error['suggestion']['description']}")
+    print(f'Fix needed: {error["file"]}:{error["file_line"]}')
+    print(f'Suggestion: {error["suggestion"]["description"]}')
 ```
 
 #### Pattern 2: MCP Tool Integration (Phase 3)
@@ -1235,45 +1233,43 @@ import time
 
 MAX_RETRIES = 5
 
+
 def install_with_retry():
     for attempt in range(1, MAX_RETRIES + 1):
-        print(f"Attempt {attempt}/{MAX_RETRIES}")
+        print(f'Attempt {attempt}/{MAX_RETRIES}')
 
         # Run installation with logsift
-        result = subprocess.run(
-            ["logsift", "monitor", "--format=json", "--", "task", "install"],
-            capture_output=True,
-            text=True
-        )
+        result = subprocess.run(['logsift', 'monitor', '--format=json', '--', 'task', 'install'], capture_output=True, text=True)
 
         data = json.loads(result.stdout)
 
         # Check success
-        if data["summary"]["status"] == "success":
-            print("✅ Installation successful!")
+        if data['summary']['status'] == 'success':
+            print('✅ Installation successful!')
             return True
 
         # Extract fixes needed
-        print(f"❌ Installation failed ({len(data['errors'])} errors)")
+        print(f'❌ Installation failed ({len(data["errors"])} errors)')
 
-        for item in data["actionable_items"]:
-            if item.get("automated"):
+        for item in data['actionable_items']:
+            if item.get('automated'):
                 # Apply automated fix
-                print(f"🔧 Auto-fixing: {item['description']}")
+                print(f'🔧 Auto-fixing: {item["description"]}')
                 # Execute automated_fix command
-                subprocess.run(item["automated_fix"], shell=True)
+                subprocess.run(item['automated_fix'], shell=True)
             else:
                 # Manual intervention needed
-                print(f"⚠️  Manual fix required: {item['description']}")
-                print(f"   File: {item['file']}:{item['line']}")
+                print(f'⚠️  Manual fix required: {item["description"]}')
+                print(f'   File: {item["file"]}:{item["line"]}')
 
         # Wait before retry
         time.sleep(2)
 
-    print("❌ Installation failed after max retries")
+    print('❌ Installation failed after max retries')
     return False
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     install_with_retry()
 ```
 

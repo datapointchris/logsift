@@ -375,7 +375,7 @@ from pathlib import Path
 
 # Clean logs older than 30 days
 deleted = clean_old_logs(Path.home() / '.cache' / 'logsift', retention_days=30)
-print(f"Deleted {deleted} old log files")
+print(f'Deleted {deleted} old log files')
 ```
 
 Planned CLI command (Phase 3):
@@ -580,8 +580,7 @@ Use with Claude Code for automated workflows:
 
 ```python
 # Claude Code can parse JSON and apply fixes
-result = subprocess.run(['logsift', 'monitor', '--format=json', '--', 'npm', 'run', 'build'],
-                       capture_output=True, text=True)
+result = subprocess.run(['logsift', 'monitor', '--format=json', '--', 'npm', 'run', 'build'], capture_output=True, text=True)
 analysis = json.loads(result.stdout)
 
 for error in analysis['errors']:

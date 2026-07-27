@@ -236,9 +236,9 @@ data = json.loads(logsift_output)
 
 if data['summary']['status'] == 'failed':
     for error in data['errors']:
-        print(f"Error: {error['message']}")
+        print(f'Error: {error["message"]}')
         if error['file']:
-            print(f"  at {error['file']}:{error['file_line']}")
+            print(f'  at {error["file"]}:{error["file_line"]}')
 ```
 
 ### jq
