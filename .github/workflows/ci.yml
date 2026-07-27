@@ -1,10 +1,9 @@
 name: Validate Project
 
 on:
-  push:
-    branches: [main, master, develop]
   pull_request:
     branches: [main, master, develop]
+  workflow_call:
   workflow_dispatch:
 
 env:
@@ -46,15 +45,15 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen --group dev
 
+      # Deliberately not astral-sh/ruff-action: it resolves ruff from the
+      # pyproject constraint and ignores uv.lock, so CI linted with 0.16 while
+      # every local run used the locked 0.14.6. Upgrade via `uv lock
+      # --upgrade-package ruff` so the bump is a reviewable diff.
       - name: Run ruff check
-        uses: astral-sh/ruff-action@v3
-        with:
-          args: "check"
+        run: uv run ruff check .
 
       - name: Run ruff format
-        uses: astral-sh/ruff-action@v3
-        with:
-          args: "format --check"
+        run: uv run ruff format --check .
 
       - name: Run mypy
         run: uv run mypy src/logsift --install-types --non-interactive --config-file pyproject.toml
