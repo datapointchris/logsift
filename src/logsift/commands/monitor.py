@@ -139,9 +139,12 @@ def monitor_command(
     start_time = time.time()
     output_lines: list[str] = []
 
+    # Bound before the try: both handlers touch them, and an exception can
+    # reach a handler before the assignments inside the try have run
+    log_handle = None
+    process = None
+
     try:
-        # Open log file for writing if save_log is enabled
-        log_handle = None
         if log_file:
             mode = 'a' if (append and log_file.exists()) else 'w'
             log_handle = log_file.open(mode, encoding='utf-8', buffering=1)
