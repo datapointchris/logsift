@@ -1,6 +1,73 @@
 # CHANGELOG
 
 
+## v0.1.1 (2026-07-31)
+
+### Bug Fixes
+
+- **monitor**: Bind process and log_handle before the try
+  ([`adc71cf`](https://github.com/datapointchris/logsift/commit/adc71cf3f81c974fcf043d963f1302704aae9304))
+
+Both exception handlers guard on these names, but both were first assigned inside the try -- so an
+  interrupt or failure early in the block reached a handler with neither bound and raised NameError
+  over the real error. The KeyboardInterrupt path is the reachable one: Ctrl-C during Popen leaves
+  process unbound and loses the terminate/wait cleanup entirely.
+
+### Chores
+
+- **config**: Adopt the standard pyright section
+  ([`3b84304`](https://github.com/datapointchris/logsift/commit/3b8430436dcfe288ff3f897d9558e87fe058e084))
+
+Synced from forge's pyproject template via sync-pyproject. basedpyright defaults to typeCheckingMode
+  "recommended", which enables its own strict rules; repos were answering that one rule at a time.
+  "standard" turns the whole family off at once.
+
+reportPossiblyUnboundVariable is no longer disabled -- it finds bugs rather than expressing an
+  opinion about annotation coverage, and nothing else in the toolchain covers it.
+
+### Code Style
+
+- Format the python snippets in the docs
+  ([`4edce0f`](https://github.com/datapointchris/logsift/commit/4edce0fd242dd7fc9fac11b0ee3f1a692f2ae77f))
+
+CI runs `ruff format --check` over the whole tree with no path filter, so ruff 0.16 formats the
+  python code blocks inside markdown too. Eleven doc files predate that and used double quotes where
+  the project uses single, which failed the job on every push — including the run before this one.
+
+The pre-commit hook pins ruff-pre-commit v0.12.5, which has no markdown support, so local commits
+  never saw it. That version skew belongs to forge's toolchain manifest, which owns pre-commit revs;
+  this only clears the backlog it exposed.
+
+### Continuous Integration
+
+- Gate release on validation and lint with the locked ruff
+  ([`040e187`](https://github.com/datapointchris/logsift/commit/040e187f2c8666a945c150935306b6e81e7e1378))
+
+Release triggered on push to main with no dependency on CI, so it published from whatever was on
+  main. On 2026-07-27 it cut a version from a commit whose Validate Project run had failed.
+
+The lint failure that exposed it was its own bug: the job ran `uv sync --frozen` and then discarded
+  that environment for astral-sh/ruff-action, which resolves ruff from the pyproject constraint
+  (>=0.7.0 -> 0.16.0) and ignores uv.lock. CI linted with 0.16 while every local run used the locked
+  0.14.6, and 0.16 formats Python inside Markdown. Running ruff through uv puts CI back on the
+  lockfile.
+
+ci.yml drops its push trigger since release now calls it — otherwise every push to main would run it
+  twice.
+
+### Documentation
+
+- Point conventions at fleet standards
+  ([`4b19878`](https://github.com/datapointchris/logsift/commit/4b198780cf8aa1fd9c5222a792b674de5fdb2e0b))
+
+General Python conventions (fail-fast, modern type hints) now live in ~/dev/standards/python.md, and
+  the restated 15-hook pre-commit inventory is generated from forge's toolchain manifest — a copy
+  here drifts silently.
+
+Keeps what is actually logsift-specific: the sh library choice, the startup validator, and the
+  coverage target.
+
+
 ## v0.1.0 (2026-07-27)
 
 ### Bug Fixes
