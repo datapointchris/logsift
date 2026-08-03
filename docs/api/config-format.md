@@ -6,7 +6,7 @@ TOML specification for logsift configuration.
 
 Create config file at:
 
-```
+```text
 ~/.config/logsift/config.toml
 ```
 

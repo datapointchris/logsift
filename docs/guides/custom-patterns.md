@@ -172,7 +172,7 @@ tags = ["python", "import"]
 
 ## Organizing Pattern Files
 
-```
+```text
 ~/.config/logsift/patterns/
 ├── python.toml      # Python-specific patterns
 ├── docker.toml      # Docker/container patterns

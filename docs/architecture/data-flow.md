@@ -4,7 +4,7 @@ How log analysis works internally in logsift.
 
 ## Overview
 
-```
+```text
 Input → Parser → IssueDetector → Analyzer → Formatter → Output
 ```
 
@@ -204,7 +204,7 @@ For large logs (>100 MB), Phase 3 adds streaming to reduce memory.
 
 ## Caching Strategy
 
-```
+```text
 ~/.cache/logsift/
 ├── monitor/               # Monitored command logs
 │   └── <name>-<timestamp>.log

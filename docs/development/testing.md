@@ -8,7 +8,7 @@ Best practices for testing logsift.
 
 ## Test Structure
 
-```
+```text
 tests/
 ├── unit/                  # Fast, isolated unit tests
 │   ├── test_parser.py
@@ -241,7 +241,7 @@ def test_cache_manager_creates_log_file(tmp_path):
 
 Create fixtures for real-world logs:
 
-```
+```text
 tests/fixtures/sample_logs/
 ├── python_traceback.log
 ├── npm_build_error.log

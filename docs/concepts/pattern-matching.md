@@ -116,7 +116,7 @@ logsift includes patterns for common tools in `src/logsift/patterns/defaults/`:
 
 ## Pattern Matching Process
 
-```
+```text
 1. Parse log line by line
 2. For each line, try all patterns
 3. First match wins (patterns are ordered)

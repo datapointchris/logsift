@@ -102,7 +102,7 @@ Create pull request on GitHub.
 
 ## Project Structure
 
-```
+```text
 logsift/
 ├── src/logsift/              # Source code
 │   ├── cli.py                # CLI entry point

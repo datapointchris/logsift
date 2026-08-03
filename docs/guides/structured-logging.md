@@ -62,7 +62,7 @@ print(f'Error: {error_line}')
 
 Easiest to implement, works great with logsift:
 
-```
+```text
 [INFO] Application started
 [DEBUG] Loading configuration from config.yaml
 [WARNING] Config file not found, using defaults
@@ -72,7 +72,7 @@ Easiest to implement, works great with logsift:
 
 Pattern:
 
-```
+```text
 [LEVEL] Message with details
 ```
 
@@ -80,7 +80,7 @@ Pattern:
 
 Critical for automated fixes:
 
-```
+```text
 ERROR: Syntax error in src/app.py:45
   42: def process_data(data):
   43:     try:
@@ -92,7 +92,7 @@ ERROR: Syntax error in src/app.py:45
 
 Pattern:
 
-```
+```text
 ERROR: <message> in <file>:<line>
   [context lines with line numbers]
 → [error line]

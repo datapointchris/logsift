@@ -75,7 +75,7 @@ logsift analyze build.log --format=markdown
 
 When running in a terminal, logsift outputs beautiful Markdown with colors:
 
-```
+```text
 # Analysis Summary
 
 **Status**: failed
@@ -93,7 +93,7 @@ When running in a terminal, logsift outputs beautiful Markdown with colors:
 
 ModuleNotFoundError: No module named 'nonexistent_module'
 
-```
+```text
 
 **Suggestion**: Install the missing module using pip
 ```

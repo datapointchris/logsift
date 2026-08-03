@@ -26,7 +26,7 @@ logsift solves all of these by:
 
 The core pattern for autonomous error fixing:
 
-```
+```text
 1. RUN    → logsift monitor --format=json -- <command>
 2. PARSE  → Extract errors and suggestions from JSON
 3. FIX    → Apply suggested fixes automatically

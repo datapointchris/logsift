@@ -117,7 +117,7 @@ Reasoning:
 
 ### Modular Pipeline
 
-```
+```text
 Input → Parser → Extractors → Matchers → Context → Output
 ```
 

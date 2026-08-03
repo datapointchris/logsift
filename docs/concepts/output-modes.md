@@ -221,7 +221,7 @@ Beautiful, human-readable formatted output with colors.
  46 |
  47 | ReactDOM.render(<App />, document.getElementById('root'));
 
-```
+```text
 
 **Message:**
 Module not found: Error: Can't resolve './missing.js'

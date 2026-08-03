@@ -339,7 +339,7 @@ import App from './App';
 
 ReactDOM.render(<App />, document.getElementById('root'));
 
-```
+```text
 
 **Message:**
 Module not found: Error: Can't resolve './missing.js'
@@ -356,7 +356,7 @@ Create the missing file or fix the import path
 
 Logs are saved to `~/.cache/logsift/`:
 
-```
+```text
 ~/.cache/logsift/
 ├── monitor/                    # Monitored command logs
 │   ├── npm-20240115_103000.log

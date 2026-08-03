@@ -62,7 +62,7 @@
 
 ### Code Organization
 
-```
+```text
 logsift/
 ├── src/logsift/           # Source code
 │   ├── cli.py             # Main CLI entry point
@@ -139,7 +139,7 @@ All code must pass these checks before committing:
 
 Use conventional commits format:
 
-```
+```text
 feat: add new error pattern for npm
 fix: correct file reference extraction regex
 docs: update pattern library documentation
