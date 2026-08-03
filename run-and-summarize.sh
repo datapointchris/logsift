@@ -54,7 +54,7 @@ set -euo pipefail
 
 COMMAND="${1:-}"
 NAME="${2:-}"
-CHECK_INTERVAL="${3:-60}"  # Check every 60 seconds by default
+CHECK_INTERVAL="${3:-60}" # Check every 60 seconds by default
 
 if [[ -z "$COMMAND" ]]; then
   echo "Usage: $(basename "$0") \"<command>\" [name] [check_interval_seconds]"
@@ -105,13 +105,13 @@ echo "Check interval: ${CHECK_INTERVAL}s"
 echo ""
 
 # Clear/create logfile
-: > "$LOGFILE"
+: >"$LOGFILE"
 
 # Create convenience symlink for easy tailing
 ln -sf "$LOGFILE" "$SYMLINK"
 
 # Start command in background
-eval "$COMMAND" > "$LOGFILE" 2>&1 &
+eval "$COMMAND" >"$LOGFILE" 2>&1 &
 PID=$!
 
 echo "Process started with PID: $PID"
@@ -159,7 +159,7 @@ echo "Generating summary..."
 
 # Generate summary
 if [[ -x "$SUMMARIZE_SCRIPT" ]]; then
-  bash "$SUMMARIZE_SCRIPT" "$LOGFILE" > "$SUMMARY_FILE" 2>&1
+  bash "$SUMMARIZE_SCRIPT" "$LOGFILE" >"$SUMMARY_FILE" 2>&1
   echo ""
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   echo " SUMMARY GENERATED"

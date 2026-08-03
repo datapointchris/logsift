@@ -49,7 +49,7 @@ echo ""
 
 # File size and line count
 FILE_SIZE=$(du -h "$LOGFILE" | cut -f1)
-LINE_COUNT=$(wc -l < "$LOGFILE")
+LINE_COUNT=$(wc -l <"$LOGFILE")
 echo "File: $FILE_SIZE, $LINE_COUNT lines"
 echo ""
 
@@ -100,11 +100,11 @@ echo ""
 
 # Common Error Patterns
 echo "COMMON ERROR PATTERNS:"
-ERROR_PATTERNS=$(grep -a -iE "permission denied|command not found|no such file|cannot find|failed to|could not|unable to|timeout|connection refused|out of memory|disk space|does not exist|no version information" "$LOGFILE" 2>/dev/null | \
-  strip_ansi | \
-  grep -v "^$" | \
-  sort -u | \
-  tail -10 || true)
+ERROR_PATTERNS=$(grep -a -iE "permission denied|command not found|no such file|cannot find|failed to|could not|unable to|timeout|connection refused|out of memory|disk space|does not exist|no version information" "$LOGFILE" 2>/dev/null \
+  | strip_ansi \
+  | grep -v "^$" \
+  | sort -u \
+  | tail -10 || true)
 
 if [[ -n "$ERROR_PATTERNS" ]]; then
   echo "$ERROR_PATTERNS" | while IFS= read -r line; do echo "  $line"; done
@@ -115,12 +115,12 @@ echo ""
 
 # Errors (last 10 unique)
 echo "ERRORS (last 10 unique):"
-ERRORS=$(grep -a -iE "error|fail|fatal|\[0;31m" "$LOGFILE" 2>/dev/null | \
-  strip_ansi | \
-  grep -v "^$" | \
-  grep -v "errorformat" | \
-  sort -u | \
-  tail -10 || true)
+ERRORS=$(grep -a -iE "error|fail|fatal|\[0;31m" "$LOGFILE" 2>/dev/null \
+  | strip_ansi \
+  | grep -v "^$" \
+  | grep -v "errorformat" \
+  | sort -u \
+  | tail -10 || true)
 
 if [[ -n "$ERRORS" ]]; then
   echo "$ERRORS" | while IFS= read -r line; do echo "  $line"; done
@@ -131,11 +131,11 @@ echo ""
 
 # Warnings (last 5 unique)
 echo "WARNINGS (last 5 unique):"
-WARNINGS=$(grep -a -iE "warning|caution|\[0;33m" "$LOGFILE" 2>/dev/null | \
-  strip_ansi | \
-  grep -v "^$" | \
-  sort -u | \
-  tail -5 || true)
+WARNINGS=$(grep -a -iE "warning|caution|\[0;33m" "$LOGFILE" 2>/dev/null \
+  | strip_ansi \
+  | grep -v "^$" \
+  | sort -u \
+  | tail -5 || true)
 
 if [[ -n "$WARNINGS" ]]; then
   echo "$WARNINGS" | while IFS= read -r line; do echo "  $line"; done
@@ -160,7 +160,7 @@ echo ""
 # Last 20 Lines (most important context)
 echo "LAST 20 LINES:"
 # Use sed to extract last 20 lines (more reliable than tail for binary-classified files)
-TOTAL_LINES=$(wc -l < "$LOGFILE")
+TOTAL_LINES=$(wc -l <"$LOGFILE")
 START_LINE=$((TOTAL_LINES - 19))
 [[ $START_LINE -lt 1 ]] && START_LINE=1
 sed -n "${START_LINE},${TOTAL_LINES}p" "$LOGFILE" | sed 's/\x1B\[[0-9;]*[mK]//g'
