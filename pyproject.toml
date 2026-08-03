@@ -120,6 +120,10 @@ pretty = true
 ignore_missing_imports = true
 check_untyped_defs = false
 warn_return_any = false
+# Same tree ruff already excludes below. These files carry deliberate type
+# errors so the pattern tests have real mypy output to match against; CI runs
+# `mypy .` over the whole repo, which no pre-commit exclude reaches.
+exclude = ['^tests/fixtures/pre-commit-violations/']
 
 # `standard` replaces the per-rule opt-outs repos used to accumulate; basedpyright
 # defaults to `recommended`, which turns every one of them back on. Named
