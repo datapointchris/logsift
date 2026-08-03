@@ -1,6 +1,64 @@
 # CHANGELOG
 
 
+## v0.1.2 (2026-08-03)
+
+### Bug Fixes
+
+- **ci**: Exclude the violation fixtures from mypy
+  ([`e26aebb`](https://github.com/datapointchris/logsift/commit/e26aebb918b577b0bc460b62e80d908ac0ffbcbc))
+
+CI runs `mypy .` over the whole repo, which no pre-commit exclude reaches, so the three deliberate
+  type errors in the fixture tree failed the type check. ruff already excluded the same directory;
+  this makes mypy agree with it.
+
+### Chores
+
+- **config**: Record the keys the pyproject sync owns
+  ([`467a35c`](https://github.com/datapointchris/logsift/commit/467a35c1d1326ef0882d0cfad4ad5a31ad2d6d5a))
+
+forge now writes [tool.forge] managed, listing the exact keys the standard sets. Deletion on a later
+  sync is scoped to that record, so dropping a key from the template retracts it here without having
+  to guess which settings belong to this project.
+
+Purely additive: nothing else in this file changed.
+
+- **toolchain**: Adopt the generated configs and CI
+  ([`278b09f`](https://github.com/datapointchris/logsift/commit/278b09fd347fbdf5b414b3aa3a532417557f7122))
+
+Brings the repo onto forge toolchain manifest 11 and gives it CI for the first time.
+
+Declares tests/fixtures/pre-commit-violations/ as the toolchain exclude. That tree is broken on
+  purpose — it generates real hook output for the pattern-matching tests — so every file-shaped hook
+  fails on it, and fail_fast was only hiding that behind check-yaml.
+
+### Code Style
+
+- **shell**: Conform to shfmt
+  ([`bcc089a`](https://github.com/datapointchris/logsift/commit/bcc089acc7f8d79f12ebf42b384a32f1479388ef))
+
+Mechanical. Redirects lose their space, matching shfmt's default, which the fleet .editorconfig
+  deliberately does not override.
+
+### Documentation
+
+- Flush dormant markdownlint violations
+  ([`6844934`](https://github.com/datapointchris/logsift/commit/6844934f884c3da547e715bb539453e5ebb51e8e))
+
+markdownlint only runs on the files a commit touches, so unmodified docs accumulate violations
+  invisibly. The toolchain sync bumps markdownlint to v0.47, which added MD060, and runs --all-files
+  — surfacing every one of them at once, in the middle of an unrelated change.
+
+Table separators are normalized to the compact `| --- |` style MD060 expects, which --fix cannot
+  repair; everything else is markdownlint --fix.
+
+- Give every fenced block a language
+  ([`af17397`](https://github.com/datapointchris/logsift/commit/af17397e1c69a44708d338413637a96ed81d3125))
+
+markdownlint MD040. All 21 were directory trees, pipeline diagrams or sample log output rather than
+  code in any language, so they are tagged text rather than guessed at.
+
+
 ## v0.1.1 (2026-07-31)
 
 ### Bug Fixes
