@@ -364,7 +364,7 @@ logsift analyze app.log --format=plain > errors.txt
 ## Comparison Table
 
 | Feature | JSON | Markdown |
-|---------|------|----------|
+| --- | --- | --- |
 | **Machine readable** | ✅ Yes | ⚠️ Partial |
 | **Human readable** | ⚠️ Requires parsing | ✅ Beautiful |
 | **Colors** | ❌ No | ✅ Yes (terminal) |
