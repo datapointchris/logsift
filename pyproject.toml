@@ -20,7 +20,7 @@ dependencies = [
     "python-dateutil>=2.8.0",
     "toon-format",
     # Self-update and the daily update notice
-    "pyselfupdate[typer]>=0.1.0",
+    "pyselfupdate[typer]>=0.2.2",
 ]
 keywords = ["log-analysis", "monitoring", "llm", "automation", "cli"]
 classifiers = [
