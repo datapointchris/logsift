@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v0.1.3 (2026-08-04)
+
+### Bug Fixes
+
+- Report the update in the verb that ran it
+  ([`efb92a8`](https://github.com/datapointchris/logsift/commit/efb92a8abe54b448365c1b8c9a57f0a36ff63e0b))
+
+pyselfupdate 0.2.2 says "updated" and "update failed" where it used to say "upgraded" and "upgrade
+  failed". The command is `update`; one command, one vocabulary.
+
+
 ## v0.1.2 (2026-08-03)
 
 ### Bug Fixes
