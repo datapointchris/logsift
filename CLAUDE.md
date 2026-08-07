@@ -123,9 +123,11 @@ Required: name, regex, severity, description, tags. Optional: suggestion.
 ## Conventions specific to logsift
 
 - **Process monitoring**: uses the `sh` library, not `subprocess`.
-- **Validation happens once at startup** in `config/validator.py` — the fail-fast rule in
-  `~/dev/standards/python.md` is what makes that the only place it needs to happen.
-- **Coverage**: currently 40% (Phase 1 stubs). Target 80%.
+- **Config validation is not implemented.** `config/validator.py` is a stub raising
+  `NotImplementedError`. When it is written, it validates once at startup and nowhere else —
+  the fail-fast rule in `~/dev/standards/python.md` is what makes one site sufficient.
+- **Coverage**: `fail_under` in `pyproject.toml` is the enforced floor; run `task test` for the
+  current figure rather than trusting a number written here.
 
 Python conventions and the pre-commit hook set are fleet standards — see
 `~/dev/standards/python.md` and `~/dev/standards/ci.md`. The hook inventory is generated from
@@ -133,8 +135,13 @@ Python conventions and the pre-commit hook set are fleet standards — see
 
 ## Implementation Status
 
-**Phase 1 (Current)**: Core Analyzer + Basic Monitor. Most modules are stubs raising `NotImplementedError`.
-**Phase 2**: Custom pattern loading, streaming, fzf integration.
-**Phase 3**: MCP server for native Claude Code integration.
+The core analyzer, pattern loading, streaming, and fzf integration are all implemented. What
+remains stubbed raises `NotImplementedError`, so `rg -l NotImplementedError src/` is the current
+list rather than a phase table here — as of this writing it is the `patterns` and `monitor`
+commands, remote monitoring, cache metadata, the plain formatter, and config validation.
+
+**The `mcp/` package is dead, not pending.** MCP servers are retired ecosystem-wide (see
+`~/.claude/CLAUDE.md` § Data CLIs); the CLI with `--json` is the integration surface. Those two
+stubs should be deleted rather than finished.
 
 When implementing: tests first (TDD), implement in `core/`/`patterns/`/`output/`, wire up in `commands/`.
