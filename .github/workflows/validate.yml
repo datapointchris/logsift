@@ -69,10 +69,17 @@ jobs:
           if [ "$code" -eq 0 ] || [ "$code" -eq 5 ]; then exit 0; fi
           exit 1
 
-      # > custom:after:python - bandit
+      # > custom:after:python - bandit and the package build
       #
-      # Ran on three OSes in the bespoke pipeline, which bought nothing: bandit
-      # reads the AST and its findings do not vary by platform. Once here it
-      # runs on the same locked interpreter as ruff and mypy.
+      # Both ran on a three-OS matrix in a separate workflow, which bought
+      # nothing: bandit reads the AST, and a build failure is a packaging
+      # failure, neither of which varies by platform.
       - name: Run bandit
         run: uv run bandit -c pyproject.toml .
+
+      # logsift is installed with `uv tool install` straight from the git repo,
+      # so the package is built on every install. Nothing in release.yml builds
+      # it — semantic-release only refreshes the lock file — which leaves this
+      # as the only check that a broken [project] table cannot ship.
+      - name: Build package
+        run: uv build

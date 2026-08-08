@@ -15,11 +15,8 @@ jobs:
   validate:
     uses: ./.github/workflows/validate.yml
 
-  cross-platform:
-    uses: ./.github/workflows/ci.yml
-
   release:
-    needs: [validate, cross-platform]
+    needs: validate
     runs-on: ubuntu-latest
     permissions:
       contents: write
