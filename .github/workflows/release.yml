@@ -13,10 +13,13 @@ jobs:
   # Without this, release published whatever was on main, tested or not — a
   # commit that failed lint still cut a version on 2026-07-27.
   validate:
+    uses: ./.github/workflows/validate.yml
+
+  cross-platform:
     uses: ./.github/workflows/ci.yml
 
   release:
-    needs: validate
+    needs: [validate, cross-platform]
     runs-on: ubuntu-latest
     permissions:
       contents: write

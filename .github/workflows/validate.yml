@@ -68,3 +68,11 @@ jobs:
           set -e
           if [ "$code" -eq 0 ] || [ "$code" -eq 5 ]; then exit 0; fi
           exit 1
+
+      # > custom:after:python - bandit
+      #
+      # Ran on three OSes in the bespoke pipeline, which bought nothing: bandit
+      # reads the AST and its findings do not vary by platform. Once here it
+      # runs on the same locked interpreter as ruff and mypy.
+      - name: Run bandit
+        run: uv run bandit -c pyproject.toml .
