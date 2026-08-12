@@ -125,12 +125,12 @@ Required: name, regex, severity, description, tags. Optional: suggestion.
 - **Process monitoring**: uses the `sh` library, not `subprocess`.
 - **Config validation is not implemented.** `config/validator.py` is a stub raising
   `NotImplementedError`. When it is written, it validates once at startup and nowhere else —
-  the fail-fast rule in `~/dev/standards/python.md` is what makes one site sufficient.
+  the fail-fast rule in `standards/python.md` is what makes one site sufficient.
 - **Coverage**: `fail_under` in `pyproject.toml` is the enforced floor; run `task test` for the
   current figure rather than trusting a number written here.
 
 Python conventions and the pre-commit hook set are fleet standards — see
-`~/dev/standards/python.md` and `~/dev/standards/ci.md`. The hook inventory is generated from
+`standards/python.md` and `standards/ci.md`. The hook inventory is generated from
 `~/tools/forge/pre-commit/toolchain.yml`; do not restate it here, it drifts.
 
 ## Implementation Status
