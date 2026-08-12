@@ -26,7 +26,7 @@ uv run logsift monitor -- echo "test"     # CLI
 
 1. **Core is Analysis** — Log parsing/pattern matching is primary; monitoring is convenience wrapper
 2. **LLM-First Output** — JSON schema optimized for agent consumption with predictable structure
-3. **Dual Output Modes** — Auto-detects TTY: JSON for headless (agents), Markdown for interactive (humans)
+3. **Dual Output Modes** — Auto-detects TTY: toon for headless (agents), Markdown for interactive (humans)
 4. **Extensible Patterns** — TOML-based pattern libraries (built-in + custom from `~/.config/logsift/patterns/`)
 5. **Universal Compatibility** — Works with ANY log format (JSON, structured, plain text)
 6. **Fail Fast** — No defensive coding with inline defaults; let it fail if misconfigured
@@ -91,7 +91,7 @@ Analyzer (file references + context) →
 Dual Output (JSON for LLMs, Markdown for humans)
 ```
 
-- TTY detection (`utils/tty.py`): `isatty()` → Markdown, else JSON
+- TTY detection (`utils/tty.py`): `detect_output_format()` returns Markdown on a TTY, else toon
 - Commands in `commands/` orchestrate but don't implement logic
 - Module layout: `cli.py` (Typer entry), `commands/`, `core/`, `patterns/`, `output/`, `monitor/`, `config/`, `cache/`, `utils/`
 
@@ -122,12 +122,14 @@ Required: name, regex, severity, description, tags. Optional: suggestion.
 
 ## Conventions specific to logsift
 
-- **Process monitoring**: uses the `sh` library, not `subprocess`.
+- **Process monitoring**: `monitor/process.py` uses `subprocess`. `sh` is still declared in `pyproject.toml` and imported nowhere — drop it or use it, but do not believe the dependency list.
 - **Config validation is not implemented.** `config/validator.py` is a stub raising
   `NotImplementedError`. When it is written, it validates once at startup and nowhere else —
   the fail-fast rule in `standards/python.md` is what makes one site sufficient.
-- **Coverage**: `fail_under` in `pyproject.toml` is the enforced floor; run `task test` for the
-  current figure rather than trusting a number written here.
+- **Coverage**: `fail_under` in `pyproject.toml` is the enforced floor; run
+  `uv run pytest --cov=logsift` for the current figure rather than trusting a number written here.
+  There is no Taskfile in this repo, against `standards/repo-structure.md` § "Taskfile is the
+  standard runner".
 
 Python conventions and the pre-commit hook set are fleet standards — see
 `standards/python.md` and `standards/ci.md`. The hook inventory is generated from
