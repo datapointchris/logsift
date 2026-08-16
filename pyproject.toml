@@ -134,9 +134,9 @@ typeCheckingMode = "standard"
 analyzeUnannotatedFunctions = true  # or pylance stops analyzing in vscode
 
 [tool.pytest.ini_options]
-addopts = "-vv"
 minversion = "8.0"
 testpaths = ["tests"]
+verbosity_assertions = 2
 
 
 [tool.refurb]
@@ -187,7 +187,7 @@ force-single-line = true
 "__init__.py" = ["F401"]
 
 [tool.forge]
-# Keys the standard owns, written by `forge dies run maintenance/sync-pyproject.sh`.
+# Keys the standard owns, written by `forge repos apply pyproject`.
 # Dropping one from the template removes it here on the next sync; a key absent
 # from this list belongs to the project and is never touched. Do not hand-edit.
 managed = [
@@ -208,7 +208,7 @@ managed = [
     ["pyright", "typeCheckingMode"],
     ["pyright", "analyzeUnannotatedFunctions"],
     ["codespell", "check-filenames"],
-    ["pytest", "ini_options", "addopts"],
+    ["pytest", "ini_options", "verbosity_assertions"],
     ["pytest", "ini_options", "minversion"],
     ["pytest", "ini_options", "testpaths"],
 ]
