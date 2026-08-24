@@ -132,8 +132,8 @@ Required: name, regex, severity, description, tags. Optional: suggestion.
   standard runner".
 
 Python conventions and the pre-commit hook set are fleet standards — see
-`standards/python.md` and `standards/ci.md`. The hook inventory is generated from
-`~/tools/forge/pre-commit/toolchain.yml`; do not restate it here, it drifts.
+`standards/python.md` and `standards/ci.md`. The hook inventory is generated from the
+declaration `forge toolchain show` names; do not restate it here, it drifts.
 
 ## Implementation Status
 
