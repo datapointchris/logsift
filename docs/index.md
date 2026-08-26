@@ -75,7 +75,7 @@ Command produces 2000 lines → logsift extracts 20-50 lines
 
 ## Project Status
 
-**Current Version**: 0.1.0 (Alpha)
+**Status**: Alpha. `logsift --version` prints the installed version.
 
 - ✅ **Phase 1 Complete**: Core Analyzer + Basic Monitor (MVP)
 - ✅ **Phase 2 Complete**: Enhanced features (validation, monitoring, cache)

@@ -37,7 +37,7 @@ which logsift
 
 # Check version
 logsift --version
-# Should show: logsift version 0.1.0
+# Prints the installed version
 
 # Test basic functionality
 logsift --help
@@ -285,7 +285,7 @@ Not officially supported in Phase 1/2. May work with some modifications. Phase 3
 
 After installation, verify everything works:
 
-- [ ] `logsift --version` shows version 0.1.0
+- [ ] `logsift --version` prints a version rather than `unknown`
 - [ ] `logsift --help` displays help message
 - [ ] `logsift monitor -- echo test` executes successfully
 - [ ] `~/.cache/logsift/monitor/` directory created

@@ -195,7 +195,7 @@ uv tool install --editable .
 
 ```bash
 which logsift          # Should show ~/.local/bin/logsift
-logsift --version      # Should show version 0.1.0
+logsift --version      # Prints the installed version
 logsift --help         # Show all commands
 ```
 
@@ -252,7 +252,7 @@ chmod 755 ~/.cache/logsift
 
 ## Project Status
 
-**Current Version**: 0.1.0 (Alpha)
+**Status**: Alpha. `logsift --version` prints the installed version.
 
 ✅ **Phase 1 Complete**: Core Analyzer + Basic Monitor (MVP)
 ✅ **Phase 2 Complete**: Enhanced features (pattern validation, monitoring, cache rotation)

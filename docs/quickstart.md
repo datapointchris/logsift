@@ -18,7 +18,7 @@ uv tool install --editable .
 Verify installation:
 
 ```bash
-logsift --version  # Should show: logsift version 0.1.0
+logsift --version  # Prints the installed version
 ```
 
 ## Your First Analysis
