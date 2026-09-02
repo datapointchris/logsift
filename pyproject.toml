@@ -1,6 +1,6 @@
 [project]
 name = "logsift"
-version = "0.1.3"
+version = "0.1.4"
 description = "Intelligent log analysis and command monitoring tool designed for LLM-driven automated workflows"
 authors = [{ name = "Chris Birch", email = "datapointchris@gmail.com" }]
 license = { text = "MIT" }
