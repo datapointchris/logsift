@@ -70,21 +70,26 @@ nav:
       - Installation: installation.md
       - CLI Reference: cli-reference.md
   - Concepts:
+      - concepts/index.md
       - Agentic Integration: concepts/agentic-integration.md
       - Output Modes: concepts/output-modes.md
       - Pattern Matching: concepts/pattern-matching.md
   - Guides:
+      - guides/index.md
       - Structured Logging: guides/structured-logging.md
       - Custom Patterns: guides/custom-patterns.md
       - Process Monitoring: guides/monitoring.md
   - Architecture:
+      - architecture/index.md
       - Design Principles: architecture/design-principles.md
       - Data Flow: architecture/data-flow.md
   - API Reference:
+      - api/index.md
       - JSON Schema: api/json-schema.md
       - Pattern Format: api/pattern-format.md
       - Config Format: api/config-format.md
   - Development:
+      - development/index.md
       - Setup Guide: development/setup.md
       - Testing Guide: development/testing.md
       - Code Patterns: development/patterns.md

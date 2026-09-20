@@ -29,29 +29,34 @@ logsift transforms verbose command output (2000+ lines) into actionable intellig
 - [Agentic Integration](concepts/agentic-integration.md) ⭐ Using with Claude Code
 - [Output Modes](concepts/output-modes.md) - JSON vs Markdown
 - [Pattern Matching](concepts/pattern-matching.md) - How patterns work
+- [concepts/](concepts/index.md) - Index of this section
 
 ### How-To Guides
 
 - [Structured Logging](guides/structured-logging.md) ⭐ Write log-friendly scripts
 - [Custom Patterns](guides/custom-patterns.md) - Create your own patterns
 - [Process Monitoring](guides/monitoring.md) - Monitor commands effectively
+- [guides/](guides/index.md) - Index of this section
 
 ### Architecture
 
 - [Design Principles](architecture/design-principles.md) - Why logsift works this way
 - [Data Flow](architecture/data-flow.md) - How analysis works internally
+- [architecture/](architecture/index.md) - Index of this section
 
 ### API Reference
 
 - [JSON Schema](api/json-schema.md) - Output format specification
 - [Pattern Format](api/pattern-format.md) - TOML pattern file spec
 - [Config Format](api/config-format.md) - Configuration file spec
+- [api/](api/index.md) - Index of this section
 
 ### Development
 
 - [Development Setup](development/setup.md) - Contributing guide
 - [Testing Guide](development/testing.md) - How to test
 - [Code Patterns](development/patterns.md) - Code standards
+- [development/](development/index.md) - Index of this section
 
 ## The Problem logsift Solves
 
