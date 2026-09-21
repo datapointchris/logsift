@@ -232,7 +232,6 @@ toon-format = { git = "https://github.com/toon-format/toon-python" }
 
 [tool.semantic_release]
 version_toml = ["pyproject.toml:project.version"]
-branch = "main"
 commit_message = "build(release): {version}"
 # The package name is hardcoded on purpose. python-semantic-release sets no
 # $PACKAGE_NAME, so `uv lock --upgrade-package "$PACKAGE_NAME"` silently no-ops
