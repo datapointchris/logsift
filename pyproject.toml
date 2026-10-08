@@ -51,7 +51,7 @@ dev = [
     "docformatter>=1.7.5",
     "interrogate>=1.7.0",
     "mypy>=1.10.0",
-    "ruff>=0.7.0",
+    "ruff==0.12.5",
     # Documentation
     "mkdocs-macros-plugin>=1.3.7",
     "mkdocs-material>=9.5.20",
@@ -233,6 +233,9 @@ managed = [
     ["pytest", "ini_options", "minversion"],
     ["pytest", "ini_options", "testpaths"],
 ]
+# Dependencies held at the version the pre-commit hook runs, in every group
+# and extra that names them, so a local run and CI cannot disagree.
+pinned = ["ruff"]
 
 [build-system]
 requires = ["uv_build>=0.9.13,<0.10.0"]
