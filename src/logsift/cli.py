@@ -789,11 +789,9 @@ def analyzed_clean(
 
     if dry_run:
         # Show what would be deleted
-        from datetime import UTC
-        from datetime import datetime
-        from datetime import timedelta
+        import datetime as dt
 
-        cutoff_time = datetime.now(tz=UTC) - timedelta(days=days)
+        cutoff_time = dt.datetime.now(tz=dt.UTC) - dt.timedelta(days=days)
         cutoff_timestamp = cutoff_time.timestamp()
 
         to_delete = []

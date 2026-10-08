@@ -3,12 +3,12 @@
 Handles parsing timestamps from various formats using python-dateutil.
 """
 
-from datetime import datetime
+import datetime as dt
 
 from dateutil import parser
 
 
-def parse_timestamp(timestamp_str: str) -> datetime | None:
+def parse_timestamp(timestamp_str: str) -> dt.datetime | None:
     """Parse a timestamp string in any common format.
 
     Args:
@@ -23,17 +23,17 @@ def parse_timestamp(timestamp_str: str) -> datetime | None:
         return None
 
 
-def format_timestamp(dt: datetime, format_str: str = '%Y-%m-%d %H:%M:%S') -> str:
+def format_timestamp(instant: dt.datetime, format_str: str = '%Y-%m-%d %H:%M:%S') -> str:
     """Format a datetime object as a string.
 
     Args:
-        dt: datetime object to format
+        instant: datetime object to format
         format_str: strftime format string
 
     Returns:
         Formatted timestamp string
     """
-    return dt.strftime(format_str)
+    return instant.strftime(format_str)
 
 
 def format_duration(seconds: float) -> str:

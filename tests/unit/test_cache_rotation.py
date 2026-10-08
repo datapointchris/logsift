@@ -1,9 +1,7 @@
 """Tests for cache rotation."""
 
+import datetime as dt
 import tempfile
-from datetime import UTC
-from datetime import datetime
-from datetime import timedelta
 from pathlib import Path
 
 from logsift.cache.rotation import clean_old_logs
@@ -41,7 +39,7 @@ def test_clean_old_logs_deletes_old_files():
         old_file.write_text('test')
 
         # Set modification time to 100 days ago
-        old_time = (datetime.now(tz=UTC) - timedelta(days=100)).timestamp()
+        old_time = (dt.datetime.now(tz=dt.UTC) - dt.timedelta(days=100)).timestamp()
         old_file.touch()
         # Update the modification time
         import os
@@ -67,7 +65,7 @@ def test_clean_old_logs_preserves_recent_deletes_old():
         old_file.write_text('old')
 
         # Set old file modification time to 100 days ago
-        old_time = (datetime.now(tz=UTC) - timedelta(days=100)).timestamp()
+        old_time = (dt.datetime.now(tz=dt.UTC) - dt.timedelta(days=100)).timestamp()
         import os
 
         os.utime(old_file, (old_time, old_time))
@@ -89,7 +87,7 @@ def test_clean_old_logs_with_subdirectories():
         old_file = subdir / 'old.log'
         old_file.write_text('test')
 
-        old_time = (datetime.now(tz=UTC) - timedelta(days=100)).timestamp()
+        old_time = (dt.datetime.now(tz=dt.UTC) - dt.timedelta(days=100)).timestamp()
         import os
 
         os.utime(old_file, (old_time, old_time))
@@ -114,7 +112,7 @@ def test_clean_old_logs_custom_retention():
         old_file = cache_dir / 'file.log'
         old_file.write_text('test')
 
-        old_time = (datetime.now(tz=UTC) - timedelta(days=5)).timestamp()
+        old_time = (dt.datetime.now(tz=dt.UTC) - dt.timedelta(days=5)).timestamp()
         import os
 
         os.utime(old_file, (old_time, old_time))
@@ -136,7 +134,7 @@ def test_clean_old_logs_returns_count():
         cache_dir = Path(tmpdir)
 
         # Create multiple old files
-        old_time = (datetime.now(tz=UTC) - timedelta(days=100)).timestamp()
+        old_time = (dt.datetime.now(tz=dt.UTC) - dt.timedelta(days=100)).timestamp()
         import os
 
         for i in range(5):
@@ -161,7 +159,7 @@ def test_clean_old_logs_only_log_files():
         old_txt = cache_dir / 'old.txt'
         old_txt.write_text('test')
 
-        old_time = (datetime.now(tz=UTC) - timedelta(days=100)).timestamp()
+        old_time = (dt.datetime.now(tz=dt.UTC) - dt.timedelta(days=100)).timestamp()
         import os
 
         os.utime(old_log, (old_time, old_time))

@@ -3,9 +3,7 @@
 Handles cleanup of old log files based on retention policies.
 """
 
-from datetime import UTC
-from datetime import datetime
-from datetime import timedelta
+import datetime as dt
 from pathlib import Path
 
 
@@ -23,7 +21,7 @@ def clean_old_logs(cache_dir: Path, retention_days: int = 90) -> int:
         return 0
 
     # Calculate cutoff time
-    cutoff_time = datetime.now(tz=UTC) - timedelta(days=retention_days)
+    cutoff_time = dt.datetime.now(tz=dt.UTC) - dt.timedelta(days=retention_days)
     cutoff_timestamp = cutoff_time.timestamp()
 
     deleted_count = 0

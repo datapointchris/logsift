@@ -3,9 +3,8 @@
 Manages the ~/.cache/logsift directory structure and log file storage.
 """
 
+import datetime as dt
 import re
-from datetime import UTC
-from datetime import datetime
 from operator import itemgetter
 from pathlib import Path
 
@@ -55,7 +54,7 @@ class CacheManager:
         sanitized_name = re.sub(r'[^\w\-.]', '_', sanitized_name)
 
         # Create ISO8601 timestamp (prefix)
-        timestamp = datetime.now(tz=UTC).strftime('%Y-%m-%dT%H:%M:%S')
+        timestamp = dt.datetime.now(tz=dt.UTC).strftime('%Y-%m-%dT%H:%M:%S')
 
         # Build filename stem (same across all formats)
         stem = f'{timestamp}-{sanitized_name}'
@@ -266,7 +265,7 @@ class CacheManager:
                         'context': '',
                         'size_bytes': stat.st_size,
                         'modified_timestamp': int(stat.st_mtime),
-                        'modified_iso': datetime.fromtimestamp(stat.st_mtime, tz=UTC).isoformat(),
+                        'modified_iso': dt.datetime.fromtimestamp(stat.st_mtime, tz=dt.UTC).isoformat(),
                     }
                 )
 

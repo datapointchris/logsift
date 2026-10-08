@@ -3,12 +3,12 @@
 Monitors a command and analyzes its output.
 """
 
+import datetime as dt
 import os
 import shlex
 import subprocess  # nosec B404
 import sys
 import time
-from datetime import datetime
 
 from rich.console import Console
 
@@ -132,7 +132,7 @@ def monitor_command(
         stderr_console.print(f'[bold]Name:[/bold] {name}')
         if log_file:
             stderr_console.print(f'[bold]Log:[/bold] {log_file}')
-        start_time_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        start_time_str = dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         stderr_console.print(f'[bold]Started:[/bold] {start_time_str}\n')
 
     # Run command and stream output
@@ -264,7 +264,7 @@ def monitor_command(
     # Print completion banner - only in interactive mode
     if show_progress:
         stderr_console.print('\n[bold green]## Process Completed[/bold green]')
-        end_time_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        end_time_str = dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         stderr_console.print(f'[bold]Completed:[/bold] {end_time_str}')
         stderr_console.print(f'[bold]Duration:[/bold] {duration:.1f}s ({int(duration // 60)}m {int(duration % 60)}s)')
         stderr_console.print(f'[bold]Exit code:[/bold] {exit_code}\n')
