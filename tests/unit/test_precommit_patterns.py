@@ -183,20 +183,18 @@ def test_codespell_typo_pattern():
     pattern = next((p for p in data['patterns'] if p['name'] == 'codespell_typo'), None)
     assert pattern is not None, 'codespell_typo pattern not found'
 
-    # Real codespell output lines
-    test_line1 = 'tests/pre-commit-testing/violations/codespell_typos.txt:3: develoment ==> development'
-    match1 = re.search(pattern['regex'], test_line1)
-    assert match1 is not None, f"Pattern didn't match: {test_line1}"
-    assert match1.group(1) == 'tests/pre-commit-testing/violations/codespell_typos.txt'
-    assert match1.group(2) == '3'
-    assert match1.group(3) == 'develoment'
-    assert match1.group(4) == 'development'
+    # Captured output sits with the typos it reports, where codespell itself never reads it
+    captured = Path('tests/fixtures/pre-commit-violations/codespell_output.txt').read_text().splitlines()
+    assert len(captured) == 2
 
-    test_line2 = 'tests/pre-commit-testing/violations/codespell_typos.txt:3: feture ==> feature, future'
-    match2 = re.search(pattern['regex'], test_line2)
-    assert match2 is not None, f"Pattern didn't match: {test_line2}"
-    assert match2.group(3) == 'feture'
-    assert 'feature' in match2.group(4)
+    for line in captured:
+        path, number, finding = line.split(':', 2)
+        typo, suggestions = finding.strip().split(' ==> ')
+        match = re.search(pattern['regex'], line)
+        assert match is not None, f"Pattern didn't match: {line}"
+        assert match.group(1, 2, 3, 4) == (path, number, typo, suggestions)
+
+    assert captured[1].endswith('==> feature, future'), 'a multi-suggestion line must stay covered'
 
 
 def test_file_validation_patterns():

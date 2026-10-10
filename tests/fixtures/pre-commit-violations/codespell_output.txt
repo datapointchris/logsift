@@ -1,0 +1,2 @@
+tests/fixtures/pre-commit-violations/codespell_typos.txt:3: develoment ==> development
+tests/fixtures/pre-commit-violations/codespell_typos.txt:3: feture ==> feature, future
