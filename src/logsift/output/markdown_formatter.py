@@ -36,19 +36,19 @@ def format_markdown(analysis_result: dict[str, Any]) -> str:
     if errors:
         lines.append('## Errors\n')
         for error in errors:
-            lines.append(_format_issue(error, is_error=True))
+            lines.append(format_issue(error, is_error=True))
 
     # Format warnings
     warnings = analysis_result.get('warnings', [])
     if warnings:
         lines.append('## Warnings\n')
         for warning in warnings:
-            lines.append(_format_issue(warning, is_error=False))
+            lines.append(format_issue(warning, is_error=False))
 
     return '\n'.join(lines)
 
 
-def _format_issue(issue: dict[str, Any], is_error: bool) -> str:
+def format_issue(issue: dict[str, Any], is_error: bool) -> str:
     """Format a single error or warning.
 
     Args:

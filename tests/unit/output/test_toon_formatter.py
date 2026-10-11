@@ -4,10 +4,10 @@ import json
 
 import pytest
 
-from logsift.output.toon_formatter import _compact_error
-from logsift.output.toon_formatter import _prepare_for_toon
-from logsift.output.toon_formatter import _strip_nulls
+from logsift.output.toon_formatter import compact_error
 from logsift.output.toon_formatter import format_toon
+from logsift.output.toon_formatter import prepare_for_toon
+from logsift.output.toon_formatter import strip_nulls
 
 
 @pytest.fixture
@@ -136,11 +136,11 @@ class TestFormatToon:
 
 
 class TestPrepareForToon:
-    """Tests for _prepare_for_toon()."""
+    """Tests for prepare_for_toon()."""
 
     def test_prepare_strips_metadata(self, sample_analysis_result):
         """Test that preparation strips pattern metadata from errors."""
-        result = _prepare_for_toon(sample_analysis_result)
+        result = prepare_for_toon(sample_analysis_result)
 
         # Summary and stats should be preserved
         assert 'summary' in result
@@ -167,7 +167,7 @@ class TestPrepareForToon:
 
     def test_prepare_strips_nulls(self, sample_analysis_result):
         """Test that preparation strips null fields."""
-        result = _prepare_for_toon(sample_analysis_result)
+        result = prepare_for_toon(sample_analysis_result)
 
         # Error has file=None and file_line=None, should be stripped
         error = result['errors'][0]
@@ -180,7 +180,7 @@ class TestPrepareForToon:
 
     def test_prepare_preserves_non_null_values(self, sample_analysis_result):
         """Test that non-null actionable fields are preserved."""
-        result = _prepare_for_toon(sample_analysis_result)
+        result = prepare_for_toon(sample_analysis_result)
 
         # Warning has file and file_line, should be kept
         warning = result['warnings'][0]
@@ -189,7 +189,7 @@ class TestPrepareForToon:
 
 
 class TestCompactError:
-    """Tests for _compact_error()."""
+    """Tests for compact_error()."""
 
     def test_compact_error_keeps_actionable_fields(self):
         """Test that compact_error keeps only actionable fields."""
@@ -208,7 +208,7 @@ class TestCompactError:
             'context_after': ['line3', 'line4'],
         }
 
-        result = _compact_error(error)
+        result = compact_error(error)
 
         # Should have actionable fields
         assert result['id'] == 1
@@ -238,7 +238,7 @@ class TestCompactError:
             'suggestion': None,
         }
 
-        result = _compact_error(error)
+        result = compact_error(error)
 
         # Should have non-null fields
         assert result['id'] == 1
@@ -253,7 +253,7 @@ class TestCompactError:
 
 
 class TestStripNulls:
-    """Tests for _strip_nulls()."""
+    """Tests for strip_nulls()."""
 
     def test_strip_nulls_removes_none_values(self):
         """Test that strip_nulls removes None values."""
@@ -264,7 +264,7 @@ class TestStripNulls:
             'd': None,
         }
 
-        result = _strip_nulls(data)
+        result = strip_nulls(data)
 
         assert result == {'a': 1, 'c': 'value'}
 
@@ -277,12 +277,12 @@ class TestStripNulls:
             'd': False,
         }
 
-        result = _strip_nulls(data)
+        result = strip_nulls(data)
 
         # Empty string, 0, and False should be preserved (not None)
         assert result == {'a': '', 'c': 0, 'd': False}
 
     def test_strip_nulls_empty_dict(self):
         """Test strip_nulls with empty dict."""
-        result = _strip_nulls({})
+        result = strip_nulls({})
         assert result == {}

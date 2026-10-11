@@ -40,12 +40,12 @@ def load_config(config_file: Path | None = None) -> dict[str, Any]:
         return config
 
     # Merge user config into defaults
-    _deep_merge(config, user_config)
+    deep_merge(config, user_config)
 
     return config
 
 
-def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> None:
+def deep_merge(base: dict[str, Any], override: dict[str, Any]) -> None:
     """Recursively merge override dict into base dict.
 
     Args:
@@ -55,7 +55,7 @@ def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> None:
     for key, value in override.items():
         if key in base and isinstance(base[key], dict) and isinstance(value, dict):
             # Recursively merge nested dicts
-            _deep_merge(base[key], value)
+            deep_merge(base[key], value)
         else:
             # Override the value
             base[key] = value

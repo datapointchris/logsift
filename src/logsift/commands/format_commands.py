@@ -200,9 +200,9 @@ def create_format_commands(
 
         # Either tail or display
         if tail:
-            _tail_file(file_path, interval)
+            tail_file(file_path, interval)
         else:
-            _display_file(file_path, language)
+            display_file(file_path, language)
 
     @app.command('browse')
     def format_browse(
@@ -260,14 +260,14 @@ def create_format_commands(
         file_path = Path(selected_path)
 
         if tail:
-            _tail_file(file_path, interval)
+            tail_file(file_path, interval)
         else:
-            _display_file(file_path, language)
+            display_file(file_path, language)
 
     return app
 
 
-def _display_file(file_path: Path, language: str) -> None:
+def display_file(file_path: Path, language: str) -> None:
     """Display a file with bat for syntax highlighting.
 
     Args:
@@ -279,7 +279,7 @@ def _display_file(file_path: Path, language: str) -> None:
     display_file_with_bat(file_path, language=language)
 
 
-def _tail_file(file_path: Path, interval: int = 1) -> None:
+def tail_file(file_path: Path, interval: int = 1) -> None:
     """Tail a file in real-time.
 
     Args:

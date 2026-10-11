@@ -24,7 +24,7 @@ console = Console()
 stderr_console = Console(stderr=True)
 
 
-def _generate_log_name(command: list[str]) -> str:
+def generate_log_name(command: list[str]) -> str:
     """Generate an informative log name from a command.
 
     Includes all non-flag arguments up to 3 parts for descriptive names.
@@ -98,7 +98,7 @@ def monitor_command(
     """
     # Use command name if no name provided
     if name is None:
-        name = _generate_log_name(command)
+        name = generate_log_name(command)
 
     # Determine log file paths
     log_file = None

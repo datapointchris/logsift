@@ -59,9 +59,9 @@ def send_notification(
 
     try:
         if sys.platform == 'darwin':
-            return _send_macos_notification(title, message, sound)
+            return send_macos_notification(title, message, sound)
         elif sys.platform == 'linux':
-            return _send_linux_notification(title, message)
+            return send_linux_notification(title, message)
         else:
             return False
     except Exception:
@@ -69,7 +69,7 @@ def send_notification(
         return False
 
 
-def _send_macos_notification(title: str, message: str, sound: bool) -> bool:
+def send_macos_notification(title: str, message: str, sound: bool) -> bool:
     """Send notification on macOS using osascript.
 
     Args:
@@ -98,7 +98,7 @@ def _send_macos_notification(title: str, message: str, sound: bool) -> bool:
     return result.returncode == 0
 
 
-def _send_linux_notification(title: str, message: str) -> bool:
+def send_linux_notification(title: str, message: str) -> bool:
     """Send notification on Linux using notify-send.
 
     Args:

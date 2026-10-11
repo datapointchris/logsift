@@ -17,13 +17,13 @@ def format_json(analysis_result: dict[str, Any]) -> str:
         JSON string formatted for LLM agents
     """
     # Convert file_references tuples to lists for JSON serialization
-    output = _prepare_for_json(analysis_result)
+    output = prepare_for_json(analysis_result)
 
     # Pretty-print with 2-space indentation for readability
     return json.dumps(output, indent=2, ensure_ascii=False)
 
 
-def _prepare_for_json(data: dict[str, Any]) -> dict[str, Any]:
+def prepare_for_json(data: dict[str, Any]) -> dict[str, Any]:
     """Prepare data for JSON serialization by converting tuples to lists.
 
     Args:
@@ -37,14 +37,14 @@ def _prepare_for_json(data: dict[str, Any]) -> dict[str, Any]:
 
     for key, value in data.items():
         if isinstance(value, list):
-            result[key] = [_convert_item(item) for item in value]
+            result[key] = [convert_item(item) for item in value]
         else:
             result[key] = value
 
     return result
 
 
-def _convert_item(item: Any) -> Any:
+def convert_item(item: Any) -> Any:
     """Convert an item for JSON serialization.
 
     Args:
@@ -60,10 +60,10 @@ def _convert_item(item: Any) -> Any:
                 # Convert list of tuples to list of lists
                 converted[key] = [list(ref) if isinstance(ref, tuple) else ref for ref in value]
             elif isinstance(value, dict | list):
-                converted[key] = _convert_item(value)
+                converted[key] = convert_item(value)
             else:
                 converted[key] = value
         return converted
     if isinstance(item, list):
-        return [_convert_item(x) for x in item]
+        return [convert_item(x) for x in item]
     return item

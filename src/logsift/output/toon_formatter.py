@@ -23,13 +23,13 @@ def format_toon(analysis_result: dict[str, Any]) -> str:
         TOON string formatted for LLM agents
     """
     # Strip non-actionable fields before encoding
-    compact_data = _prepare_for_toon(analysis_result)
+    compact_data = prepare_for_toon(analysis_result)
 
     # Encode to TOON format
     return encode(compact_data)
 
 
-def _prepare_for_toon(data: dict[str, Any]) -> dict[str, Any]:
+def prepare_for_toon(data: dict[str, Any]) -> dict[str, Any]:
     """Prepare data for TOON encoding by stripping non-actionable fields.
 
     Removes:
@@ -47,7 +47,7 @@ def _prepare_for_toon(data: dict[str, Any]) -> dict[str, Any]:
 
     # Copy summary, stripping nulls
     if 'summary' in data:
-        result['summary'] = _strip_nulls(data['summary'])
+        result['summary'] = strip_nulls(data['summary'])
 
     # Copy stats
     if 'stats' in data:
@@ -63,16 +63,16 @@ def _prepare_for_toon(data: dict[str, Any]) -> dict[str, Any]:
 
     # Process errors - strip metadata and nulls
     if 'errors' in data:
-        result['errors'] = [_compact_error(error) for error in data['errors']]
+        result['errors'] = [compact_error(error) for error in data['errors']]
 
     # Process warnings - strip metadata and nulls
     if 'warnings' in data:
-        result['warnings'] = [_compact_error(warning) for warning in data['warnings']]
+        result['warnings'] = [compact_error(warning) for warning in data['warnings']]
 
     return result
 
 
-def _compact_error(error: dict[str, Any]) -> dict[str, Any]:
+def compact_error(error: dict[str, Any]) -> dict[str, Any]:
     """Strip non-actionable fields from an error/warning.
 
     Keeps only: id, severity, line_in_log, message, file, file_line, suggestion
@@ -108,10 +108,10 @@ def _compact_error(error: dict[str, Any]) -> dict[str, Any]:
         if context_messages:
             compact['context_after'] = context_messages
 
-    return _strip_nulls(compact)
+    return strip_nulls(compact)
 
 
-def _strip_nulls(data: dict[str, Any]) -> dict[str, Any]:
+def strip_nulls(data: dict[str, Any]) -> dict[str, Any]:
     """Remove None/null values from a dictionary.
 
     Args:
