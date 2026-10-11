@@ -193,7 +193,7 @@ Total: O(n × p) dominated by pattern matching
 - **Errors**: O(e) - typically e << n
 - **Output**: O(e × c) - errors with context
 
-For large logs (>100 MB), Phase 3 adds streaming to reduce memory.
+Memory therefore grows with the log, because the whole file is read before analysis starts.
 
 ### Optimization Strategies
 

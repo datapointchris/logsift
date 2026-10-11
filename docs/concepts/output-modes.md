@@ -347,17 +347,11 @@ logsift analyze app.log --format=auto  # or omit --format
    watch -n 60 'logsift analyze /var/log/app.log --format=markdown'
    ```
 
-## Plain Text Output (Future)
+## Plain Text Output
 
-Phase 3 will add `--format=plain` for:
-
-- No ANSI colors
-- Simple text output
-- Logging to files
-- Email-friendly format
+`--format=plain` prints no ANSI colors, for files and email:
 
 ```bash
-# Future
 logsift analyze app.log --format=plain > errors.txt
 ```
 

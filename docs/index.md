@@ -80,14 +80,8 @@ Command produces 2000 lines → logsift extracts 20-50 lines
 
 ## Project Status
 
-**Status**: Alpha. `logsift --version` prints the installed version.
-
-- ✅ **Phase 1 Complete**: Core Analyzer + Basic Monitor (MVP)
-- ✅ **Phase 2 Complete**: Enhanced features (validation, monitoring, cache)
-- 📋 **Phase 3 Planned**: MCP Server & Remote Monitoring
-- 📋 **Phase 4 Planned**: Advanced Features (streaming, web UI)
-
-**Test Coverage**: 85% (245 tests passing)
+**Status**: Alpha. `logsift --version` prints the installed version, and
+`uv run pytest --cov=logsift` prints the current coverage.
 
 ## Use Cases
 

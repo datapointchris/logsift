@@ -139,11 +139,10 @@ declaration `forge toolchain show` names; do not restate it here, it drifts.
 
 The core analyzer, pattern loading, streaming, and fzf integration are all implemented. What
 remains stubbed raises `NotImplementedError`, so `rg -l NotImplementedError src/` is the current
-list rather than a phase table here — as of this writing it is the `patterns` and `monitor`
-commands, remote monitoring, cache metadata, the plain formatter, and config validation.
+list. Nothing imports those modules.
 
-**The `mcp/` package is dead, not pending.** MCP servers are retired ecosystem-wide (see
-`~/.claude/CLAUDE.md` § Data CLIs); the CLI with `--json` is the integration surface. Those two
-stubs should be deleted rather than finished.
+**There is no MCP server and no remote monitor, by design.** The CLI with `--json` is the
+integration surface for an agent. A remote command is monitored like any other:
+`logsift monitor -- ssh user@host ./deploy.sh`.
 
 When implementing: tests first (TDD), implement in `core/`/`patterns/`/`output/`, wire up in `commands/`.

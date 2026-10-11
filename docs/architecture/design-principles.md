@@ -90,16 +90,16 @@ Reasoning:
 - Simpler for MVP
 - Works well for capturing command output
 
-### Why No Streaming (Phase 1/2)?
+### Why Read the Whole File?
 
-**Deferred to Phase 3**
+**Chosen:** Read the whole log, then analyze it
+**Rejected:** Incremental parsing
 
 Reasoning:
 
-- MVP needs simple, complete analysis
-- Streaming adds complexity
+- Complete analysis is simpler
+- Incremental parsing adds complexity
 - Most logs are <10MB
-- Phase 3 adds for large files
 
 ### Why Auto-Format Detection?
 
@@ -143,11 +143,10 @@ Try patterns before generic extraction:
 
 What logsift intentionally does NOT do:
 
-1. **Real-time streaming** (Phase 1/2) - Batch analysis only
-2. **Log aggregation** - Use ELK, Splunk, etc.
-3. **Metrics/monitoring** - Use Prometheus, Grafana
-4. **Log storage** - Cache is temporary, not database
-5. **Multi-format output** - JSON + Markdown only
+1. **Log aggregation** - Use ELK, Splunk, etc.
+2. **Metrics/monitoring** - Use Prometheus, Grafana
+3. **Log storage** - Cache is temporary, not database
+4. **Multi-format output** - JSON + Markdown only
 
 ## Success Criteria
 

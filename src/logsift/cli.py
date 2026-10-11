@@ -784,7 +784,7 @@ def analyzed_clean(
 
 
 # ============================================================================
-# Format-specific command groups (Phase 5: CLI redesign)
+# Format-specific command groups
 # ============================================================================
 #
 # Create unified command groups for each log format using template function.

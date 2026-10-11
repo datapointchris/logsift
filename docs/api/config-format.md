@@ -119,15 +119,11 @@ Or override only what you need:
 retention_days = 30  # Keep logs for 30 days instead of 90
 ```
 
-## Environment Variables (Future)
+## Environment Variables
 
-Phase 3 will add environment variable support:
-
-```bash
-export LOGSIFT_CONFIG=/custom/path/config.toml
-export LOGSIFT_CACHE_DIR=/custom/cache
-export LOGSIFT_NO_COLOR=1
-```
+Each `LOGSIFT_*` variable sets the flag it names, so
+`LOGSIFT_CONFIG_FILE=/custom/path/config.toml` stands in for `--config-file`.
+The [CLI Reference](../cli-reference.md#environment-variables) lists them all.
 
 ## Validation
 

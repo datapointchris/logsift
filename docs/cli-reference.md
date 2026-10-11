@@ -367,22 +367,10 @@ Logs are saved to `~/.cache/logsift/`:
 
 ### Cache Cleanup
 
-Manually clean old logs using Python:
-
-```python
-from logsift.cache.rotation import clean_old_logs
-from pathlib import Path
-
-# Clean logs older than 30 days
-deleted = clean_old_logs(Path.home() / '.cache' / 'logsift', retention_days=30)
-print(f'Deleted {deleted} old log files')
-```
-
-Planned CLI command (Phase 3):
-
 ```bash
 logsift logs clean              # Clean >90 days (default)
 logsift logs clean --days=30    # Custom retention
+logsift logs clean --dry-run    # List what would be deleted
 ```
 
 ### Configuration File
@@ -494,16 +482,7 @@ logsift analyze app.log
 For very large log files (>100 MB):
 
 - Analysis may take several seconds
-- Memory usage scales with file size
-- Phase 3 will add streaming/incremental parsing
-
-```bash
-# Current behavior
-logsift analyze huge.log  # May be slow for >100MB files
-
-# Phase 3 planned
-logsift analyze --streaming huge.log  # Process incrementally
-```
+- Memory usage scales with file size, because the whole file is read first
 
 ### Batch Processing
 
@@ -535,18 +514,6 @@ alias lsm-json='logsift monitor --format=json'
 alias lsa-json='logsift analyze --format=json'
 ```
 
-### Shell Completion (Planned)
-
-Tab completion planned for Phase 3:
-
-```bash
-# Bash
-eval "$(_LOGSIFT_COMPLETE=bash_source logsift)"
-
-# Zsh
-eval "$(_LOGSIFT_COMPLETE=zsh_source logsift)"
-```
-
 ## Integration with Other Tools
 
 ### jq (JSON Processing)
@@ -564,10 +531,10 @@ logsift analyze app.log --format=json | jq -r '.errors[] | select(.file) | "\(.f
 
 ### fzf (Fuzzy Finding)
 
-Planned integration (Phase 2):
+`logsift logs browse` and `logsift analyze browse` pick a cached log with fzf.
 
 ```bash
-# Interactively select error
+# Interactively select a cached log
 logsift logs list | fzf
 
 # Jump to error in editor

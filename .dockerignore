@@ -46,6 +46,5 @@ Thumbs.db
 venv/
 README.md
 LICENSE
-PLANNING.md
 .pre-commit-config.yaml
 .markdownlint.json

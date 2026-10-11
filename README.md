@@ -85,12 +85,12 @@ logsift monitor -- uv run python -m pytest --cov=myapp
 3. Saves log to `~/.cache/logsift/monitor/`
 4. Outputs structured analysis (JSON or Markdown)
 
-### Watch Command
+### Watching a Growing Log
 
-Watch a log file in real-time (Phase 3):
+`analyze --stream` analyzes the whole file, then keeps analyzing as it grows:
 
 ```bash
-logsift watch /var/log/app.log
+logsift analyze --stream /var/log/app.log
 ```
 
 ### Output Formats
@@ -252,25 +252,11 @@ chmod 755 ~/.cache/logsift
 
 ## Project Status
 
-**Status**: Alpha. `logsift --version` prints the installed version.
-
-✅ **Phase 1 Complete**: Core Analyzer + Basic Monitor (MVP)
-✅ **Phase 2 Complete**: Enhanced features (pattern validation, monitoring, cache rotation)
-
-**Test Coverage**: 85% (372 tests passing)
-
-See [PLANNING.md](PLANNING.md) for the complete roadmap and implementation plan.
-
-## Development Phases
-
-- ✅ **Phase 1**: Core Analyzer + Basic Monitor (MVP) - **COMPLETE**
-- ✅ **Phase 2**: Enhanced features (pattern validation, monitoring, cache rotation) - **COMPLETE**
-- **Phase 3** (Planned): MCP Server & Remote Monitoring (Claude Code native integration)
-- **Phase 4** (Planned): Advanced Features (streaming, fzf integration, web UI)
+**Status**: Alpha. `logsift --version` prints the installed version, and
+`uv run pytest --cov=logsift` prints the current coverage.
 
 ## Documentation
 
-- [Planning Document](PLANNING.md) - Complete project vision and roadmap
 - [Development Guide](CLAUDE.md) - For Claude Code and contributors
 - CLI Reference - See `logsift --help` and `logsift COMMAND --help`
 - Pattern Format - See custom patterns section above

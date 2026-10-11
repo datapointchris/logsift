@@ -53,7 +53,7 @@
 
 ### Testing Requirements
 
-- **Target Coverage**: 80% (currently 40% due to stub implementations)
+- **Target Coverage**: 80%
 - **Test Philosophy**: Test behavior, not implementation
 - **Unit Tests**: Test individual components in isolation
 - **Integration Tests**: Test complete workflows with real fixtures
@@ -73,8 +73,7 @@ logsift/
 │   ├── monitor/           # Process monitoring
 │   ├── config/            # Configuration management
 │   ├── cache/             # Log caching system
-│   ├── utils/             # Utility functions
-│   └── mcp/               # MCP server (Phase 3)
+│   └── utils/             # Utility functions
 └── tests/                 # Test suite
 ```
 
@@ -147,41 +146,13 @@ test: add integration tests for monitor command
 chore: update dependencies
 ```
 
-## Implementation Phases
-
-### Phase 1 (Current): Core Analyzer + Basic Monitor (MVP)
-
-Focus on building:
-
-- Core analysis engine (parser, extractors, matchers)
-- Basic CLI with monitor and analyze commands
-- JSON and Markdown output formatters
-- Default pattern libraries
-- Basic test coverage
-
-### Phase 2: Enhanced Features
-
-- Custom pattern library loading
-- Dual output modes (streaming)
-- fzf integration for log browsing
-- Live watching (tail mode)
-- External log support
-- Notifications
-
-### Phase 3: MCP Server & Remote Monitoring
-
-- MCP server for native Claude Code integration
-- Remote SSH monitoring
-- Advanced features and optimizations
-
 ## Critical Gotchas
 
-1. **Coverage Threshold**: Currently set to 40% for Phase 1 (stub implementations). Will increase as functionality is implemented.
-2. **Pattern Files**: Must be valid TOML with required fields (name, regex, severity, description)
-3. **Output Format**: JSON schema must remain stable for LLM consumption
-4. **TTY Detection**: Auto-format selection based on sys.stdout.isatty()
-5. **Type Hints**: Use modern Python 3.13+ syntax (list[str] not List[str])
-6. **Error Handling**: Prefer raising NotImplementedError for stubs, specific exceptions for errors
+1. **Pattern Files**: Must be valid TOML with required fields (name, regex, severity, description)
+2. **Output Format**: JSON schema must remain stable for LLM consumption
+3. **TTY Detection**: Auto-format selection based on sys.stdout.isatty()
+4. **Type Hints**: Use modern Python 3.13+ syntax (list[str] not List[str])
+5. **Error Handling**: Prefer raising NotImplementedError for stubs, specific exceptions for errors
 
 ## Development Principles
 
@@ -215,7 +186,7 @@ All documentation must be:
 - Include code examples and technical details
 - Keep up to date with code changes
 
-See PLANNING.md for complete project specification and architecture details.
+`docs/architecture/` holds the design principles and data flow.
 
 ## Key Configuration Files
 
@@ -229,7 +200,6 @@ See PLANNING.md for complete project specification and architecture details.
 
 ## Resources
 
-- Planning Document: PLANNING.md
 - README: Quick start and features overview
 - Tests: examples/fixtures/ for real-world log samples
 - Patterns: src/logsift/patterns/defaults/ for pattern examples

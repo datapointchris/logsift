@@ -466,29 +466,6 @@ def fix_test_failure(error: dict) -> None:
         apply_code_change(test_file, test_line, fix)
 ```
 
-## Integration with MCP Server (Phase 3)
-
-In Phase 3, logsift will provide a Model Context Protocol (MCP) server for native Claude Code integration:
-
-```python
-# Future: Claude Code can call logsift as a native tool
-
-# Instead of subprocess:
-result = subprocess.run(['logsift', 'monitor', ...])
-
-# Use MCP tool directly:
-result = await logsift_monitor(command=['npm', 'run', 'build'])
-```
-
-This enables:
-
-- Native tool calling without subprocess overhead
-- Streaming analysis results
-- Bidirectional communication
-- Better error handling
-
-See MCP Integration documentation (Phase 3 - coming soon).
-
 ## Troubleshooting
 
 ### Agent Not Parsing JSON

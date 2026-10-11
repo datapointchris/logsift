@@ -166,18 +166,6 @@ uv tool install --editable .
 
 See [Development Setup](development/setup.md) for complete details.
 
-## Docker Installation (Future)
-
-Docker support planned for Phase 3:
-
-```bash
-# Pull image (when available)
-docker pull datapointchris/logsift:latest
-
-# Run as container
-docker run -v $(pwd):/logs datapointchris/logsift analyze /logs/app.log
-```
-
 ## Configuration
 
 After installation, optionally configure logsift:
@@ -279,7 +267,7 @@ Recommended approach. Install WSL2 with Ubuntu, then follow Linux instructions.
 
 ### Native Windows
 
-Not officially supported in Phase 1/2. May work with some modifications. Phase 3 will include Windows support.
+Not supported. Use WSL2.
 
 ## Verification Checklist
 
