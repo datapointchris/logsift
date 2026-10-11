@@ -12,11 +12,8 @@ from importlib.metadata import version as installed_version
 def _tool_version() -> str:
     """This build's version, or 'unknown' from a source checkout.
 
-    Read from the installed distribution rather than a constant here, so
-    semantic-release owns the one copy in `pyproject.toml` and this cannot drift
-    behind it. It had: `pyproject.toml` reached 0.1.3 while `logsift --version`
-    went on printing 0.1.0, because `version_toml` bumps the one file and
-    nothing touched the other.
+    Read from the installed distribution, whose version the release tag sets
+    through uv-dynamic-versioning. A constant here would be bumped by nothing.
 
     A checkout that was never installed has no metadata and says so rather than
     inventing a number.

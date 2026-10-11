@@ -357,7 +357,6 @@ wheels = [
 
 [[package]]
 name = "logsift"
-version = "0.1.5"
 source = { editable = "." }
 dependencies = [
     { name = "click" },
