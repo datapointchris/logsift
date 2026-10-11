@@ -3,11 +3,14 @@
 Analyzes an existing log file and outputs results.
 """
 
+import json
 import sys
+from contextlib import suppress
 from pathlib import Path
 
 from rich.console import Console
 
+from logsift.cache.manager import CacheManager
 from logsift.core.analyzer import Analyzer
 from logsift.monitor.watcher import LogWatcher
 from logsift.output.json_formatter import format_json
@@ -45,11 +48,6 @@ def analyze_log(log_file: str, output_format: str = 'auto', save: bool = True) -
 
     # Auto-save analysis result in all formats
     if save:
-        import json
-        from contextlib import suppress
-
-        from logsift.cache.manager import CacheManager
-
         cache = CacheManager()
 
         # Get stem from log file name (without extension)

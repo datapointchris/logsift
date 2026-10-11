@@ -1,15 +1,17 @@
 """Tests for logs command."""
 
 import json
+import os
+import time
 from unittest.mock import patch
 
+from logsift.cache.manager import CacheManager
 from logsift.commands.logs import clean_logs
 from logsift.commands.logs import list_logs
 
 
 def test_list_logs_empty_cache(capsys, tmp_path):
     """Test listing logs when cache is empty."""
-    from logsift.cache.manager import CacheManager
 
     # Use temporary cache directory
     def mock_init(self, cache_dir=None):
@@ -44,8 +46,6 @@ def test_list_logs_with_files(capsys, tmp_path):
     log2 = raw_dir / '2024-01-01T13:00:00-test2.log'
     log2.write_text('log content 2 with more data')
 
-    from logsift.cache.manager import CacheManager
-
     def mock_init(self, cache_dir=None):
         self.cache_dir = tmp_path
         self.raw_dir = raw_dir
@@ -74,8 +74,6 @@ def test_list_logs_json_format(capsys, tmp_path):
 
     log_file = raw_dir / '2024-01-01T12:00:00-test.log'
     log_file.write_text('test log content')
-
-    from logsift.cache.manager import CacheManager
 
     def mock_init(self, cache_dir=None):
         self.cache_dir = tmp_path
@@ -107,8 +105,6 @@ def test_list_logs_plain_format(capsys, tmp_path):
     log_file = raw_dir / '2024-01-01T12:00:00-app.log'
     log_file.write_text('app log content')
 
-    from logsift.cache.manager import CacheManager
-
     def mock_init(self, cache_dir=None):
         self.cache_dir = tmp_path
         self.raw_dir = raw_dir
@@ -130,8 +126,6 @@ def test_list_logs_plain_format(capsys, tmp_path):
 
 def test_clean_logs_empty_cache(capsys, tmp_path):
     """Test cleaning logs when cache is empty."""
-    from logsift.cache.manager import CacheManager
-
     # Use a non-existent directory
     nonexistent_dir = tmp_path / 'nonexistent'
 
@@ -147,8 +141,6 @@ def test_clean_logs_no_old_files(capsys, tmp_path):
     # Create recent log file in flat structure
     (tmp_path / '2024-01-01T12:00:00-recent.log').write_text('recent log')
 
-    from logsift.cache.manager import CacheManager
-
     with patch.object(CacheManager, '__init__', lambda self, cache_dir=None: setattr(self, 'cache_dir', tmp_path)):
         clean_logs(days=1)  # Only delete files older than 1 day
         captured = capsys.readouterr()
@@ -158,8 +150,6 @@ def test_clean_logs_no_old_files(capsys, tmp_path):
 
 def test_clean_logs_dry_run(capsys, tmp_path):
     """Test cleaning logs with dry-run mode."""
-    import time
-
     # Create an old log file in flat structure
     old_log = tmp_path / '2024-01-01T12:00:00-old.log'
     old_log.write_text('old log')
@@ -167,11 +157,8 @@ def test_clean_logs_dry_run(capsys, tmp_path):
     # Set modification time to 100 days ago
     old_time = time.time() - (100 * 24 * 60 * 60)
     old_log.touch()
-    import os
 
     os.utime(old_log, (old_time, old_time))
-
-    from logsift.cache.manager import CacheManager
 
     with patch.object(CacheManager, '__init__', lambda self, cache_dir=None: setattr(self, 'cache_dir', tmp_path)):
         clean_logs(days=30, dry_run=True)
@@ -188,19 +175,14 @@ def test_clean_logs_dry_run(capsys, tmp_path):
 
 def test_clean_logs_actual_deletion(capsys, tmp_path):
     """Test actual deletion of old log files."""
-    import time
-
     # Create an old log file in flat structure
     old_log = tmp_path / '2024-01-01T12:00:00-old.log'
     old_log.write_text('old log')
 
     # Set modification time to 100 days ago
     old_time = time.time() - (100 * 24 * 60 * 60)
-    import os
 
     os.utime(old_log, (old_time, old_time))
-
-    from logsift.cache.manager import CacheManager
 
     with patch.object(CacheManager, '__init__', lambda self, cache_dir=None: setattr(self, 'cache_dir', tmp_path)):
         clean_logs(days=30, dry_run=False)
@@ -215,21 +197,16 @@ def test_clean_logs_actual_deletion(capsys, tmp_path):
 
 def test_clean_logs_preserves_recent_files(tmp_path):
     """Test that clean_logs preserves recent files."""
-    import time
-
     # Create old log in flat structure
     old_log = tmp_path / '2024-01-01T12:00:00-old.log'
     old_log.write_text('old log')
     old_time = time.time() - (100 * 24 * 60 * 60)
-    import os
 
     os.utime(old_log, (old_time, old_time))
 
     # Create recent log
     recent_log = tmp_path / '2024-01-01T12:00:00-recent.log'
     recent_log.write_text('recent log')
-
-    from logsift.cache.manager import CacheManager
 
     with patch.object(CacheManager, '__init__', lambda self, cache_dir=None: setattr(self, 'cache_dir', tmp_path)):
         clean_logs(days=30, dry_run=False)

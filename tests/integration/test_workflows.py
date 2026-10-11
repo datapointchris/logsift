@@ -5,11 +5,15 @@ Tests end-to-end functionality with real commands and log files.
 
 import json
 import sys
+import time
+from contextlib import suppress
 from pathlib import Path
 
 from typer.testing import CliRunner
 
+from logsift.cache.manager import CacheManager
 from logsift.cli import app
+from logsift.commands.watch import watch_log
 
 runner = CliRunner()
 
@@ -177,11 +181,6 @@ class TestWatchWorkflow:
 
     def test_watch_existing_file(self, tmp_path, monkeypatch):
         """Test watching an existing log file."""
-        import time
-        from contextlib import suppress
-
-        from logsift.commands.watch import watch_log
-
         log_file = tmp_path / 'watch.log'
         log_file.write_text('Initial line\n')
 
@@ -421,8 +420,6 @@ class TestMultiFormatCreation:
 
     def test_monitor_creates_all_formats(self):
         """Test that monitor creates raw, json, toon, and md files."""
-        from logsift.cache.manager import CacheManager
-
         cache = CacheManager()
 
         # Run monitor command
@@ -470,8 +467,6 @@ class TestMultiFormatCreation:
 
     def test_analyze_creates_all_analysis_formats(self, tmp_path):
         """Test that analyze creates json, toon, and md files."""
-        from logsift.cache.manager import CacheManager
-
         cache = CacheManager()
 
         # Create a test log file in raw/
@@ -505,8 +500,6 @@ class TestMultiFormatCreation:
 
     def test_toon_format_is_compact(self):
         """Test that TOON format is more compact than JSON."""
-        from logsift.cache.manager import CacheManager
-
         cache = CacheManager()
 
         # Run monitor with an error

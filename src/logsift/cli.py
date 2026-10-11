@@ -3,6 +3,9 @@
 This module defines the primary logsift command-line interface with subcommands for monitoring, analyzing, and managing logs.
 """
 
+import datetime as dt
+import json
+from pathlib import Path
 from typing import Annotated
 
 import click
@@ -11,11 +14,26 @@ from pyselfupdate import Config
 from pyselfupdate import notify
 from pyselfupdate.typercmd import add_update_command
 from rich.console import Console
+from rich.table import Table
 from typer.core import TyperGroup
 
 from logsift import __version__
+from logsift.cache.manager import CacheManager
+from logsift.cache.rotation import clean_old_logs
 from logsift.cli_formatter import format_help_with_colors
+from logsift.commands.analyze import analyze_log
+from logsift.commands.analyze import stream_analyze_log
 from logsift.commands.format_commands import create_format_commands
+from logsift.commands.logs import browse_logs
+from logsift.commands.logs import clean_logs
+from logsift.commands.logs import list_logs
+from logsift.commands.logs import tail_log
+from logsift.commands.monitor import monitor_command
+from logsift.output.markdown_formatter import format_markdown
+from logsift.utils.display import display_file_with_bat
+from logsift.utils.display import display_with_bat
+from logsift.utils.fzf import is_fzf_available
+from logsift.utils.fzf import select_log_file
 
 
 class ColoredTyperGroup(TyperGroup):
@@ -205,15 +223,11 @@ def monitor(
         logsift monitor --minimal -- pre-commit run --files file.py
         logsift monitor --format json -- docker build -t myapp .
     """
-    from logsift.cli_formatter import format_help_with_colors
-
     # Show help if no command provided
     if command is None or len(command) == 0:
         help_text = format_help_with_colors(ctx)
         click.echo(help_text, color=True)
         raise typer.Exit()
-
-    from logsift.commands.monitor import monitor_command
 
     monitor_command(
         command,
@@ -283,21 +297,14 @@ def analyze(
         logsift analyze latest --stream
         logsift analyze browse
     """
-    from logsift.cli_formatter import format_help_with_colors
-
     # Show help if no arguments provided
     if not log_file:
         help_text = format_help_with_colors(ctx)
         click.echo(help_text, color=True)
         raise typer.Exit()
 
-    from logsift.commands.analyze import analyze_log
-    from logsift.commands.analyze import stream_analyze_log
-
     # Handle "latest" shortcut
     if log_file == 'latest':
-        from logsift.cache.manager import CacheManager
-
         cache = CacheManager()
         latest_log = cache.get_absolute_latest_log()
 
@@ -311,10 +318,6 @@ def analyze(
 
     # Handle "browse" shortcut
     elif log_file == 'browse':
-        from logsift.cache.manager import CacheManager
-        from logsift.utils.fzf import is_fzf_available
-        from logsift.utils.fzf import select_log_file
-
         if not is_fzf_available():
             console.print('[red]Error: fzf is not available[/red]')
             console.print('[dim]Install fzf to use browse mode[/dim]')
@@ -361,8 +364,6 @@ def logs_callback(ctx: typer.Context) -> None:
     """Manage cached log files."""
     # Show help if no subcommand provided
     if ctx.invoked_subcommand is None:
-        from logsift.cli_formatter import format_help_with_colors
-
         help_text = format_help_with_colors(ctx)
         click.echo(help_text, color=True)
         raise typer.Exit()
@@ -384,8 +385,6 @@ def analyzed_callback(ctx: typer.Context) -> None:
     """Manage saved analysis results."""
     # Show help if no subcommand provided
     if ctx.invoked_subcommand is None:
-        from logsift.cli_formatter import format_help_with_colors
-
         help_text = format_help_with_colors(ctx)
         click.echo(help_text, color=True)
         raise typer.Exit()
@@ -416,8 +415,6 @@ def logs_list(
         # Simple list of paths
         logsift logs list --format plain
     """
-    from logsift.commands.logs import list_logs
-
     list_logs(output_format=format)
 
 
@@ -458,8 +455,6 @@ def logs_clean(
         # Use default retention (90 days)
         logsift logs clean
     """
-    from logsift.commands.logs import clean_logs
-
     clean_logs(days=days, dry_run=dry_run)
 
 
@@ -506,8 +501,6 @@ def logs_browse(
         # Browse and tail a log file
         logsift logs browse --tail
     """
-    from logsift.commands.logs import browse_logs
-
     if tail:
         action = 'tail'
     elif view:
@@ -559,9 +552,6 @@ def logs_latest(
         # Tail with custom update interval
         logsift logs latest pytest --tail --interval 5
     """
-    from logsift.cache.manager import CacheManager
-    from logsift.commands.logs import tail_log
-
     cache = CacheManager()
 
     # Get the latest log
@@ -583,8 +573,6 @@ def logs_latest(
         tail_log(str(log_path), interval=interval)
     else:
         # Show raw log contents with bat for better UX
-        from logsift.utils.display import display_file_with_bat
-
         display_file_with_bat(log_path)
 
 
@@ -610,8 +598,6 @@ def analyzed_list(
         # List in JSON format
         logsift analyzed list --format json
     """
-    from logsift.cache.manager import CacheManager
-
     cache = CacheManager()
     analyses = cache.list_all_analyzed()
 
@@ -620,16 +606,12 @@ def analyzed_list(
         return
 
     if format == 'json':
-        import json
-
         print(json.dumps(analyses, indent=2))
     elif format == 'plain':
         for analysis in analyses:
             print(f'{analysis["name"]}\t{analysis["path"]}\t{analysis["size_bytes"]}\t{analysis["modified_iso"]}')
     else:
         # Table format
-        from rich.table import Table
-
         table = Table(title='Saved Analysis Results', show_header=True)
         table.add_column('Name', style='cyan')
         table.add_column('Size', justify='right')
@@ -656,10 +638,6 @@ def analyzed_browse() -> None:
     Examples:
         logsift analyzed browse
     """
-    from logsift.cache.manager import CacheManager
-    from logsift.utils.fzf import is_fzf_available
-    from logsift.utils.fzf import select_log_file
-
     if not is_fzf_available():
         console.print('[red]Error: fzf is not installed or not in PATH[/red]')
         console.print('[dim]Install fzf: https://github.com/junegunn/fzf#installation[/dim]')
@@ -679,15 +657,9 @@ def analyzed_browse() -> None:
         return
 
     # Display the analysis with bat for better UX
-    import json
-    from pathlib import Path
-
     try:
         analysis_data = json.loads(Path(selected_path).read_text())
         console.print(f'[cyan]Analysis: {selected_path}[/cyan]\n')
-
-        from logsift.output.markdown_formatter import format_markdown
-        from logsift.utils.display import display_with_bat
 
         output = format_markdown(analysis_data)
         display_with_bat(output, language='markdown', filename=Path(selected_path).name)
@@ -713,8 +685,6 @@ def analyzed_latest(
         # Show latest analysis matching "build"
         logsift analyzed latest build
     """
-    from logsift.cache.manager import CacheManager
-
     cache = CacheManager()
 
     if name:
@@ -731,13 +701,8 @@ def analyzed_latest(
     console.print(f'[cyan]Latest analysis: {latest_analysis}[/cyan]\n')
 
     # Display the analysis with bat for better UX
-    import json
-
     try:
         analysis_data = json.loads(latest_analysis.read_text())
-
-        from logsift.output.markdown_formatter import format_markdown
-        from logsift.utils.display import display_with_bat
 
         output = format_markdown(analysis_data)
         display_with_bat(output, language='markdown', filename=latest_analysis.name)
@@ -779,8 +744,6 @@ def analyzed_clean(
         # Preview what would be deleted
         logsift analyzed clean --dry-run
     """
-    from logsift.cache.manager import CacheManager
-
     cache = CacheManager()
 
     if not cache.analyzed_dir.exists():
@@ -789,8 +752,6 @@ def analyzed_clean(
 
     if dry_run:
         # Show what would be deleted
-        import datetime as dt
-
         cutoff_time = dt.datetime.now(tz=dt.UTC) - dt.timedelta(days=days)
         cutoff_timestamp = cutoff_time.timestamp()
 
@@ -814,8 +775,6 @@ def analyzed_clean(
         console.print('\n[dim]Run without --dry-run to actually delete[/dim]')
     else:
         # Actually delete
-        from logsift.cache.rotation import clean_old_logs
-
         deleted_count = clean_old_logs(cache.analyzed_dir, retention_days=days)
 
         if deleted_count == 0:
@@ -857,8 +816,6 @@ def help(
         logsift help monitor
         logsift help analyze
     """
-    from logsift.cli_formatter import format_help_with_colors
-
     # Get the Click context for the main app
     click_ctx = ctx.parent or ctx
 

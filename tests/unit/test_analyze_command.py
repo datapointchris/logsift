@@ -2,6 +2,7 @@
 
 import json
 import tempfile
+from contextlib import suppress
 from pathlib import Path
 
 from logsift.commands.analyze import analyze_log
@@ -129,8 +130,6 @@ def test_analyze_log_with_file_references(capsys):
 
 def test_analyze_log_nonexistent_file():
     """Test analyzing a nonexistent file raises appropriate error."""
-    from contextlib import suppress
-
     with suppress(FileNotFoundError, SystemExit):
         analyze_log('/nonexistent/path.log', output_format='json')
         raise AssertionError('Should have raised an error')

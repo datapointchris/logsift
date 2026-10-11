@@ -2,8 +2,10 @@
 
 import json
 import sys
+from contextlib import suppress
 from unittest.mock import patch
 
+from logsift.cache.manager import CacheManager
 from logsift.commands.monitor import monitor_command
 
 
@@ -65,8 +67,6 @@ def test_monitor_command_auto_format(capsys):
 
 def test_monitor_command_with_error():
     """Test monitoring a command that fails."""
-    from contextlib import suppress
-
     with suppress(SystemExit):
         monitor_command(['false'], output_format='json', save_log=False)
         # Should have exited with non-zero code
@@ -116,8 +116,6 @@ def test_monitor_command_with_stderr(capsys):
 
 def test_monitor_command_empty_command():
     """Test monitoring with empty command list."""
-    from contextlib import suppress
-
     # Empty command should raise SystemExit or Exception
     with suppress(SystemExit, Exception):
         monitor_command([], output_format='json', save_log=False)
@@ -177,8 +175,6 @@ def test_monitor_command_with_external_log(tmp_path, capsys):
 
 def test_monitor_command_with_nonexistent_external_log(capsys):
     """Test monitoring with non-existent external log file."""
-    from contextlib import suppress
-
     # Should exit with error
     with suppress(SystemExit):
         monitor_command(
@@ -201,8 +197,6 @@ def test_monitor_command_with_append_mode(tmp_path, capsys):
     )
 
     # Get the created log file
-    from logsift.cache.manager import CacheManager
-
     cache = CacheManager()
     log_file = cache.get_latest_log('test-append')
 

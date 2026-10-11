@@ -5,6 +5,7 @@ and includes them in the summary for LLM consumption.
 """
 
 from logsift.core.analyzer import Analyzer
+from logsift.output.toon_formatter import format_toon
 
 
 class TestHookDetection:
@@ -110,8 +111,6 @@ class TestToonFormatterHooks:
 
     def test_toon_includes_failed_hooks(self):
         """Test that TOON output includes failed hooks."""
-        from logsift.output.toon_formatter import format_toon
-
         analysis_result = {
             'summary': {'status': 'failed', 'exit_code': 1},
             'stats': {'total_errors': 1, 'total_warnings': 0},
@@ -131,8 +130,6 @@ class TestToonFormatterHooks:
 
     def test_toon_omits_hooks_when_empty(self):
         """Test that TOON output omits hooks when none detected."""
-        from logsift.output.toon_formatter import format_toon
-
         analysis_result = {
             'summary': {'status': 'success', 'exit_code': 0},
             'stats': {'total_errors': 0, 'total_warnings': 0},

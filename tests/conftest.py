@@ -7,6 +7,8 @@ from pathlib import Path
 
 import pytest
 
+from logsift.cache.manager import CacheManager
+
 
 @pytest.fixture
 def sample_log_content() -> str:
@@ -49,8 +51,6 @@ def isolate_cache(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setenv('HOME', str(tmp_path))
 
     # Also patch the default cache location
-    from logsift.cache.manager import CacheManager
-
     original_init = CacheManager.__init__
 
     def patched_init(self, cache_dir=None):

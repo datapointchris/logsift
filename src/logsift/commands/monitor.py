@@ -4,11 +4,13 @@ Monitors a command and analyzes its output.
 """
 
 import datetime as dt
+import json
 import os
 import shlex
 import subprocess  # nosec B404
 import sys
 import time
+from contextlib import suppress
 
 from rich.console import Console
 
@@ -287,9 +289,6 @@ def monitor_command(
 
     # Save all analysis formats if we created new paths
     if log_paths:
-        import json
-        from contextlib import suppress
-
         # Save JSON (full analysis with metadata)
         with suppress(OSError), log_paths['json'].open('w', encoding='utf-8') as f:
             json.dump(analysis_result, f, indent=2)

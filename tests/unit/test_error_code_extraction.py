@@ -5,6 +5,7 @@ and file references from linter output into the error metadata.
 """
 
 from logsift.core.analyzer import Analyzer
+from logsift.output.toon_formatter import format_toon
 
 
 class TestErrorCodeExtraction:
@@ -119,8 +120,6 @@ class TestToonFormatterErrorCodes:
 
     def test_toon_includes_error_code(self):
         """Test that TOON output includes error codes when present."""
-        from logsift.output.toon_formatter import format_toon
-
         analysis_result = {
             'summary': {'status': 'failed', 'exit_code': 1},
             'stats': {'total_errors': 1, 'total_warnings': 0},

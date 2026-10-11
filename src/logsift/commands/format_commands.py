@@ -3,13 +3,23 @@
 Creates standardized command groups for each log format (raw, json, toon, md).
 """
 
+import json
 import sys
+import time
 from pathlib import Path
 from typing import Annotated
 
+import click
 import typer
 from rich.console import Console
+from rich.table import Table
 from typer.core import TyperGroup
+
+from logsift.cache.manager import CacheManager
+from logsift.cli_formatter import format_help_with_colors
+from logsift.utils.display import display_file_with_bat
+from logsift.utils.fzf import is_fzf_available
+from logsift.utils.fzf import select_log_file
 
 console = Console()
 
@@ -36,10 +46,6 @@ def create_format_commands(
         - logsift {format} latest [name] [--tail]
         - logsift {format} list
     """
-    # Import ColoredTyperGroup to ensure consistent formatting
-    import click
-
-    from logsift.cli_formatter import format_help_with_colors
 
     class ColoredTyperGroup(TyperGroup):
         """Custom TyperGroup that uses our uv-style colored formatter."""
@@ -86,8 +92,6 @@ def create_format_commands(
             logsift <format> list --format json
             logsift <format> list --format plain
         """
-        from logsift.cache.manager import CacheManager
-
         cache = CacheManager()
 
         # Get files for this format
@@ -98,16 +102,12 @@ def create_format_commands(
             return
 
         if output_format == 'json':
-            import json
-
             print(json.dumps(files, indent=2))
         elif output_format == 'plain':
             for file in files:
                 print(f'{file["path"]}\t{file["size_bytes"]}\t{file["modified_iso"]}')
         else:
             # Table format (default)
-            from rich.table import Table
-
             table = Table(title=f'{format_name.upper()} Files')
             table.add_column('Name', style='white')
             table.add_column('Size', justify='right', style='green')
@@ -168,8 +168,6 @@ def create_format_commands(
             logsift <format> latest build --tail
             logsift <format> latest pytest --tail --interval 5
         """
-        from logsift.cache.manager import CacheManager
-
         cache = CacheManager()
 
         # Get the format directory
@@ -233,10 +231,6 @@ def create_format_commands(
             logsift <format> browse
             logsift <format> browse --tail
         """
-        from logsift.cache.manager import CacheManager
-        from logsift.utils.fzf import is_fzf_available
-        from logsift.utils.fzf import select_log_file
-
         if not is_fzf_available():
             console.print('[red]Error: fzf is not installed or not in PATH[/red]')
             console.print('[dim]Install fzf: https://github.com/junegunn/fzf#installation[/dim]')
@@ -274,8 +268,6 @@ def display_file(file_path: Path, language: str) -> None:
         file_path: Path to file to display
         language: Language for syntax highlighting
     """
-    from logsift.utils.display import display_file_with_bat
-
     display_file_with_bat(file_path, language=language)
 
 
@@ -286,8 +278,6 @@ def tail_file(file_path: Path, interval: int = 1) -> None:
         file_path: Path to file to tail
         interval: Update interval in seconds
     """
-    import time
-
     if not file_path.exists():
         console.print(f'[red]Error: File not found: {file_path}[/red]')
         sys.exit(1)

@@ -5,6 +5,7 @@ Provides colored, well-structured help output without boxes or excessive formatt
 
 from __future__ import annotations
 
+import re
 from collections.abc import Sequence
 
 import click
@@ -139,8 +140,6 @@ def format_help_with_colors(ctx: Context) -> str:
                                 # Split flag from description using multiple spaces as separator
                                 # Format is: "-n, --name          Description" or "--format        Description"
                                 # Find where multiple spaces (2+) start - that's the description
-                                import re
-
                                 match = re.match(r'^(\S+(?:\s+\S+)?)\s{2,}(.+)$', line)
                                 if match:
                                     flag = match.group(1)

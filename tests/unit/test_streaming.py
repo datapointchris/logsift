@@ -1,8 +1,10 @@
 """Unit tests for dual output streaming."""
 
 import json
+import sys
 from io import StringIO
 
+from logsift.output.streaming import StreamManager
 from logsift.output.streaming import write_both_to_stdout
 from logsift.output.streaming import write_dual_output
 from logsift.output.streaming import write_stream_mode
@@ -107,9 +109,6 @@ def test_write_stream_mode(tmp_path):
     }
 
     # Redirect stdout to capture markdown
-    import sys
-    from io import StringIO
-
     old_stdout = sys.stdout
     sys.stdout = StringIO()
 
@@ -130,9 +129,6 @@ def test_write_stream_mode(tmp_path):
 
 def test_write_both_to_stdout():
     """Test writing both outputs to stdout with separator."""
-    import sys
-    from io import StringIO
-
     result = {
         'summary': {'status': 'failed', 'exit_code': 1},
         'errors': [{'id': 1, 'severity': 'error', 'message': 'Test', 'line_number': 1, 'context_before': [], 'context_after': []}],
@@ -192,8 +188,6 @@ def test_write_dual_output_no_destinations():
 
 def test_stream_manager_class(tmp_path):
     """Test StreamManager class wrapper."""
-    from logsift.output.streaming import StreamManager
-
     manager = StreamManager()
 
     json_path = tmp_path / 'output.json'

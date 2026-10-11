@@ -1,10 +1,12 @@
 """Integration tests for logs CLI commands."""
 
 import json
+import os
 import time
 
 from typer.testing import CliRunner
 
+from logsift.cache.manager import CacheManager
 from logsift.cli import app
 
 runner = CliRunner()
@@ -90,8 +92,6 @@ class TestLogsCleanCommand:
 
     def test_logs_clean_dry_run(self, tmp_path):
         """Test cleaning with dry-run mode."""
-        from logsift.cache.manager import CacheManager
-
         # Create an old log file in raw/ subdirectory
         cache = CacheManager()
         raw_dir = cache.raw_dir
@@ -102,7 +102,6 @@ class TestLogsCleanCommand:
 
         # Set modification time to 100 days ago
         old_time = time.time() - (100 * 24 * 60 * 60)
-        import os
 
         os.utime(old_log, (old_time, old_time))
 
@@ -118,8 +117,6 @@ class TestLogsCleanCommand:
 
     def test_logs_clean_actual_deletion(self, tmp_path):
         """Test actual deletion of old log files."""
-        from logsift.cache.manager import CacheManager
-
         # Create an old log file in raw/ subdirectory
         cache = CacheManager()
         raw_dir = cache.raw_dir
@@ -130,7 +127,6 @@ class TestLogsCleanCommand:
 
         # Set modification time to 100 days ago
         old_time = time.time() - (100 * 24 * 60 * 60)
-        import os
 
         os.utime(old_log, (old_time, old_time))
 
@@ -145,8 +141,6 @@ class TestLogsCleanCommand:
 
     def test_logs_clean_custom_retention_days(self, tmp_path):
         """Test cleaning with custom retention period."""
-        from logsift.cache.manager import CacheManager
-
         cache = CacheManager()
         raw_dir = cache.raw_dir
         raw_dir.mkdir(parents=True, exist_ok=True)
@@ -159,8 +153,6 @@ class TestLogsCleanCommand:
         log_20_days = raw_dir / '2024-01-01T12:00:00-log-20days.log'
         log_20_days.write_text('20 days old')
         time_20_days = time.time() - (20 * 24 * 60 * 60)
-
-        import os
 
         os.utime(log_60_days, (time_60_days, time_60_days))
         os.utime(log_20_days, (time_20_days, time_20_days))

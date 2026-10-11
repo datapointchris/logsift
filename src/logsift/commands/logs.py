@@ -3,7 +3,10 @@
 Lists and manages cached log files.
 """
 
+import datetime as dt
+import json
 import sys
+import time
 from pathlib import Path
 
 from rich.console import Console
@@ -11,6 +14,7 @@ from rich.table import Table
 
 from logsift.cache.manager import CacheManager
 from logsift.cache.rotation import clean_old_logs
+from logsift.commands.analyze import analyze_log
 from logsift.utils.fzf import browse_log_with_preview
 from logsift.utils.fzf import is_fzf_available
 from logsift.utils.fzf import select_log_file
@@ -32,8 +36,6 @@ def list_logs(output_format: str = 'table') -> None:
         return
 
     if output_format == 'json':
-        import json
-
         print(json.dumps(logs, indent=2))
     elif output_format == 'plain':
         for log in logs:
@@ -84,8 +86,6 @@ def clean_logs(days: int = 90, dry_run: bool = False) -> None:
 
     if dry_run:
         # Show what would be deleted
-        import datetime as dt
-
         cutoff_time = dt.datetime.now(tz=dt.UTC) - dt.timedelta(days=days)
         cutoff_timestamp = cutoff_time.timestamp()
 
@@ -150,8 +150,6 @@ def browse_logs(action: str = 'select', interval: int = 1) -> None:
         # Analyze the selected log
         console.print(f'[cyan]Analyzing: {selected_path}[/cyan]')
 
-        from logsift.commands.analyze import analyze_log
-
         analyze_log(selected_path, output_format='markdown')
 
     elif action == 'view':
@@ -188,8 +186,6 @@ def tail_log(log_file: str, interval: int = 1) -> None:
         log_file: Path to the log file to tail
         interval: Update interval in seconds
     """
-    import time
-
     file_path = Path(log_file).expanduser().resolve()
 
     if not file_path.exists():

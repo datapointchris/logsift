@@ -9,6 +9,7 @@ import tomllib
 from pathlib import Path
 
 from logsift.core.analyzer import Analyzer
+from logsift.output.toon_formatter import format_toon
 
 
 class TestMultiLinePatterns:
@@ -114,8 +115,6 @@ class TestToonFormatterContext:
 
     def test_toon_includes_context_for_multiline_errors(self):
         """Test that TOON output includes context_after for errors that need it."""
-        from logsift.output.toon_formatter import format_toon
-
         analysis_result = {
             'summary': {'status': 'failed', 'exit_code': 1},
             'stats': {'total_errors': 1, 'total_warnings': 0},

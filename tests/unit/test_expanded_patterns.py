@@ -8,6 +8,8 @@ import re
 import tomllib
 from pathlib import Path
 
+from logsift.core.analyzer import Analyzer
+
 
 class TestSpecificShellcheckPatterns:
     """Test specific shellcheck patterns with actionable suggestions."""
@@ -155,8 +157,6 @@ class TestIntegrationWithAnalyzer:
 
     def test_analyzer_detects_specific_shellcheck_issues(self):
         """Test analyzer detects specific shellcheck issues."""
-        from logsift.core.analyzer import Analyzer
-
         log_content = """\
 shellcheck...............................................................Failed
 In script.sh line 5:
@@ -176,8 +176,6 @@ In script.sh line 5:
 
     def test_analyzer_detects_specific_ruff_issues(self):
         """Test analyzer detects specific ruff issues."""
-        from logsift.core.analyzer import Analyzer
-
         log_content = """\
 ruff.....................................................................Failed
 src/main.py:10:1: F401 'sys' imported but unused
