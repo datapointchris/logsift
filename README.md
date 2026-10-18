@@ -172,6 +172,17 @@ print(f'Deleted {deleted} old log files')
 
 ## Installation
 
+### From the Package Index
+
+Every release is published to a package index of its own:
+
+```bash
+uv tool install --index https://pypi.ichrisbirch.com/simple/ logsift
+logsift update   # later: install the newest release over this one
+```
+
+Name the index on the install. Without it uv asks PyPI, where `logsift` is a different project.
+
 ### Local Installation with UV (Development)
 
 Install logsift as a global tool for local testing and development:
@@ -203,18 +214,6 @@ logsift --help         # Show all commands
 
 ```bash
 uv tool uninstall logsift
-```
-
-### With uv (from PyPI - coming soon)
-
-```bash
-uv tool install logsift
-```
-
-### With pipx (from PyPI - coming soon)
-
-```bash
-pipx install logsift
 ```
 
 ### Troubleshooting Installation

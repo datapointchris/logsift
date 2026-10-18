@@ -5,10 +5,10 @@ Complete installation instructions for logsift.
 ## Requirements
 
 - **Python 3.13+** - logsift uses modern Python features
-- **uv** - Recommended package installer (or pipx/pip)
-- **Git** - For cloning the repository
+- **uv** - the installer, which records the package index a release came from
+- **Git** - only for a development install, which clones the repository
 
-## Local Development Installation (Recommended)
+## Local Development Installation
 
 Install logsift as a global tool for local testing and development:
 
@@ -44,20 +44,16 @@ logsift --help
 logsift monitor --format=json -- echo "Hello from logsift"
 ```
 
-## Production Installation (Coming Soon)
+## Installing a Release
 
-Install from PyPI when released:
+Every release is published to a package index of its own:
 
 ```bash
-# With UV (recommended)
-uv tool install logsift
-
-# With pipx
-pipx install logsift
-
-# With pip
-pip install --user logsift
+uv tool install --index https://pypi.ichrisbirch.com/simple/ logsift
 ```
+
+Name the index on the install. Without it uv asks PyPI, where `logsift` is a different project.
+uv records the index beside the tool, which is where `logsift update` reads it back.
 
 ## Uninstallation
 
@@ -201,18 +197,13 @@ git pull origin main
 # No reinstall needed - changes are live due to editable install
 ```
 
-### From PyPI (When Available)
+### A Release
 
 ```bash
-# With UV
-uv tool upgrade logsift
-
-# With pipx
-pipx upgrade logsift
-
-# With pip
-pip install --upgrade logsift
+logsift update
 ```
+
+It installs the newest release from the index over the running one.
 
 ## System Requirements
 
