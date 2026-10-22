@@ -48,11 +48,28 @@ class ColoredTyperGroup(TyperGroup):
 
 app = typer.Typer(
     name='logsift',
-    help='LLM-optimized log analysis for automated error diagnosis.',
+    help=(
+        'LLM-optimized log analysis for automated error diagnosis.\n\n'
+        'Start with `logsift monitor -- <command>`. It runs the command, saves its output '
+        'and prints the errors it found. Reach for `logsift analyze` only when the log '
+        'already exists: a file another tool wrote, or `latest` to re-run the patterns '
+        'over the last capture.\n\n'
+        '`logs` holds what a run printed, and `analyzed` holds what logsift found in it. '
+        'Open `logs` to read the raw output, and `analyzed` to reread the errors '
+        'without running the command again.'
+    ),
     add_completion=False,
     rich_markup_mode=None,  # Disable Rich markup
     pretty_exceptions_enable=False,  # Disable Rich exceptions
-    epilog='Use `logsift help <command>` for more details on a specific command.',
+    epilog=(
+        '\b\n'
+        'Examples:\n'
+        '  logsift monitor -- make build\n'
+        '  logsift monitor --minimal --format json -- pytest tests/\n'
+        '  logsift analyze latest\n'
+        '  logsift analyzed latest build\n\n'
+        'Use `logsift help <command>` for more details on a specific command.'
+    ),
     cls=ColoredTyperGroup,  # Use our custom colored formatter
 )
 console = Console()
