@@ -64,10 +64,10 @@ app = typer.Typer(
     epilog=(
         '\b\n'
         'Examples:\n'
-        '  logsift monitor -- make build\n'
-        '  logsift monitor --minimal --format json -- pytest tests/\n'
-        '  logsift analyze latest\n'
-        '  logsift analyzed latest build\n\n'
+        '  logsift monitor -- make build                             run it, show errors\n'
+        '  logsift monitor --minimal --format json -- pytest tests/  JSON only, for LLMs\n'
+        '  logsift analyze latest                                    re-scan last capture\n'
+        '  logsift analyzed latest build                             reread build errors\n\n'
         'Use `logsift help <command>` for more details on a specific command.'
     ),
     cls=ColoredTyperGroup,  # Use our custom colored formatter
