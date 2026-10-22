@@ -183,7 +183,8 @@ def test_codespell_typo_pattern():
     pattern = next((p for p in data['patterns'] if p['name'] == 'codespell_typo'), None)
     assert pattern is not None, 'codespell_typo pattern not found'
 
-    # Captured output sits with the typos it reports, where codespell itself never reads it
+    # This fixture sits under tests/fixtures/pre-commit-violations/, which pre-commit excludes,
+    # so the typos it quotes never fail the codespell hook.
     captured = Path('tests/fixtures/pre-commit-violations/codespell_output.txt').read_text().splitlines()
     assert len(captured) == 2
 

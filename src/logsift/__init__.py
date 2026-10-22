@@ -14,9 +14,6 @@ def tool_version() -> str:
 
     Read from the installed distribution, whose version the release tag sets
     through uv-dynamic-versioning. A constant here would be bumped by nothing.
-
-    A checkout that was never installed has no metadata and says so rather than
-    inventing a number.
     """
     try:
         return installed_version('logsift')
