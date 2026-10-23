@@ -123,7 +123,7 @@ uv build
 All code must pass these checks before committing:
 
 - Conventional commits (commit message format)
-- actionlint (GitHub Actions validation)
+- jactionlint (GitHub Actions validation)
 - uv-lock (dependency sync)
 - ruff (linting and formatting)
 - codespell (spell checking)
