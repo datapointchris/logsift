@@ -121,8 +121,7 @@ retention_days = 30  # Keep logs for 30 days instead of 90
 
 ## Environment Variables
 
-Each `LOGSIFT_*` variable sets the flag it names, so
-`LOGSIFT_CONFIG_FILE=/custom/path/config.toml` stands in for `--config-file`.
+Each `LOGSIFT_*` variable sets the flag it names.
 The [CLI Reference](../cli-reference.md#environment-variables) lists them all.
 
 ## Validation
