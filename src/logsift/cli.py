@@ -24,6 +24,7 @@ from logsift.cli_formatter import format_help_with_colors
 from logsift.commands.analyze import analyze_log
 from logsift.commands.analyze import stream_analyze_log
 from logsift.commands.format_commands import create_format_commands
+from logsift.commands.logs import CAPTURE_HINT
 from logsift.commands.logs import browse_logs
 from logsift.commands.logs import clean_logs
 from logsift.commands.logs import list_logs
@@ -327,6 +328,7 @@ def analyze(
 
         if not latest_log:
             console.print('[red]Error: No cached logs found[/red]')
+            console.print(CAPTURE_HINT)
             raise typer.Exit(1)
 
         log_file = str(latest_log)
@@ -346,6 +348,7 @@ def analyze(
 
         if not logs:
             console.print('[yellow]No cached logs found[/yellow]')
+            console.print(CAPTURE_HINT)
             raise typer.Exit(1)
 
         selected = select_log_file(logs, 'Select log file to analyze')
@@ -576,11 +579,13 @@ def logs_latest(
         log_path = cache.get_latest_log(name)
         if not log_path:
             console.print(f'[red]Error: No logs found for name "{name}"[/red]')
+            console.print('[dim]Run `logsift logs list` to see the cached names[/dim]')
             raise typer.Exit(1)
     else:
         log_path = cache.get_absolute_latest_log()
         if not log_path:
             console.print('[red]Error: No cached logs found[/red]')
+            console.print(CAPTURE_HINT)
             raise typer.Exit(1)
 
     console.print(f'[cyan]Latest log: {log_path}[/cyan]\n')
@@ -620,6 +625,7 @@ def analyzed_list(
 
     if not analyses:
         console.print('[yellow]No saved analyses found[/yellow]')
+        console.print(CAPTURE_HINT)
         return
 
     if format == 'json':
@@ -665,6 +671,7 @@ def analyzed_browse() -> None:
 
     if not analyses:
         console.print('[yellow]No saved analyses found[/yellow]')
+        console.print(CAPTURE_HINT)
         return
 
     selected_path = select_log_file(analyses, 'Select analysis result to view')
@@ -708,11 +715,13 @@ def analyzed_latest(
         latest_analysis = cache.get_latest_analyzed(name)
         if not latest_analysis:
             console.print(f'[red]Error: No analyses found matching "{name}"[/red]')
+            console.print('[dim]Run `logsift analyzed list` to see the saved names[/dim]')
             raise typer.Exit(1)
     else:
         latest_analysis = cache.get_absolute_latest_analyzed()
         if not latest_analysis:
             console.print('[red]Error: No saved analyses found[/red]')
+            console.print(CAPTURE_HINT)
             raise typer.Exit(1)
 
     console.print(f'[cyan]Latest analysis: {latest_analysis}[/cyan]\n')

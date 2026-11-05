@@ -21,6 +21,9 @@ from logsift.utils.fzf import select_log_file
 
 console = Console()
 
+# Printed under every empty-cache message: monitor is the one command that writes logs and analyses.
+CAPTURE_HINT = '[dim]Run `logsift monitor -- <command>` to capture a run and analyze it[/dim]'
+
 
 def list_logs(output_format: str = 'table') -> None:
     """List cached log files.
@@ -33,6 +36,7 @@ def list_logs(output_format: str = 'table') -> None:
 
     if not logs:
         console.print('[yellow]No cached logs found[/yellow]')
+        console.print(CAPTURE_HINT)
         return
 
     if output_format == 'json':
@@ -137,6 +141,7 @@ def browse_logs(action: str = 'select', interval: int = 1) -> None:
 
     if not logs:
         console.print('[yellow]No cached logs found[/yellow]')
+        console.print(CAPTURE_HINT)
         return
 
     # Select log file with fzf
