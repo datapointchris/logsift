@@ -72,13 +72,10 @@ uv run logsift monitor -- echo "test"     # CLI
 - Pattern tests must verify TOML regex works as expected
 - Integration tests must use both parser + patterns together
 
-**Historical Context**: We previously had hardcoded level detection in `parser.py` (lines 231-239) that duplicated logic in `common.toml`. This caused:
-
-- mkdocs warnings not being detected (parser stripped "WARNING -" before patterns could match)
-- Inability to customize detection behavior
-- Fragile coupling between parser and specific log formats
-
-This rule prevents that recurring. The parser is a format normalizer, NOT a pattern matcher.
+**What breaks when the parser detects levels**: a parser that strips a level prefix hides it from
+the patterns. A plain-text line such as mkdocs' `WARNING -  Doc file ...` then matches no
+warning pattern, and a user's custom pattern cannot change what the parser already decided. The
+parser is a format normalizer, NOT a pattern matcher.
 
 ## Architecture
 
@@ -122,14 +119,13 @@ Required: name, regex, severity, description, tags. Optional: suggestion.
 
 - **Process monitoring**: `monitor/process.py` uses `subprocess`. `sh` is still declared in `pyproject.toml` and imported nowhere — drop it or use it, but do not believe the dependency list.
 - **Config validation is not implemented.** `config/validator.py` is a stub raising
-  `NotImplementedError`. When it is written, it validates once at startup and nowhere else —
-  the fail-fast rule in `standards/python.md` is what makes one site sufficient.
+  `NotImplementedError`. When it is written, it validates once at startup and nowhere else.
+  Configuration fails fast at that one site, so no later code re-checks it.
 - **Coverage**: `fail_under` in `pyproject.toml` is the enforced floor; run
   `task test:coverage` for the current figure rather than trusting a number written here.
 
-Python conventions and the pre-commit hook set are fleet standards — see
-`standards/python.md` and `standards/ci.md`. The hook inventory is generated from the
-declaration `forge toolchain show` names; do not restate it here, it drifts.
+The pre-commit hook set is `.pre-commit-config.yaml`, and it is generated. Read it there rather
+than restating it here, where it drifts.
 
 ## Implementation Status
 
