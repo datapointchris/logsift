@@ -8,17 +8,15 @@
 
 ## Essential Commands
 
+`Taskfile.yml` holds the developer commands, and `task --list` names them.
+
 ```bash
-uv sync --group dev --group test          # Install deps
-uv run pre-commit install --install-hooks # Install hooks
-uv run pre-commit install --hook-type commit-msg
-
-uv run python -m pytest -v                           # All tests
-uv run python -m pytest tests/unit/test_parser.py -v  # Specific file
-uv run python -m pytest --cov=logsift --cov-report=term # With coverage
-
-uv run ruff check src/ tests/ && uv run ruff format src/ tests/
-uv run mypy src/logsift --config-file pyproject.toml
+task setup                                # Install deps and the git hooks
+task test                                 # All tests
+task test -- tests/unit/test_parser.py -v # Specific file
+task test:coverage                        # With coverage
+task lint                                 # ruff, mypy and bandit, read-only
+task format                               # ruff format and autofixes
 uv run logsift monitor -- echo "test"     # CLI
 ```
 
@@ -127,9 +125,7 @@ Required: name, regex, severity, description, tags. Optional: suggestion.
   `NotImplementedError`. When it is written, it validates once at startup and nowhere else —
   the fail-fast rule in `standards/python.md` is what makes one site sufficient.
 - **Coverage**: `fail_under` in `pyproject.toml` is the enforced floor; run
-  `uv run pytest --cov=logsift` for the current figure rather than trusting a number written here.
-  There is no Taskfile in this repo, against `standards/repo-structure.md` § "Taskfile is the
-  standard runner".
+  `task test:coverage` for the current figure rather than trusting a number written here.
 
 Python conventions and the pre-commit hook set are fleet standards — see
 `standards/python.md` and `standards/ci.md`. The hook inventory is generated from the

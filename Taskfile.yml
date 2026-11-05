@@ -1,0 +1,56 @@
+version: "3"
+
+tasks:
+  default:
+    desc: List the available tasks
+    silent: true
+    cmds:
+      - task --list
+
+  # A fresh checkout has no virtualenv. The test group is not one of uv's
+  # default groups, so it is named here.
+  setup:
+    desc: Make a fresh checkout runnable
+    cmds:
+      - uv sync --group dev --group test
+      - uv run pre-commit install --install-hooks
+      - uv run pre-commit install --hook-type commit-msg
+
+  test:
+    desc: Run all tests
+    cmds:
+      - uv run --group test pytest {{.CLI_ARGS}}
+
+  test:coverage:
+    desc: Run tests with a coverage report
+    cmds:
+      - uv run --group test pytest --cov=logsift --cov-report=term {{.CLI_ARGS}}
+
+  lint:
+    desc: Run ruff, mypy and bandit without writing any file
+    cmds:
+      - uv run ruff format --check src/ tests/
+      - uv run ruff check src/ tests/
+      - task: typecheck
+      - uv run bandit -c pyproject.toml -r src
+
+  typecheck:
+    desc: Type check with mypy
+    cmds:
+      - uv run mypy src/logsift --config-file pyproject.toml
+
+  format:
+    desc: Apply ruff formatting and autofixes
+    cmds:
+      - uv run ruff format src/ tests/
+      - uv run ruff check --fix src/ tests/
+
+  build:
+    desc: Build the wheel and sdist
+    cmds:
+      - uv build
+
+  clean:
+    desc: Remove build and coverage artifacts
+    cmds:
+      - rm -rf dist htmlcov .coverage coverage.xml
