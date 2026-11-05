@@ -60,10 +60,9 @@ jobs:
       - name: Run bandit
         run: uv run bandit -c pyproject.toml .
 
-      # logsift is installed with `uv tool install` straight from the git repo,
-      # so the package is built on every install. Nothing in release.yml builds
-      # it — semantic-release only refreshes the lock file — which leaves this
-      # as the only check that a broken [project] table cannot ship.
+      # release.yml's publish job builds the package only on the tag, once the
+      # release is cut. This step catches a broken [project] table on the pull
+      # request, while it can still be fixed before anything is released.
       - name: Build package
         run: uv build
 
