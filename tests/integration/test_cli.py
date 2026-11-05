@@ -21,6 +21,12 @@ def test_cli_help():
     assert 'logsift' in result.stdout.lower()
 
 
+def test_help_for_an_unknown_command_is_a_usage_error():
+    """A mistyped command name exits 2, apart from a command that ran and failed."""
+    result = runner.invoke(app, ['help', 'no-such-command'])
+    assert result.exit_code == 2
+
+
 def test_monitor_command():
     """Test that monitor command works."""
     result = runner.invoke(app, ['monitor', '--format=json', '--', 'echo', 'test'])

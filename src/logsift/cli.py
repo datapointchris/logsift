@@ -841,22 +841,14 @@ def help(
         help_text = format_help_with_colors(click_ctx)
         click.echo(help_text, color=True)
     else:
-        # Try to get the command from the group
-        if hasattr(click_ctx.command, 'get_command'):
-            cmd = click_ctx.command.get_command(click_ctx, command)
-            if cmd:
-                # Create context for the command and show its help with custom formatter
-                with click.Context(cmd, info_name=command, parent=click_ctx) as cmd_ctx:
-                    help_text = format_help_with_colors(cmd_ctx)
-                    click.echo(help_text, color=True)
-            else:
-                console.print(f'[red]Error: Unknown command "{command}"[/red]')
-                console.print('[dim]Run "logsift help" to see available commands[/dim]')
-                raise typer.Exit(1)
-        else:
-            console.print(f'[red]Error: Unknown command "{command}"[/red]')
-            console.print('[dim]Run "logsift help" to see available commands[/dim]')
-            raise typer.Exit(1)
+        get_command = getattr(click_ctx.command, 'get_command', None)
+        cmd = get_command(click_ctx, command) if get_command else None
+        if cmd is None:
+            # A usage error exits 2, so a caller can tell a mistyped name from a command that ran and failed.
+            raise click.UsageError(f'Unknown command "{command}". Run "logsift help" to see available commands.', ctx=ctx)
+        with click.Context(cmd, info_name=command, parent=click_ctx) as cmd_ctx:
+            help_text = format_help_with_colors(cmd_ctx)
+            click.echo(help_text, color=True)
 
 
 if __name__ == '__main__':
