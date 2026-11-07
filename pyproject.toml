@@ -15,8 +15,6 @@ dependencies = [
     "click>=8.0.0",
     # TOML handling
     "tomli-w>=1.0.0",
-    # Process handling
-    "sh>=2.0.0",
     # Date parsing
     "python-dateutil>=2.8.0",
     "toon-format",
