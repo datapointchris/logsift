@@ -57,6 +57,29 @@ class UVStyleHelpFormatter(click.HelpFormatter):
             self.write('\n')
 
 
+def commands_by_section(ctx: Context, group: click.Group) -> list[tuple[str, str]]:
+    """Pair each subcommand name with the help section it is listed under.
+
+    Commands sharing a `rich_help_panel` are listed together, sections in the order their first
+    command appears. Commands with no panel come last, under "Additional commands", as cobra
+    lists its ungrouped children. A group whose commands name no panel keeps one "Commands" section.
+    """
+    sections: dict[str, list[str]] = {}
+    ungrouped: list[str] = []
+    for name in group.list_commands(ctx):
+        # Typer leaves a falsy placeholder object, not None, on a command given no panel
+        panel = getattr(group.get_command(ctx, name), 'rich_help_panel', None)
+        if isinstance(panel, str) and panel:
+            sections.setdefault(panel, []).append(name)
+        else:
+            ungrouped.append(name)
+
+    ungrouped_heading = 'Additional commands' if sections else 'Commands'
+    pairs = [(panel, name) for panel, names in sections.items() for name in names]
+    pairs += [(ungrouped_heading, name) for name in ungrouped]
+    return pairs
+
+
 def format_help_with_colors(ctx: Context) -> str:
     """Format help text with uv-style colors and structure."""
     formatter = UVStyleHelpFormatter(width=ctx.terminal_width, max_width=120)
@@ -103,14 +126,18 @@ def format_help_with_colors(ctx: Context) -> str:
 
     # Get command object
     if isinstance(ctx.command, click.Group) and ctx.command.list_commands(ctx):
-        # Main help - show commands with expanded descriptions, flags, and examples
+        # Main help - show commands under their sections with expanded descriptions, flags, and examples
         formatter.write_paragraph()
-        formatter.write_heading('Commands')
         formatter.current_section = 'Commands'
+        current_heading = None
 
-        for name in ctx.command.list_commands(ctx):
+        for heading, name in commands_by_section(ctx, ctx.command):
             cmd = ctx.command.get_command(ctx, name)
             if cmd and not cmd.hidden:
+                if heading != current_heading:
+                    formatter.write_heading(heading)
+                    current_heading = heading
+
                 # Get full help text
                 full_help = cmd.help or ''
                 help_lines = full_help.split('\n\n')  # Split by paragraphs

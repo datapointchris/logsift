@@ -81,6 +81,11 @@ stderr_console = Console(stderr=True)
 UPDATE_CONFIG = Config(tool='logsift', owner='datapointchris')
 add_update_command(app, UPDATE_CONFIG)
 
+# Help sections, named for what their commands are for. A command with no panel, such as
+# `help` and `update`, is listed after them under "Additional commands".
+ANALYZE_PANEL = 'Analyze'
+BROWSE_PANEL = 'Browse saved runs'
+
 
 def version_callback(value: bool) -> None:
     """Display version information."""
@@ -152,7 +157,7 @@ def main(
         raise typer.Exit()
 
 
-@app.command()
+@app.command(rich_help_panel=ANALYZE_PANEL)
 def monitor(
     ctx: typer.Context,
     command: Annotated[list[str] | None, typer.Argument(help='Command to monitor')] = None,
@@ -261,7 +266,7 @@ def monitor(
     )
 
 
-@app.command()
+@app.command(rich_help_panel=ANALYZE_PANEL)
 def analyze(
     ctx: typer.Context,
     log_file: Annotated[
@@ -377,7 +382,7 @@ logs_app = typer.Typer(
     cls=ColoredTyperGroup,  # Use our custom colored formatter
     invoke_without_command=True,
 )
-app.add_typer(logs_app, name='logs')
+app.add_typer(logs_app, name='logs', rich_help_panel=BROWSE_PANEL)
 
 
 @logs_app.callback()
@@ -398,7 +403,7 @@ analyzed_app = typer.Typer(
     cls=ColoredTyperGroup,  # Use our custom colored formatter
     invoke_without_command=True,
 )
-app.add_typer(analyzed_app, name='analyzed')
+app.add_typer(analyzed_app, name='analyzed', rich_help_panel=BROWSE_PANEL)
 
 
 @analyzed_app.callback()
@@ -825,10 +830,10 @@ toon_app = create_format_commands('toon', '.toon', 'toon_dir', 'yaml')
 md_app = create_format_commands('md', '.md', 'md_dir', 'markdown')
 
 # Register format commands
-app.add_typer(raw_app, name='raw')
-app.add_typer(json_app, name='json')
-app.add_typer(toon_app, name='toon')
-app.add_typer(md_app, name='md')
+app.add_typer(raw_app, name='raw', rich_help_panel=BROWSE_PANEL)
+app.add_typer(json_app, name='json', rich_help_panel=BROWSE_PANEL)
+app.add_typer(toon_app, name='toon', rich_help_panel=BROWSE_PANEL)
+app.add_typer(md_app, name='md', rich_help_panel=BROWSE_PANEL)
 
 
 @app.command()
