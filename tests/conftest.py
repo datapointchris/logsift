@@ -42,13 +42,15 @@ def isolate_cache(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """Automatically isolate all tests to use a temporary cache directory.
 
     This prevents tests from polluting the user's real cache directory
-    at ~/.cache/logsift/. Every test gets its own isolated cache.
+    at $XDG_CACHE_HOME/logsift/. Every test gets its own isolated cache.
     """
     test_cache = tmp_path / 'logsift_test_cache'
     test_cache.mkdir(parents=True, exist_ok=True)
 
-    # Override the cache directory via environment variable
+    # Point every home-relative and XDG path at the temporary directory
     monkeypatch.setenv('HOME', str(tmp_path))
+    monkeypatch.delenv('XDG_CACHE_HOME', raising=False)
+    monkeypatch.delenv('XDG_CONFIG_HOME', raising=False)
 
     # Also patch the default cache location
     original_init = CacheManager.__init__
