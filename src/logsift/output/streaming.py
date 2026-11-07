@@ -108,19 +108,24 @@ def write_stream_mode(
     )
 
 
-def write_both_to_stdout(analysis_result: dict[str, Any]) -> None:
-    """Write both JSON and Markdown to stdout with separator.
+def write_both_to_stdout(analysis_result: dict[str, Any], stream: TextIO | None = None) -> None:
+    """Write both JSON and Markdown to one stream with separator.
 
     Used for debugging or when explicitly requested with --both flag.
 
     Args:
         analysis_result: Analysis results dictionary
+        stream: Stream to write to; sys.stdout at call time when omitted
     """
+    out = stream if stream is not None else sys.stdout
+
     # Write JSON first
-    print('=== JSON OUTPUT ===')
-    print(format_json(analysis_result))
-    print()
+    out.write('=== JSON OUTPUT ===\n')
+    out.write(format_json(analysis_result))
+    out.write('\n\n')
 
     # Then Markdown
-    print('=== MARKDOWN OUTPUT ===')
-    print(format_markdown(analysis_result))
+    out.write('=== MARKDOWN OUTPUT ===\n')
+    out.write(format_markdown(analysis_result))
+    out.write('\n')
+    out.flush()

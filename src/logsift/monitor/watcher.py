@@ -70,10 +70,8 @@ def watch_file(
         LogWatcher instance (already started)
 
     Example:
-        def process_line(line: str) -> None:
-            print(f"New line: {line}")
-
-        watcher = watch_file(Path('/var/log/app.log'), process_line)
+        seen: list[str] = []
+        watcher = watch_file(Path('/var/log/app.log'), seen.append)
         # ... later ...
         watcher.stop()
     """
