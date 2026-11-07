@@ -1,6 +1,6 @@
 """Load and merge configuration from TOML files.
 
-Handles loading from ~/.config/logsift/config.toml and merging with defaults.
+Handles loading from $XDG_CONFIG_HOME/logsift/config.toml and merging with defaults.
 """
 
 import copy
@@ -8,6 +8,7 @@ import tomllib
 from pathlib import Path
 from typing import Any
 
+from logsift import xdg_dirs
 from logsift.config.defaults import DEFAULT_CONFIG
 
 
@@ -15,7 +16,7 @@ def load_config(config_file: Path | None = None) -> dict[str, Any]:
     """Load configuration from file and merge with defaults.
 
     Args:
-        config_file: Optional path to config file (defaults to ~/.config/logsift/config.toml)
+        config_file: Optional path to config file (defaults to config.toml in $XDG_CONFIG_HOME/logsift, else ~/.config/logsift)
 
     Returns:
         Merged configuration dictionary
@@ -25,7 +26,7 @@ def load_config(config_file: Path | None = None) -> dict[str, Any]:
 
     # Determine config file path
     if config_file is None:
-        config_file = Path.home() / '.config' / 'logsift' / 'config.toml'
+        config_file = xdg_dirs.config_dir() / 'config.toml'
 
     # If config file doesn't exist, return defaults
     if not config_file.exists():

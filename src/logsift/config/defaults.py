@@ -3,11 +3,11 @@
 Defines sensible defaults for all configuration options.
 """
 
-from pathlib import Path
+from logsift import xdg_dirs
 
 DEFAULT_CONFIG = {
     'general': {
-        'cache_dir': Path.home() / '.cache' / 'logsift',
+        'cache_dir': xdg_dirs.cache_dir(),
         'default_interval': 60,
     },
     'output': {
@@ -27,7 +27,7 @@ DEFAULT_CONFIG = {
     'patterns': {
         'load_builtin': True,
         'load_custom': True,
-        'custom_dir': Path.home() / '.config' / 'logsift' / 'patterns',
+        'custom_dir': xdg_dirs.config_dir() / 'patterns',
     },
     'notifications': {
         'enabled': True,

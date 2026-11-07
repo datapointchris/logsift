@@ -1,12 +1,14 @@
 """Cache directory management.
 
-Manages the ~/.cache/logsift directory structure and log file storage.
+Manages the $XDG_CACHE_HOME/logsift directory structure and log file storage.
 """
 
 import datetime as dt
 import re
 from operator import itemgetter
 from pathlib import Path
+
+from logsift import xdg_dirs
 
 
 class CacheManager:
@@ -16,9 +18,9 @@ class CacheManager:
         """Initialize the cache manager.
 
         Args:
-            cache_dir: Optional cache directory path (defaults to ~/.cache/logsift)
+            cache_dir: Optional cache directory path (defaults to $XDG_CACHE_HOME/logsift, else ~/.cache/logsift)
         """
-        self.cache_dir = cache_dir or Path.home() / '.cache' / 'logsift'
+        self.cache_dir = cache_dir or xdg_dirs.cache_dir()
 
         # New directory structure: raw/, json/, toon/, md/
         self.raw_dir = self.cache_dir / 'raw'
