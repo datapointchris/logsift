@@ -11,6 +11,7 @@ import subprocess  # nosec B404
 import sys
 import time
 from contextlib import suppress
+from pathlib import Path
 
 from rich.console import Console
 
@@ -47,7 +48,7 @@ def generate_log_name(command: list[str]) -> str:
     parts: list[str] = []
 
     # Add first command (basename only, no path)
-    first_cmd = os.path.basename(command[0])
+    first_cmd = Path(command[0]).name
     parts.append(first_cmd)
 
     # Add up to 3 more non-flag arguments
@@ -56,7 +57,7 @@ def generate_log_name(command: list[str]) -> str:
             break
         if not arg.startswith('-'):
             # Strip common script extensions and path
-            clean_arg = os.path.basename(arg)
+            clean_arg = Path(arg).name
             for ext in ('.sh', '.py', '.js', '.rb', '.pl', '.php'):
                 clean_arg = clean_arg.removesuffix(ext)
             parts.append(clean_arg)
