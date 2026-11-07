@@ -209,17 +209,15 @@ def test_parser_handles_edge_cases():
 Use pytest-mock for mocking:
 
 ```python
-def test_process_monitor_handles_command_failure(mocker):
-    """Test that ProcessMonitor handles failed commands."""
-    # Mock subprocess.run to return failure
-    mock_run = mocker.patch('subprocess.run')
-    mock_run.return_value = mocker.Mock(returncode=1, stdout='', stderr='Command failed')
+def test_monitor_command_sends_notification(mocker):
+    """Test that monitor_command reports a finished run to the notifier."""
+    # Patch the name where monitor_command looks it up, not where it is defined
+    mock_notify = mocker.patch('logsift.commands.monitor.notify_command_complete')
 
-    monitor = ProcessMonitor(['false'])
-    result = monitor.run()
+    monitor_command(['echo', 'test'], output_format='json', save_log=False, notify=True)
 
-    assert result['success'] is False
-    assert result['exit_code'] == 1
+    mock_notify.assert_called_once()
+    assert mock_notify.call_args.kwargs['success'] is True
 ```
 
 ## Temporary Files

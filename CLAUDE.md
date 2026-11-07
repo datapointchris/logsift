@@ -117,7 +117,8 @@ Required: name, regex, severity, description, tags. Optional: suggestion.
 
 ## Conventions specific to logsift
 
-- **Process monitoring**: `monitor/process.py` uses `subprocess`. `sh` is still declared in `pyproject.toml` and imported nowhere — drop it or use it, but do not believe the dependency list.
+- **Process monitoring**: `commands/monitor.py` runs the command with `subprocess.Popen` and streams its output line by line. It is the one place logsift runs a monitored command.
+- **`sh` is declared in `pyproject.toml` and imported nowhere** — drop it or use it, but do not believe the dependency list.
 - **Config validation is not implemented.** `config/validator.py` is a stub raising
   `NotImplementedError`. When it is written, it validates once at startup and nowhere else.
   Configuration fails fast at that one site, so no later code re-checks it.
