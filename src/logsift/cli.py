@@ -74,6 +74,7 @@ app = typer.Typer(
     cls=ColoredTyperGroup,  # Use our custom colored formatter
 )
 console = Console()
+stderr_console = Console(stderr=True)
 
 # Shared by the `update` command and the daily check in the callback below, so
 # the notice cannot name a release the update command would not install.
@@ -327,19 +328,19 @@ def analyze(
         latest_log = cache.get_absolute_latest_log()
 
         if not latest_log:
-            console.print('[red]Error: No cached logs found[/red]')
-            console.print(CAPTURE_HINT)
+            stderr_console.print('[red]Error: No cached logs found[/red]')
+            stderr_console.print(CAPTURE_HINT)
             raise typer.Exit(1)
 
         log_file = str(latest_log)
         action = 'Stream analyzing' if stream else 'Analyzing'
-        console.print(f'[cyan]{action} latest log: {log_file}[/cyan]\n')
+        stderr_console.print(f'[cyan]{action} latest log: {log_file}[/cyan]\n')
 
     # Handle "browse" shortcut
     elif log_file == 'browse':
         if not is_fzf_available():
-            console.print('[red]Error: fzf is not available[/red]')
-            console.print('[dim]Install fzf to use browse mode[/dim]')
+            stderr_console.print('[red]Error: fzf is not available[/red]')
+            stderr_console.print('[dim]Install fzf to use browse mode[/dim]')
             raise typer.Exit(1)
 
         # Use fzf to select a log file
@@ -347,19 +348,19 @@ def analyze(
         logs = cache.list_all_logs()
 
         if not logs:
-            console.print('[yellow]No cached logs found[/yellow]')
-            console.print(CAPTURE_HINT)
+            stderr_console.print('[yellow]No cached logs found[/yellow]')
+            stderr_console.print(CAPTURE_HINT)
             raise typer.Exit(1)
 
         selected = select_log_file(logs, 'Select log file to analyze')
 
         if not selected:
-            console.print('[dim]No file selected[/dim]')
+            stderr_console.print('[dim]No file selected[/dim]')
             raise typer.Exit(0)
 
         log_file = selected
         action = 'Stream analyzing' if stream else 'Analyzing'
-        console.print(f'[cyan]{action}: {log_file}[/cyan]\n')
+        stderr_console.print(f'[cyan]{action}: {log_file}[/cyan]\n')
 
     # Call appropriate function based on stream flag
     if stream:
@@ -578,17 +579,17 @@ def logs_latest(
     if name:
         log_path = cache.get_latest_log(name)
         if not log_path:
-            console.print(f'[red]Error: No logs found for name "{name}"[/red]')
-            console.print('[dim]Run `logsift logs list` to see the cached names[/dim]')
+            stderr_console.print(f'[red]Error: No logs found for name "{name}"[/red]')
+            stderr_console.print('[dim]Run `logsift logs list` to see the cached names[/dim]')
             raise typer.Exit(1)
     else:
         log_path = cache.get_absolute_latest_log()
         if not log_path:
-            console.print('[red]Error: No cached logs found[/red]')
-            console.print(CAPTURE_HINT)
+            stderr_console.print('[red]Error: No cached logs found[/red]')
+            stderr_console.print(CAPTURE_HINT)
             raise typer.Exit(1)
 
-    console.print(f'[cyan]Latest log: {log_path}[/cyan]\n')
+    stderr_console.print(f'[cyan]Latest log: {log_path}[/cyan]\n')
 
     # Either tail or show the raw log
     if tail:
@@ -624,8 +625,8 @@ def analyzed_list(
     analyses = cache.list_all_analyzed()
 
     if not analyses:
-        console.print('[yellow]No saved analyses found[/yellow]')
-        console.print(CAPTURE_HINT)
+        stderr_console.print('[yellow]No saved analyses found[/yellow]')
+        stderr_console.print(CAPTURE_HINT)
         return
 
     if format == 'json':
@@ -662,33 +663,33 @@ def analyzed_browse() -> None:
         logsift analyzed browse
     """
     if not is_fzf_available():
-        console.print('[red]Error: fzf is not installed or not in PATH[/red]')
-        console.print('[dim]Install fzf: https://github.com/junegunn/fzf#installation[/dim]')
+        stderr_console.print('[red]Error: fzf is not installed or not in PATH[/red]')
+        stderr_console.print('[dim]Install fzf: https://github.com/junegunn/fzf#installation[/dim]')
         raise typer.Exit(1)
 
     cache = CacheManager()
     analyses = cache.list_all_analyzed()
 
     if not analyses:
-        console.print('[yellow]No saved analyses found[/yellow]')
-        console.print(CAPTURE_HINT)
+        stderr_console.print('[yellow]No saved analyses found[/yellow]')
+        stderr_console.print(CAPTURE_HINT)
         return
 
     selected_path = select_log_file(analyses, 'Select analysis result to view')
 
     if not selected_path:
-        console.print('[dim]No file selected[/dim]')
+        stderr_console.print('[dim]No file selected[/dim]')
         return
 
     # Display the analysis with bat for better UX
     try:
         analysis_data = json.loads(Path(selected_path).read_text())
-        console.print(f'[cyan]Analysis: {selected_path}[/cyan]\n')
+        stderr_console.print(f'[cyan]Analysis: {selected_path}[/cyan]\n')
 
         output = format_markdown(analysis_data)
         display_with_bat(output, language='markdown', filename=Path(selected_path).name)
     except (json.JSONDecodeError, OSError) as e:
-        console.print(f'[red]Error reading analysis: {e}[/red]')
+        stderr_console.print(f'[red]Error reading analysis: {e}[/red]')
 
 
 @analyzed_app.command('latest')
@@ -714,17 +715,17 @@ def analyzed_latest(
     if name:
         latest_analysis = cache.get_latest_analyzed(name)
         if not latest_analysis:
-            console.print(f'[red]Error: No analyses found matching "{name}"[/red]')
-            console.print('[dim]Run `logsift analyzed list` to see the saved names[/dim]')
+            stderr_console.print(f'[red]Error: No analyses found matching "{name}"[/red]')
+            stderr_console.print('[dim]Run `logsift analyzed list` to see the saved names[/dim]')
             raise typer.Exit(1)
     else:
         latest_analysis = cache.get_absolute_latest_analyzed()
         if not latest_analysis:
-            console.print('[red]Error: No saved analyses found[/red]')
-            console.print(CAPTURE_HINT)
+            stderr_console.print('[red]Error: No saved analyses found[/red]')
+            stderr_console.print(CAPTURE_HINT)
             raise typer.Exit(1)
 
-    console.print(f'[cyan]Latest analysis: {latest_analysis}[/cyan]\n')
+    stderr_console.print(f'[cyan]Latest analysis: {latest_analysis}[/cyan]\n')
 
     # Display the analysis with bat for better UX
     try:
@@ -733,7 +734,7 @@ def analyzed_latest(
         output = format_markdown(analysis_data)
         display_with_bat(output, language='markdown', filename=latest_analysis.name)
     except (json.JSONDecodeError, OSError) as e:
-        console.print(f'[red]Error reading analysis: {e}[/red]')
+        stderr_console.print(f'[red]Error reading analysis: {e}[/red]')
         raise typer.Exit(1) from None
 
 
@@ -773,7 +774,7 @@ def analyzed_clean(
     cache = CacheManager()
 
     if not cache.analyzed_dir.exists():
-        console.print('[yellow]No cache directory found - nothing to clean[/yellow]')
+        stderr_console.print('[yellow]No cache directory found - nothing to clean[/yellow]')
         return
 
     if dry_run:

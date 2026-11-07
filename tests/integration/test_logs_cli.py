@@ -23,7 +23,7 @@ class TestLogsListCommand:
         result = runner.invoke(app, ['logs', 'list'])
 
         assert result.exit_code == 0
-        assert 'No cached logs found' in result.stdout
+        assert 'No cached logs found' in result.stderr
 
     def test_logs_list_with_logs(self):
         """Test listing logs with cached log files."""
@@ -227,10 +227,10 @@ class TestLogsLatestCommand:
         result = runner.invoke(app, ['logs', 'latest', 'latest-test'])
 
         assert result.exit_code == 0
-        assert 'Latest log:' in result.stdout
+        assert 'Latest log:' in result.stderr
         # The name might be split across lines due to path wrapping, so check for it without newlines
-        stdout_no_newlines = result.stdout.replace('\n', '')
-        assert 'latest-test' in stdout_no_newlines
+        stderr_no_newlines = result.stderr.replace('\n', '')
+        assert 'latest-test' in stderr_no_newlines
 
     def test_logs_latest_absolute(self):
         """Test getting the absolute latest log (no name filter)."""
@@ -242,14 +242,15 @@ class TestLogsLatestCommand:
         result = runner.invoke(app, ['logs', 'latest'])
 
         assert result.exit_code == 0
-        assert 'Latest log:' in result.stdout
+        assert 'Latest log:' in result.stderr
 
     def test_logs_latest_nonexistent_name(self):
         """Test getting latest log for nonexistent name."""
         result = runner.invoke(app, ['logs', 'latest', 'nonexistent-command-xyz'])
 
         assert result.exit_code == 1
-        assert 'No logs found' in result.stdout
+        assert 'No logs found' in result.stderr
+        assert result.stdout == ''
 
     def test_logs_latest_with_tail_flag(self):
         """Test that --tail flag is accepted (full tail testing in watch tests)."""

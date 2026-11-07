@@ -14,6 +14,7 @@ from logsift.monitor.watcher import LogWatcher
 from logsift.output.markdown_formatter import format_markdown
 
 console = Console()
+stderr_console = Console(stderr=True)
 
 
 def watch_log(log_file: str, interval: int = 1) -> None:
@@ -26,11 +27,11 @@ def watch_log(log_file: str, interval: int = 1) -> None:
     file_path = Path(log_file).expanduser().resolve()
 
     if not file_path.exists():
-        console.print(f'[red]Error: Log file not found: {file_path}[/red]')
+        stderr_console.print(f'[red]Error: Log file not found: {file_path}[/red]')
         sys.exit(1)
 
-    console.print(f'[blue]Watching:[/blue] {file_path}')
-    console.print(f'[dim]Update interval: {interval}s (Press Ctrl+C to stop)[/dim]\n')
+    stderr_console.print(f'[blue]Watching:[/blue] {file_path}')
+    stderr_console.print(f'[dim]Update interval: {interval}s (Press Ctrl+C to stop)[/dim]\n')
 
     # Initialize components
     analyzer = Analyzer()
@@ -65,7 +66,7 @@ def watch_log(log_file: str, interval: int = 1) -> None:
     try:
         watcher.watch(process_new_line)
     except KeyboardInterrupt:
-        console.print('\n[yellow]Stopped watching log file[/yellow]')
+        stderr_console.print('\n[yellow]Stopped watching log file[/yellow]')
         watcher.stop()
         sys.exit(0)
 
@@ -82,11 +83,11 @@ def tail_log(log_file: str, interval: int = 1) -> None:
     file_path = Path(log_file).expanduser().resolve()
 
     if not file_path.exists():
-        console.print(f'[red]Error: Log file not found: {file_path}[/red]')
+        stderr_console.print(f'[red]Error: Log file not found: {file_path}[/red]')
         sys.exit(1)
 
-    console.print(f'[blue]Tailing:[/blue] {file_path}')
-    console.print('[dim]Press Ctrl+C to stop[/dim]\n')
+    stderr_console.print(f'[blue]Tailing:[/blue] {file_path}')
+    stderr_console.print('[dim]Press Ctrl+C to stop[/dim]\n')
 
     # Open file and seek to end
     try:
@@ -105,5 +106,5 @@ def tail_log(log_file: str, interval: int = 1) -> None:
                     time.sleep(interval)
 
     except KeyboardInterrupt:
-        console.print('\n[yellow]Stopped tailing log file[/yellow]')
+        stderr_console.print('\n[yellow]Stopped tailing log file[/yellow]')
         sys.exit(0)

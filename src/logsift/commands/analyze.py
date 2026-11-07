@@ -19,6 +19,7 @@ from logsift.output.toon_formatter import format_toon
 from logsift.utils.tty import detect_output_format
 
 console = Console()
+stderr_console = Console(stderr=True)
 
 
 def analyze_log(log_file: str, output_format: str = 'auto', save: bool = True) -> None:
@@ -104,11 +105,11 @@ def stream_analyze_log(log_file: str, interval: int = 1) -> None:
     file_path = Path(log_file).expanduser().resolve()
 
     if not file_path.exists():
-        console.print(f'[red]Error: Log file not found: {file_path}[/red]')
+        stderr_console.print(f'[red]Error: Log file not found: {file_path}[/red]')
         sys.exit(1)
 
-    console.print(f'[blue]Stream analyzing:[/blue] {file_path}')
-    console.print(f'[dim]Update interval: {interval}s (Press Ctrl+C to stop)[/dim]\n')
+    stderr_console.print(f'[blue]Stream analyzing:[/blue] {file_path}')
+    stderr_console.print(f'[dim]Update interval: {interval}s (Press Ctrl+C to stop)[/dim]\n')
 
     # Initialize analyzer
     analyzer = Analyzer()
@@ -118,7 +119,7 @@ def stream_analyze_log(log_file: str, interval: int = 1) -> None:
         with file_path.open('r', encoding='utf-8') as f:
             existing_content = f.read()
     except OSError as e:
-        console.print(f'[red]Error reading file: {e}[/red]')
+        stderr_console.print(f'[red]Error reading file: {e}[/red]')
         sys.exit(1)
 
     # Initial analysis of existing content
@@ -168,6 +169,6 @@ def stream_analyze_log(log_file: str, interval: int = 1) -> None:
     try:
         watcher.watch(process_new_line)
     except KeyboardInterrupt:
-        console.print('\n[yellow]Stopped stream analysis[/yellow]')
+        stderr_console.print('\n[yellow]Stopped stream analysis[/yellow]')
         watcher.stop()
         sys.exit(0)

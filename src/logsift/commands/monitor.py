@@ -22,7 +22,6 @@ from logsift.output.toon_formatter import format_toon
 from logsift.utils.notifications import notify_command_complete
 from logsift.utils.tty import detect_output_format
 
-console = Console()
 stderr_console = Console(stderr=True)
 
 
@@ -246,7 +245,7 @@ def monitor_command(
             log_handle.close()
 
     except KeyboardInterrupt:
-        console.print('\n\n[yellow]Interrupted by user[/yellow]')
+        stderr_console.print('\n\n[yellow]Interrupted by user[/yellow]')
         if process:
             process.terminate()
             process.wait()
@@ -255,7 +254,7 @@ def monitor_command(
         sys.exit(130)
 
     except Exception as e:
-        console.print(f'\n\n[red]Error monitoring command: {e}[/red]')
+        stderr_console.print(f'\n\n[red]Error monitoring command: {e}[/red]')
         if log_handle:
             log_handle.close()
         sys.exit(1)

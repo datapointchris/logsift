@@ -22,6 +22,7 @@ from logsift.utils.fzf import is_fzf_available
 from logsift.utils.fzf import select_log_file
 
 console = Console()
+stderr_console = Console(stderr=True)
 
 
 def create_format_commands(
@@ -98,7 +99,7 @@ def create_format_commands(
         files = cache.list_all_in_format(format_name)
 
         if not files:
-            console.print(f'[yellow]No {format_name} files found[/yellow]')
+            stderr_console.print(f'[yellow]No {format_name} files found[/yellow]')
             return
 
         if output_format == 'json':
@@ -179,7 +180,7 @@ def create_format_commands(
             matching_files = [f for f in format_dir.glob(f'*{extension}') if name in f.stem]
 
             if not matching_files:
-                console.print(f'[red]Error: No {format_name} files found matching "{name}"[/red]')
+                stderr_console.print(f'[red]Error: No {format_name} files found matching "{name}"[/red]')
                 raise typer.Exit(1)
 
             # Sort by modification time
@@ -189,12 +190,12 @@ def create_format_commands(
             all_files = list(format_dir.glob(f'*{extension}'))
 
             if not all_files:
-                console.print(f'[red]Error: No {format_name} files found[/red]')
+                stderr_console.print(f'[red]Error: No {format_name} files found[/red]')
                 raise typer.Exit(1)
 
             file_path = max(all_files, key=lambda f: f.stat().st_mtime)
 
-        console.print(f'[cyan]Latest {format_name}: {file_path}[/cyan]\n')
+        stderr_console.print(f'[cyan]Latest {format_name}: {file_path}[/cyan]\n')
 
         # Either tail or display
         if tail:
@@ -232,24 +233,24 @@ def create_format_commands(
             logsift <format> browse --tail
         """
         if not is_fzf_available():
-            console.print('[red]Error: fzf is not installed or not in PATH[/red]')
-            console.print('[dim]Install fzf: https://github.com/junegunn/fzf#installation[/dim]')
+            stderr_console.print('[red]Error: fzf is not installed or not in PATH[/red]')
+            stderr_console.print('[dim]Install fzf: https://github.com/junegunn/fzf#installation[/dim]')
             raise typer.Exit(1)
 
         cache = CacheManager()
         files = cache.list_all_in_format(format_name)
 
         if not files:
-            console.print(f'[yellow]No {format_name} files found[/yellow]')
+            stderr_console.print(f'[yellow]No {format_name} files found[/yellow]')
             return
 
         selected_path = select_log_file(files, f'Select {format_name} file')
 
         if not selected_path:
-            console.print('[dim]No file selected[/dim]')
+            stderr_console.print('[dim]No file selected[/dim]')
             return
 
-        console.print(f'[cyan]Selected: {selected_path}[/cyan]\n')
+        stderr_console.print(f'[cyan]Selected: {selected_path}[/cyan]\n')
 
         file_path = Path(selected_path)
 
@@ -279,11 +280,11 @@ def tail_file(file_path: Path, interval: int = 1) -> None:
         interval: Update interval in seconds
     """
     if not file_path.exists():
-        console.print(f'[red]Error: File not found: {file_path}[/red]')
+        stderr_console.print(f'[red]Error: File not found: {file_path}[/red]')
         sys.exit(1)
 
-    console.print(f'[blue]Tailing:[/blue] {file_path}')
-    console.print('[dim]Press Ctrl+C to stop[/dim]\n')
+    stderr_console.print(f'[blue]Tailing:[/blue] {file_path}')
+    stderr_console.print('[dim]Press Ctrl+C to stop[/dim]\n')
 
     try:
         with file_path.open('r', encoding='utf-8') as f:
@@ -301,5 +302,5 @@ def tail_file(file_path: Path, interval: int = 1) -> None:
                     time.sleep(interval)
 
     except KeyboardInterrupt:
-        console.print('\n[yellow]Stopped tailing file[/yellow]')
+        stderr_console.print('\n[yellow]Stopped tailing file[/yellow]')
         sys.exit(0)

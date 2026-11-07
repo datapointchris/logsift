@@ -31,7 +31,8 @@ def test_list_logs_empty_cache(capsys, tmp_path):
         list_logs(output_format='table')
         captured = capsys.readouterr()
 
-        assert 'No cached logs found' in captured.out
+        assert 'No cached logs found' in captured.err
+        assert captured.out == ''
 
 
 def test_list_logs_with_files(capsys, tmp_path):
@@ -133,7 +134,7 @@ def test_clean_logs_empty_cache(capsys, tmp_path):
         clean_logs(days=30)
         captured = capsys.readouterr()
 
-        assert 'No cache directory found' in captured.out
+        assert 'No cache directory found' in captured.err
 
 
 def test_clean_logs_no_old_files(capsys, tmp_path):

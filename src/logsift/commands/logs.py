@@ -20,6 +20,7 @@ from logsift.utils.fzf import is_fzf_available
 from logsift.utils.fzf import select_log_file
 
 console = Console()
+stderr_console = Console(stderr=True)
 
 # Printed under every empty-cache message: monitor is the one command that writes logs and analyses.
 CAPTURE_HINT = '[dim]Run `logsift monitor -- <command>` to capture a run and analyze it[/dim]'
@@ -35,8 +36,8 @@ def list_logs(output_format: str = 'table') -> None:
     logs = cache.list_all_logs()
 
     if not logs:
-        console.print('[yellow]No cached logs found[/yellow]')
-        console.print(CAPTURE_HINT)
+        stderr_console.print('[yellow]No cached logs found[/yellow]')
+        stderr_console.print(CAPTURE_HINT)
         return
 
     if output_format == 'json':
@@ -85,7 +86,7 @@ def clean_logs(days: int = 90, dry_run: bool = False) -> None:
     cache = CacheManager()
 
     if not cache.cache_dir.exists():
-        console.print('[yellow]No cache directory found[/yellow]')
+        stderr_console.print('[yellow]No cache directory found[/yellow]')
         return
 
     if dry_run:
@@ -131,8 +132,8 @@ def browse_logs(action: str = 'select', interval: int = 1) -> None:
     """
     # Check if fzf is available
     if not is_fzf_available():
-        console.print('[red]Error: fzf is not installed or not in PATH[/red]')
-        console.print('[dim]Install fzf: https://github.com/junegunn/fzf#installation[/dim]')
+        stderr_console.print('[red]Error: fzf is not installed or not in PATH[/red]')
+        stderr_console.print('[dim]Install fzf: https://github.com/junegunn/fzf#installation[/dim]')
         sys.exit(1)
 
     # Get log files
@@ -140,8 +141,8 @@ def browse_logs(action: str = 'select', interval: int = 1) -> None:
     logs = cache.list_all_logs()
 
     if not logs:
-        console.print('[yellow]No cached logs found[/yellow]')
-        console.print(CAPTURE_HINT)
+        stderr_console.print('[yellow]No cached logs found[/yellow]')
+        stderr_console.print(CAPTURE_HINT)
         return
 
     # Select log file with fzf
@@ -149,11 +150,11 @@ def browse_logs(action: str = 'select', interval: int = 1) -> None:
         selected_path = select_log_file(logs, 'Select log file to analyze')
 
         if not selected_path:
-            console.print('[dim]No file selected[/dim]')
+            stderr_console.print('[dim]No file selected[/dim]')
             return
 
         # Analyze the selected log
-        console.print(f'[cyan]Analyzing: {selected_path}[/cyan]')
+        stderr_console.print(f'[cyan]Analyzing: {selected_path}[/cyan]')
 
         analyze_log(selected_path, output_format='markdown')
 
@@ -161,21 +162,21 @@ def browse_logs(action: str = 'select', interval: int = 1) -> None:
         selected_path = select_log_file(logs, 'Select log file to view')
 
         if not selected_path:
-            console.print('[dim]No file selected[/dim]')
+            stderr_console.print('[dim]No file selected[/dim]')
             return
 
         # Browse the selected log
         log_path = Path(selected_path)
         if browse_log_with_preview(log_path):
-            console.print(f'[dim]Browsed: {log_path}[/dim]')
+            stderr_console.print(f'[dim]Browsed: {log_path}[/dim]')
         else:
-            console.print('[red]Error browsing log file[/red]')
+            stderr_console.print('[red]Error browsing log file[/red]')
 
     elif action == 'tail':
         selected_path = select_log_file(logs, 'Select log file to tail')
 
         if not selected_path:
-            console.print('[dim]No file selected[/dim]')
+            stderr_console.print('[dim]No file selected[/dim]')
             return
 
         # Tail the selected log
@@ -194,11 +195,11 @@ def tail_log(log_file: str, interval: int = 1) -> None:
     file_path = Path(log_file).expanduser().resolve()
 
     if not file_path.exists():
-        console.print(f'[red]Error: Log file not found: {file_path}[/red]')
+        stderr_console.print(f'[red]Error: Log file not found: {file_path}[/red]')
         sys.exit(1)
 
-    console.print(f'[blue]Tailing:[/blue] {file_path}')
-    console.print('[dim]Press Ctrl+C to stop[/dim]\n')
+    stderr_console.print(f'[blue]Tailing:[/blue] {file_path}')
+    stderr_console.print('[dim]Press Ctrl+C to stop[/dim]\n')
 
     # Open file and seek to end
     try:
@@ -217,5 +218,5 @@ def tail_log(log_file: str, interval: int = 1) -> None:
                     time.sleep(interval)
 
     except KeyboardInterrupt:
-        console.print('\n[yellow]Stopped tailing log file[/yellow]')
+        stderr_console.print('\n[yellow]Stopped tailing log file[/yellow]')
         sys.exit(0)
