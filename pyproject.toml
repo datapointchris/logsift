@@ -17,7 +17,7 @@ dependencies = [
     "tomli-w>=1.0.0",
     # Date parsing
     "python-dateutil>=2.8.0",
-    "toon-format",
+    "toon-format>=1.0.0",
     # Self-update and the daily update notice
     "pyselfupdate[typer]>=0.5.4",
 ]
@@ -261,9 +261,6 @@ pinned = ["ruff"]
 [build-system]
 requires = ["hatchling", "uv-dynamic-versioning"]
 build-backend = "hatchling.build"
-
-[tool.uv.sources]
-toon-format = { git = "https://github.com/toon-format/toon-python" }
 
 [tool.semantic_release]
 # A feature release on 0.x stays on 0.x. python-semantic-release v10 defaults
