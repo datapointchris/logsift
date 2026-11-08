@@ -118,7 +118,6 @@ blank = false
 
 [tool.mypy]
 pretty = true
-ignore_missing_imports = true
 check_untyped_defs = false
 warn_return_any = false
 # Same tree ruff already excludes below. These files carry deliberate type
