@@ -105,30 +105,6 @@ def main(
         is_eager=True,
         help='Display the logsift version',
     ),
-    cache_dir: str | None = typer.Option(
-        None,
-        '--cache-dir',
-        help='Path to the cache directory',
-        envvar='LOGSIFT_CACHE_DIR',
-    ),
-    no_cache: bool = typer.Option(
-        False,
-        '--no-cache',
-        help='Avoid reading from or writing to the cache',
-        envvar='LOGSIFT_NO_CACHE',
-    ),
-    config_file: str | None = typer.Option(
-        None,
-        '--config-file',
-        help='Path to a logsift.toml configuration file',
-        envvar='LOGSIFT_CONFIG_FILE',
-    ),
-    no_config: bool = typer.Option(
-        False,
-        '--no-config',
-        help='Avoid loading configuration files',
-        envvar='LOGSIFT_NO_CONFIG',
-    ),
 ) -> None:
     """logsift - Intelligent log analysis for agentic workflows.
 
@@ -136,14 +112,6 @@ def main(
     Claude Code and other AI agents. Extracts actionable insights from verbose
     logs and provides structured output optimized for LLMs.
     """
-    # Store options in context for subcommands to use
-    ctx.obj = {
-        'cache_dir': cache_dir,
-        'no_cache': no_cache,
-        'config_file': config_file,
-        'no_config': no_config,
-    }
-
     # Never raises and never prints an error; the notice is deferred to exit so
     # it lands after the command's own output. `logsift update` is the only
     # place an update failure is reported, and is skipped here because it is

@@ -10,16 +10,7 @@ Available for all commands:
 logsift [OPTIONS] COMMAND [ARGS]...
 ```
 
-### Cache Options
-
-- `--cache-dir PATH` - Path to the cache directory (env: `LOGSIFT_CACHE_DIR`)
-- `--no-cache` - Avoid reading from or writing to the cache (env: `LOGSIFT_NO_CACHE`)
-
-### Configuration Options
-
 - `-V, --version` - Display the logsift version
-- `--config-file PATH` - Path to a logsift.toml configuration file (env: `LOGSIFT_CONFIG_FILE`)
-- `--no-config` - Avoid loading configuration files (env: `LOGSIFT_NO_CONFIG`)
 
 **Examples:**
 
@@ -27,15 +18,6 @@ logsift [OPTIONS] COMMAND [ARGS]...
 # Display version
 logsift --version
 logsift -V
-
-# Use custom config file
-logsift --config-file /path/to/config.toml monitor -- make build
-
-# Disable caching
-logsift --no-cache monitor -- npm test
-
-# Custom cache directory
-logsift --cache-dir /tmp/logsift-cache monitor -- pytest
 ```
 
 ### `--help`
@@ -439,15 +421,9 @@ fi
 
 logsift supports the following environment variables:
 
-### Configuration
-
-- `LOGSIFT_CONFIG_FILE` - Custom config file path (overrides default `~/.config/logsift/config.toml`)
-- `LOGSIFT_NO_CONFIG` - Set to `1` or `true` to avoid loading configuration files
-
 ### Cache
 
-- `LOGSIFT_CACHE_DIR` - Custom cache directory (overrides default `~/.cache/logsift`)
-- `LOGSIFT_NO_CACHE` - Set to `1` or `true` to avoid reading from or writing to cache
+- `XDG_CACHE_HOME` - logsift keeps its cache in `$XDG_CACHE_HOME/logsift`, else `~/.cache/logsift`
 
 ### Monitor Command
 
@@ -458,21 +434,13 @@ logsift supports the following environment variables:
 **Examples:**
 
 ```bash
-# Use custom cache directory
-export LOGSIFT_CACHE_DIR=/tmp/logsift-cache
+# Use a custom cache directory
+export XDG_CACHE_HOME=/tmp/cache
 logsift monitor -- make build
-
-# Disable caching for CI/CD
-export LOGSIFT_NO_CACHE=1
-logsift monitor -- pytest
 
 # Force JSON output globally
 export LOGSIFT_OUTPUT_FORMAT=json
 logsift monitor -- npm test
-
-# Use custom config file
-export LOGSIFT_CONFIG_FILE=/etc/logsift/config.toml
-logsift analyze app.log
 ```
 
 ## Performance Considerations

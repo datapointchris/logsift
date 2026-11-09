@@ -40,7 +40,7 @@ class UVStyleHelpFormatter(click.HelpFormatter):
 
         for first, second in rows:
             # Color command names and option flags blue
-            if self.current_section in ('Commands', 'Cache options', 'Output options', 'Global options'):
+            if self.current_section in ('Commands', 'Output options', 'Global options'):
                 # Use click.style and get actual length for padding
                 colored_first = click.style(first, fg='bright_blue')
                 first_len = len(first)  # Length without ANSI codes
@@ -215,7 +215,6 @@ def format_help_with_colors(ctx: Context) -> str:
                 formatter.write('\n')
 
     # Write options grouped by category
-    cache_options: list[tuple[str, str]] = []
     output_options: list[tuple[str, str]] = []
     global_options: list[tuple[str, str]] = []
 
@@ -235,22 +234,12 @@ def format_help_with_colors(ctx: Context) -> str:
             # We don't need to add them again - Typer handles this automatically
 
             # Group options by name patterns
-            if '--cache' in opt_name or '--no-cache' in opt_name:
-                cache_options.append((opt_name, help_text))
-            elif '--format' in opt_name or '--notify' in opt_name:
+            if '--format' in opt_name or '--notify' in opt_name:
                 output_options.append((opt_name, help_text))
-            elif '--config' in opt_name or '--no-config' in opt_name:
-                global_options.append((opt_name, help_text))
             else:
                 global_options.append((opt_name, help_text))
 
     # Write option groups in order
-    if cache_options:
-        formatter.write_paragraph()
-        formatter.write_heading('Cache options')
-        formatter.current_section = 'Cache options'
-        formatter.write_dl(cache_options)
-
     if output_options:
         formatter.write_paragraph()
         formatter.write_heading('Output options')
