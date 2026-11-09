@@ -127,7 +127,7 @@ def monitor_command(
     # Use --minimal for LLM workflows that need only the analysis result
     show_progress = not minimal
 
-    # Print initial banner (like run-and-summarize.sh) - only in interactive mode
+    # Print initial banner naming the command and its log - only in interactive mode
     if show_progress:
         stderr_console.print('\n[bold cyan]## Starting Monitored Process[/bold cyan]')
         stderr_console.print(f'[bold]Command:[/bold] {" ".join(command)}')
