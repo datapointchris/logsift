@@ -226,7 +226,7 @@ def create_format_commands(
         Opens an interactive fuzzy-finder interface to search and select from files.
         Displays the selected file or tails it in real-time.
 
-        Requires fzf to be installed (install with: brew install fzf).
+        Requires fzf to be installed (see https://github.com/junegunn/fzf#installation).
 
         Examples:
             logsift <format> browse

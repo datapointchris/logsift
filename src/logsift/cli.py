@@ -483,7 +483,7 @@ def logs_browse(
     cached logs. By default, analyzes the selected file. Use --view to browse
     raw content, or --tail to tail it in real-time.
 
-    Requires fzf to be installed (install with: brew install fzf).
+    Requires fzf to be installed (see https://github.com/junegunn/fzf#installation).
 
     Examples:
         # Browse and analyze a cached log
@@ -630,7 +630,7 @@ def analyzed_browse() -> None:
     Opens an interactive fuzzy-finder to search and select from saved analyses,
     then displays the selected analysis result.
 
-    Requires fzf to be installed (install with: brew install fzf).
+    Requires fzf to be installed (see https://github.com/junegunn/fzf#installation).
 
     Examples:
         logsift analyzed browse
