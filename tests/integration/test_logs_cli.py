@@ -80,6 +80,17 @@ def test_latest_for_a_name_no_run_has_is_an_error():
     assert result.stdout == ''
 
 
+def test_analyzed_latest_finds_by_name_an_analysis_of_a_file_outside_the_cache(tmp_path):
+    """`logsift analyze scratch/deploy.log`, then `logsift json latest deploy`, as analyze's help suggests."""
+    log_file = tmp_path / 'deploy.log'
+    log_file.write_text('ERROR: boom\n')
+    runner.invoke(app, ['analyze', str(log_file)])
+
+    result = runner.invoke(app, ['json', 'latest', 'deploy'])
+
+    assert result.exit_code == 0
+
+
 class TestMonitorStreamFlags:
     """Test the monitor command --stream and --update-interval flags."""
 

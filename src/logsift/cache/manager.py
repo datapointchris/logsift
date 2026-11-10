@@ -40,8 +40,16 @@ def sanitize_name(name: str) -> str:
 
 
 def run_name(path: Path) -> str:
-    """The run name a saved file's stem carries after its start time."""
-    return path.stem[STAMP_LENGTH + 1 :]
+    """The run name a saved file's stem carries after its start time, or the whole stem where it carries none.
+
+    `analyze` saves its analysis of a file outside the cache under that file's own stem, with no start time.
+    """
+    stamp, rest = path.stem[:STAMP_LENGTH], path.stem[STAMP_LENGTH:]
+    try:
+        dt.datetime.strptime(stamp, STAMP_FORMAT)
+    except ValueError:
+        return path.stem
+    return rest[1:] if rest.startswith('-') else path.stem
 
 
 class CacheManager:
