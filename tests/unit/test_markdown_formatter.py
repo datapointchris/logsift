@@ -66,6 +66,4 @@ def test_format_markdown_stats():
 
     output = format_markdown(analysis_result)
 
-    # Should mention the counts (formatter shows stats)
-    assert '2' in output  # 2 errors
-    assert '1' in output  # 1 warning
+    assert '**Errors:** 2 | **Warnings:** 1' in output.splitlines()

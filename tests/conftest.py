@@ -3,9 +3,20 @@
 Common fixtures used across all tests.
 """
 
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 import pytest
+
+from logsift.patterns.loader import PatternLoader
+
+
+@pytest.fixture(scope='session')
+def builtin_pattern() -> Callable[[str], dict[str, Any]]:
+    """Look a shipped pattern up by name, read through the loader that validates every file."""
+    patterns = {pattern['name']: pattern for category in PatternLoader().load_builtin_patterns().values() for pattern in category}
+    return patterns.__getitem__
 
 
 @pytest.fixture

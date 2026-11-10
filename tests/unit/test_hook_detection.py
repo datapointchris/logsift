@@ -4,6 +4,8 @@ These tests verify that logsift extracts hook names from pre-commit output
 and includes them in the summary for LLM consumption.
 """
 
+import toon_format
+
 from logsift.core.analyzer import Analyzer
 from logsift.output.toon_formatter import format_toon
 
@@ -106,43 +108,17 @@ mypy...Passed
         assert 'mypy' in result['hooks']['passed']
 
 
-class TestToonFormatterHooks:
-    """Test TOON formatter includes hooks field."""
+def test_toon_carries_only_the_failed_hooks():
+    """toon names the hooks that failed, and leaves out the passed list and an empty failed one."""
+    analysis_result = {
+        'summary': {'status': 'failed', 'exit_code': 1},
+        'stats': {'total_errors': 0, 'total_warnings': 0},
+        'errors': [],
+        'warnings': [],
+        'hooks': {'failed': ['ruff', 'shellcheck'], 'passed': ['check yaml']},
+    }
 
-    def test_toon_includes_failed_hooks(self):
-        """Test that TOON output includes failed hooks."""
-        analysis_result = {
-            'summary': {'status': 'failed', 'exit_code': 1},
-            'stats': {'total_errors': 1, 'total_warnings': 0},
-            'errors': [],
-            'warnings': [],
-            'hooks': {
-                'failed': ['ruff', 'shellcheck'],
-                'passed': ['check yaml', 'check toml'],
-            },
-        }
+    assert toon_format.decode(format_toon(analysis_result))['hooks'] == {'failed': ['ruff', 'shellcheck']}
 
-        result = format_toon(analysis_result)
-
-        # Should include failed hooks in output
-        assert 'hooks' in result or 'ruff' in result
-        assert 'failed' in result or 'ruff' in result
-
-    def test_toon_omits_hooks_when_empty(self):
-        """Test that TOON output omits hooks when none detected."""
-        analysis_result = {
-            'summary': {'status': 'success', 'exit_code': 0},
-            'stats': {'total_errors': 0, 'total_warnings': 0},
-            'errors': [],
-            'warnings': [],
-            'hooks': {
-                'failed': [],
-                'passed': [],
-            },
-        }
-
-        result = format_toon(analysis_result)
-
-        # Hooks should not appear if empty (token efficiency)
-        # The actual behavior depends on implementation
-        assert isinstance(result, str)
+    analysis_result['hooks']['failed'] = []
+    assert 'hooks' not in toon_format.decode(format_toon(analysis_result))

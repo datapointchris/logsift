@@ -329,16 +329,6 @@ class TestErrorHandling:
         # Should handle error gracefully
         assert result.exit_code != 0
 
-    def test_command_timeout(self):
-        """Test handling of long-running commands."""
-        # This is a basic test - actual timeout handling would need more sophisticated testing
-        result = runner.invoke(
-            app,
-            ['monitor', '--format=json', '--', 'echo', 'test'],
-        )
-
-        assert result.exit_code == 0
-
     def test_empty_log_file(self, tmp_path):
         """Test analyzing an empty log file."""
         log_file = tmp_path / 'empty.log'

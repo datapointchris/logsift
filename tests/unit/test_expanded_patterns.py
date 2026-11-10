@@ -5,8 +5,6 @@ other common pre-commit hooks correctly match real output.
 """
 
 import re
-import tomllib
-from pathlib import Path
 
 from logsift.core.analyzer import Analyzer
 
@@ -14,49 +12,25 @@ from logsift.core.analyzer import Analyzer
 class TestSpecificShellcheckPatterns:
     """Test specific shellcheck patterns with actionable suggestions."""
 
-    def test_sc2086_quoting_pattern(self):
+    def test_sc2086_quoting_pattern(self, builtin_pattern):
         """Test SC2086 quoting pattern matches real output."""
-        pattern_file = Path('src/logsift/patterns/defaults/pre-commit.toml')
-        with pattern_file.open('rb') as f:
-            data = tomllib.load(f)
-
-        pattern = next(
-            (p for p in data['patterns'] if p['name'] == 'shellcheck_sc2086_quoting'),
-            None,
-        )
-        assert pattern is not None
+        pattern = builtin_pattern('shellcheck_sc2086_quoting')
 
         test_line = '    ^---^ SC2086 (info): Double quote to prevent globbing and word splitting.'
         match = re.search(pattern['regex'], test_line)
         assert match is not None
 
-    def test_sc2155_declare_assign_pattern(self):
+    def test_sc2155_declare_assign_pattern(self, builtin_pattern):
         """Test SC2155 declare/assign pattern."""
-        pattern_file = Path('src/logsift/patterns/defaults/pre-commit.toml')
-        with pattern_file.open('rb') as f:
-            data = tomllib.load(f)
-
-        pattern = next(
-            (p for p in data['patterns'] if p['name'] == 'shellcheck_sc2155_declare_assign'),
-            None,
-        )
-        assert pattern is not None
+        pattern = builtin_pattern('shellcheck_sc2155_declare_assign')
 
         test_line = 'SC2155 (warning): Declare and assign separately to avoid masking return values.'
         match = re.search(pattern['regex'], test_line)
         assert match is not None
 
-    def test_sc2034_unused_var_pattern(self):
+    def test_sc2034_unused_var_pattern(self, builtin_pattern):
         """Test SC2034 unused variable pattern."""
-        pattern_file = Path('src/logsift/patterns/defaults/pre-commit.toml')
-        with pattern_file.open('rb') as f:
-            data = tomllib.load(f)
-
-        pattern = next(
-            (p for p in data['patterns'] if p['name'] == 'shellcheck_sc2034_unused_var'),
-            None,
-        )
-        assert pattern is not None
+        pattern = builtin_pattern('shellcheck_sc2034_unused_var')
 
         test_line = 'SC2034 (warning): UNUSED_VAR appears unused. Verify use (or export if used externally).'
         match = re.search(pattern['regex'], test_line)
@@ -66,49 +40,25 @@ class TestSpecificShellcheckPatterns:
 class TestSpecificRuffPatterns:
     """Test specific ruff patterns with actionable suggestions."""
 
-    def test_f401_unused_import_pattern(self):
+    def test_f401_unused_import_pattern(self, builtin_pattern):
         """Test F401 unused import pattern."""
-        pattern_file = Path('src/logsift/patterns/defaults/pre-commit.toml')
-        with pattern_file.open('rb') as f:
-            data = tomllib.load(f)
-
-        pattern = next(
-            (p for p in data['patterns'] if p['name'] == 'ruff_f401_unused_import'),
-            None,
-        )
-        assert pattern is not None
+        pattern = builtin_pattern('ruff_f401_unused_import')
 
         test_line = "src/main.py:10:1: F401 'sys' imported but unused"
         match = re.search(pattern['regex'], test_line)
         assert match is not None
 
-    def test_e501_line_too_long_pattern(self):
+    def test_e501_line_too_long_pattern(self, builtin_pattern):
         """Test E501 line too long pattern."""
-        pattern_file = Path('src/logsift/patterns/defaults/pre-commit.toml')
-        with pattern_file.open('rb') as f:
-            data = tomllib.load(f)
-
-        pattern = next(
-            (p for p in data['patterns'] if p['name'] == 'ruff_e501_line_too_long'),
-            None,
-        )
-        assert pattern is not None
+        pattern = builtin_pattern('ruff_e501_line_too_long')
 
         test_line = 'src/main.py:15:5: E501 line too long (120 > 88 characters)'
         match = re.search(pattern['regex'], test_line)
         assert match is not None
 
-    def test_f841_unused_variable_pattern(self):
+    def test_f841_unused_variable_pattern(self, builtin_pattern):
         """Test F841 unused variable pattern."""
-        pattern_file = Path('src/logsift/patterns/defaults/pre-commit.toml')
-        with pattern_file.open('rb') as f:
-            data = tomllib.load(f)
-
-        pattern = next(
-            (p for p in data['patterns'] if p['name'] == 'ruff_f841_unused_variable'),
-            None,
-        )
-        assert pattern is not None
+        pattern = builtin_pattern('ruff_f841_unused_variable')
 
         test_line = "src/utils.py:5:1: F841 local variable 'x' is assigned to but never used"
         match = re.search(pattern['regex'], test_line)
@@ -118,34 +68,18 @@ class TestSpecificRuffPatterns:
 class TestPythonErrorPatterns:
     """Test Python error patterns."""
 
-    def test_module_not_found_pattern(self):
+    def test_module_not_found_pattern(self, builtin_pattern):
         """Test ModuleNotFoundError pattern."""
-        pattern_file = Path('src/logsift/patterns/defaults/pre-commit.toml')
-        with pattern_file.open('rb') as f:
-            data = tomllib.load(f)
-
-        pattern = next(
-            (p for p in data['patterns'] if p['name'] == 'module_not_found'),
-            None,
-        )
-        assert pattern is not None
+        pattern = builtin_pattern('module_not_found')
 
         test_line = "ModuleNotFoundError: No module named 'requests'"
         match = re.search(pattern['regex'], test_line)
         assert match is not None
         assert match.group(1) == 'requests'
 
-    def test_syntax_error_pattern(self):
+    def test_syntax_error_pattern(self, builtin_pattern):
         """Test SyntaxError pattern."""
-        pattern_file = Path('src/logsift/patterns/defaults/pre-commit.toml')
-        with pattern_file.open('rb') as f:
-            data = tomllib.load(f)
-
-        pattern = next(
-            (p for p in data['patterns'] if p['name'] == 'syntax_error_python'),
-            None,
-        )
-        assert pattern is not None
+        pattern = builtin_pattern('syntax_error_python')
 
         test_line = 'SyntaxError: invalid syntax'
         match = re.search(pattern['regex'], test_line)
