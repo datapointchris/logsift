@@ -196,7 +196,7 @@ files share a stem, its UTC start time and a name made from the command:
 ```
 
 `logsift logs list` lists the raw logs, and `logsift analyze --latest` re-runs the patterns over the
-newest one.
+one written most recently. After `monitor --append`, that is the log the run appended to.
 
 Clean old raw logs (older than 90 days by default) and old analyses (older than 30 days):
 

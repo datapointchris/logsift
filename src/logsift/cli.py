@@ -65,7 +65,7 @@ app = typer.Typer(
         '  logsift monitor -q --format json -- pytest tests/\n'
         '  # Re-run the patterns over the last capture\n'
         '  logsift analyze --latest\n'
-        '  # Reread the newest analysis of a run named build\n'
+        '  # Reread the latest analysis of a run named build\n'
         '  logsift analyzed latest build\n\n'
         '`logsift <command> --help` describes one command.'
     ),
@@ -221,7 +221,7 @@ def monitor(
 def analyze(
     ctx: typer.Context,
     log_file: Annotated[str | None, typer.Argument(help='The log file to analyze')] = None,
-    latest: Annotated[bool, typer.Option('--latest', help='Analyze the newest log monitor captured')] = False,
+    latest: Annotated[bool, typer.Option('--latest', help='Analyze the log monitor wrote most recently')] = False,
     choose: Annotated[bool, typer.Option('--choose', help='Pick a log monitor captured with fzf. Needs a terminal')] = False,
     format: Annotated[
         AnalysisFormat,

@@ -81,7 +81,11 @@ class CacheManager:
         return failures
 
     def files(self, kind: SavedKind) -> list[Path]:
-        """Every saved file of kind, newest first: by modification time, then by name."""
+        """Every saved file of kind, most recently written first, then by name.
+
+        A run's start time is in its name, but `monitor --append` writes to an earlier run's log, and
+        that log is what a caller asking for the latest means.
+        """
         found = [path for path in self.directory(kind).glob(f'*{SUFFIXES[kind]}') if path.is_file()]
         return sorted(found, key=lambda path: (path.stat().st_mtime, path.name), reverse=True)
 
@@ -103,7 +107,7 @@ class CacheManager:
         return rows
 
     def latest(self, kind: SavedKind, name: str | None = None) -> Path | None:
-        """The newest file of kind, or the newest whose run name contains name."""
+        """The most recently written file of kind, or the most recent whose run name contains name."""
         wanted = sanitize_name(name) if name else ''
         return next((path for path in self.files(kind) if wanted in run_name(path)), None)
 
