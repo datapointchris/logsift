@@ -7,8 +7,12 @@ import datetime as dt
 import re
 from operator import itemgetter
 from pathlib import Path
+from typing import Any
 
 from logsift import xdg_dirs
+from logsift.output.json_formatter import format_json
+from logsift.output.markdown_formatter import format_markdown
+from logsift.output.toon_formatter import format_toon
 
 
 class CacheManager:
@@ -68,6 +72,24 @@ class CacheManager:
             'toon': self.toon_dir / f'{stem}.toon',
             'md': self.md_dir / f'{stem}.md',
         }
+
+    def save_analysis(self, analysis: dict[str, Any], stem: str) -> list[str]:
+        """Write the analysis under stem in json/, toon/ and md/.
+
+        Returns:
+            One line per file that could not be written, naming it and the reason
+        """
+        failures = []
+        for path, render in (
+            (self.json_dir / f'{stem}.json', format_json),
+            (self.toon_dir / f'{stem}.toon', format_toon),
+            (self.md_dir / f'{stem}.md', format_markdown),
+        ):
+            try:
+                path.write_text(render(analysis), encoding='utf-8')
+            except OSError as fault:
+                failures.append(f'{path}: {fault.strerror or fault}')
+        return failures
 
     def get_latest_log(self, name: str) -> Path | None:
         """Get the latest raw log file for a given name.

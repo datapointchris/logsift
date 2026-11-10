@@ -4,7 +4,6 @@ Analyzes an existing log file and outputs results.
 """
 
 import sys
-from contextlib import suppress
 from pathlib import Path
 
 from rich.console import Console
@@ -46,29 +45,8 @@ def analyze_log(log_file: str, output_format: str = 'auto', save: bool = True) -
     analyzer = Analyzer()
     analysis_result = analyzer.analyze(log_content)
 
-    # Auto-save analysis result in all formats
     if save:
-        cache = CacheManager()
-
-        # Get stem from log file name (without extension)
-        stem = log_path.stem
-
-        # Create paths for all analysis formats
-        json_path = cache.json_dir / f'{stem}.json'
-        toon_path = cache.toon_dir / f'{stem}.toon'
-        md_path = cache.md_dir / f'{stem}.md'
-
-        # Silently fail if we can't save - don't interrupt the analysis
-        with suppress(OSError), json_path.open('w', encoding='utf-8') as f:
-            f.write(format_json(analysis_result))
-
-        # Save TOON (compact for LLMs)
-        with suppress(OSError), toon_path.open('w', encoding='utf-8') as f:
-            f.write(format_toon(analysis_result))
-
-        # Save Markdown (curated for humans)
-        with suppress(OSError), md_path.open('w', encoding='utf-8') as f:
-            f.write(format_markdown(analysis_result))
+        report_unsaved(CacheManager().save_analysis(analysis_result, log_path.stem))
 
     # Determine output format
     if output_format == 'auto':
@@ -88,6 +66,12 @@ def analyze_log(log_file: str, output_format: str = 'auto', save: bool = True) -
         # Plain format fallback - just use markdown
         output = format_markdown(analysis_result)
         print(output)
+
+
+def report_unsaved(failures: list[str]) -> None:
+    """Name on stderr each analysis file a run could not save, so a later `latest` finding none is explained."""
+    for failure in failures:
+        stderr_console.print(f'[yellow]Warning: analysis not saved to {failure}[/yellow]', soft_wrap=True)
 
 
 def stream_analyze_log(log_file: str, interval: int = 1) -> None:

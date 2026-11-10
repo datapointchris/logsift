@@ -6,13 +6,13 @@ Monitors a command and analyzes its output.
 import datetime as dt
 import sys
 import time
-from contextlib import suppress
 from pathlib import Path
 
 from rich.console import Console
 
 from logsift import process_runner
 from logsift.cache.manager import CacheManager
+from logsift.commands.analyze import report_unsaved
 from logsift.core.analyzer import Analyzer
 from logsift.output.json_formatter import format_json
 from logsift.output.markdown_formatter import format_markdown
@@ -227,18 +227,9 @@ def monitor_command(
         'log_file': str(log_file) if log_file else None,
     }
 
-    # Save all analysis formats if we created new paths
+    # An appended run reuses an earlier log, whose analysis files belong to that earlier run.
     if log_paths:
-        with suppress(OSError), log_paths['json'].open('w', encoding='utf-8') as f:
-            f.write(format_json(analysis_result))
-
-        # Save TOON (compact for LLMs)
-        with suppress(OSError), log_paths['toon'].open('w', encoding='utf-8') as f:
-            f.write(format_toon(analysis_result))
-
-        # Save Markdown (curated for humans)
-        with suppress(OSError), log_paths['md'].open('w', encoding='utf-8') as f:
-            f.write(format_markdown(analysis_result))
+        report_unsaved(cache.save_analysis(analysis_result, log_paths['raw'].stem))
 
     # Print analysis summary header - only in interactive mode
     if show_progress:
