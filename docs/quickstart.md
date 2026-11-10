@@ -204,13 +204,13 @@ logsift logs clean --days 30
 
 Now that you have logsift running:
 
-1. **[CLI Reference](cli-reference.md)** - Explore all commands and options
+1. **[CLI Reference](cli-reference.md)** - Where each command's help lives, and the exit codes
 2. **[Agentic Integration](concepts/agentic-integration.md)** - Use with Claude Code
 3. **[Structured Logging](guides/structured-logging.md)** - Write better logs
 4. **[Custom Patterns](guides/custom-patterns.md)** - Create domain patterns
 
 ## Getting Help
 
-- Run `logsift --help` for quick reference
-- Check [CLI Reference](cli-reference.md) for detailed docs
+- Run `logsift --help`, or `logsift <command> --help` for one command
+- Check [CLI Reference](cli-reference.md) for the exit codes and what each stream carries
 - Report issues on [GitHub](https://github.com/datapointchris/logsift/issues)

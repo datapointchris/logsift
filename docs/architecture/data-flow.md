@@ -69,9 +69,11 @@ Pattern matching:
 ```python
 for entry in log_entries:
     for pattern in all_patterns:
-        if re.search(pattern['regex'], entry['message']):
-            issue = self._build_issue(entry, pattern['severity'], issue_id, pattern)
-            # issue['pattern_name'], ['description'], ['tags'] and ['suggestion'] come from the pattern
+        found = re.search(pattern['regex'], entry['message'])
+        if found:
+            # error and warning report the line: pattern_name, description, tags and suggestion
+            # come from the pattern, and the regex's (?P<code>...) group, if any, is the issue's code.
+            # info reports nothing, so a line known to be benign never reaches a later catch-all.
             break  # First match wins
 ```
 

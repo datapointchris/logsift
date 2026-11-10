@@ -347,4 +347,4 @@ logsift analyze app.log --format=json
 
 - [JSON Schema](../api/json-schema.md) - Complete JSON specification
 - [Agentic Integration](agentic-integration.md) - Using JSON with AI agents
-- [CLI Reference](../cli-reference.md) - All format options
+- [CLI Reference](../cli-reference.md) - Where the help lives, what each stream carries, and the exit codes

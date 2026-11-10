@@ -89,5 +89,5 @@ set it:
 
 ## See Also
 
-- [CLI Reference](../cli-reference.md) - Every flag and variable
+- [CLI Reference](../cli-reference.md) - Where the help lives, what each stream carries, and the exit codes
 - [Custom Patterns](../guides/custom-patterns.md) - Pattern files under the patterns directory

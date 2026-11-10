@@ -151,5 +151,5 @@ logsift logs clean --days 30
 
 ## See Also
 
-- [CLI Reference](../cli-reference.md) - Complete command docs
+- [CLI Reference](../cli-reference.md) - Where the help lives, what each stream carries, and the exit codes
 - [Agentic Integration](../concepts/agentic-integration.md) - Automated workflows

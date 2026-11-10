@@ -202,4 +202,4 @@ suggestion = "Fix this custom error"
 - [JSON Schema](../api/json-schema.md) - How to read the JSON output
 - [Pattern Format](../api/pattern-format.md) - Create custom patterns
 - [Structured Logging](../guides/structured-logging.md) - Write log-friendly scripts
-- [CLI Reference](../cli-reference.md) - Complete command documentation
+- [CLI Reference](../cli-reference.md) - Where the help lives, what each stream carries, and the exit codes

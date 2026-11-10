@@ -22,7 +22,7 @@ logsift transforms verbose command output (2000+ lines) into actionable intellig
 
 - [5-Minute Quickstart](quickstart.md) - Get up and running fast
 - [Installation Guide](installation.md) - Detailed installation instructions
-- [CLI Reference](cli-reference.md) - Complete command documentation
+- [CLI Reference](cli-reference.md) - Where the help lives, what each stream carries, and the exit codes
 
 ### Core Concepts
 
