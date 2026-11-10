@@ -83,7 +83,7 @@ parser is a format normalizer, NOT a pattern matcher.
 Input → Parser (format detection, normalization) →
 IssueDetector (single-pass, TOML patterns) →
 Analyzer (file references + context) →
-Dual Output (JSON for LLMs, Markdown for humans)
+Output (toon for LLMs when piped, JSON for programs, Markdown on a terminal)
 ```
 
 - TTY detection (`utils/tty.py`): `detect_output_format()` returns Markdown on a TTY, else toon

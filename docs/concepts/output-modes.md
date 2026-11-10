@@ -1,43 +1,46 @@
 # Output Modes
 
-Understanding logsift's dual output system: JSON for machines, Markdown for humans.
+Understanding logsift's three output formats: toon for agents, JSON for programs, Markdown for humans.
 
 ## Overview
 
-logsift provides two output formats optimized for different consumers:
+logsift prints one analysis in three formats, each for a different reader:
 
-- **JSON** - Structured data for LLMs and scripts
-- **Markdown** - Beautiful formatted text for humans
+- **toon** - Compact text an LLM reads with the fewest tokens
+- **JSON** - Structured data for scripts and programs
+- **Markdown** - Formatted text for humans
 
 The format is automatically detected based on context, but can be forced with `--format`.
 
 ## Auto-Detection
 
-By default (`--format=auto`), logsift detects the best format:
+By default (`--format=auto`), `detect_output_format()` in `utils/tty.py` picks the format:
 
 ```python
-import sys
-
-if sys.stdout.isatty():
-    # Running in terminal → Markdown
-    format = 'markdown'
-else:
-    # Piped or redirected → JSON
-    format = 'json'
+def detect_output_format() -> str:
+    return 'markdown' if is_interactive() else 'toon'
 ```
 
 ### Examples
 
 ```bash
-# Terminal → Markdown with colors
+# Terminal → Markdown
 logsift analyze app.log
 
-# Piped → JSON automatically
-logsift analyze app.log | jq '.errors'
+# Piped → toon
+logsift analyze app.log | head
 
-# Redirected → JSON automatically
-logsift analyze app.log > analysis.json
+# JSON needs asking for, piped or redirected
+logsift analyze app.log --format=json | jq '.errors'
+logsift analyze app.log --format=json > analysis.json
 ```
+
+## toon Output
+
+toon is the default whenever stdout is not a terminal, because an agent running logsift reads
+piped output. Each issue keeps its id, severity, line, message, code and suggestion. It drops
+`pattern_name`, `tags`, `file_references` and the context lines, except the lines a multi-line
+pattern asked for. A program that needs those fields asks for JSON.
 
 ## JSON Output
 
@@ -45,7 +48,7 @@ Structured output optimized for machine consumption and LLM parsing.
 
 ### When to Use JSON
 
-- **AI Agents** - Claude Code and other LLMs
+- **Agent code** - A program an agent writes to parse the result
 - **Scripting** - Bash, Python, Node.js scripts
 - **Automation** - CI/CD pipelines
 - **Processing** - jq, Python json module
@@ -210,8 +213,11 @@ logsift analyze app.log --format=markdown > report.md
 Override auto-detection with `--format`:
 
 ```bash
-# Force JSON (even in terminal)
+# Force JSON (piped or on a terminal)
 logsift analyze app.log --format=json
+
+# Force toon (even on a terminal)
+logsift analyze app.log --format=toon
 
 # Force Markdown (even when piped)
 logsift analyze app.log --format=markdown | less
@@ -290,28 +296,22 @@ logsift analyze app.log --format=plain > errors.txt
 
 ## Comparison Table
 
-| Feature | JSON | Markdown |
-| --- | --- | --- |
-| **Machine readable** | ✅ Yes | ⚠️ Partial |
-| **Human readable** | ⚠️ Requires parsing | ✅ Beautiful |
-| **Colors** | ❌ No | ✅ Yes (terminal) |
-| **Scriptable** | ✅ Easy | ⚠️ Harder |
-| **LLM consumption** | ✅ Optimized | ⚠️ Works but verbose |
-| **Copy-paste** | ⚠️ Need jq | ✅ Easy |
-| **Schema stability** | ✅ Guaranteed | ⚠️ May change |
-| **File size** | ⚠️ Larger | ✅ Smaller |
-| **Debugging** | ⚠️ Hard to read | ✅ Easy to read |
+| Feature | toon | JSON | Markdown |
+| --- | --- | --- | --- |
+| **Default when** | Piped | Never | On a terminal |
+| **Machine readable** | ⚠️ Needs a toon decoder | ✅ Yes | ⚠️ Partial |
+| **Human readable** | ✅ Compact | ⚠️ Requires parsing | ✅ Easy |
+| **Fields kept** | Message, code, suggestion | All | Message, files, suggestion, context range |
+| **LLM consumption** | ✅ Fewest tokens | ⚠️ Verbose | ⚠️ Verbose |
+| **Schema** | — | ✅ `schemas/analysis.schema.json` | ⚠️ May change |
 
 ## Design Decisions
 
-### Why JSON for LLMs?
+### Why toon for LLMs?
 
-LLMs excel at parsing structured data:
-
-- Predictable schema reduces token usage
-- Fields are explicitly labeled
-- Arrays and objects are natural
-- No ambiguity in parsing
+An agent that runs logsift reads piped output, and every token of it costs context. toon carries
+the same errors as JSON with no braces, quotes or repeated keys, and leaves out the pattern
+metadata an agent reading the message does not need.
 
 ### Why Markdown for Humans?
 
@@ -324,23 +324,22 @@ Humans prefer formatted text:
 
 ### Why Auto-Detection?
 
-Best of both worlds:
-
-- Terminal users get beauty
-- Scripts get structure
-- No manual flags needed
-- Optimal default behavior
+A person at a terminal gets Markdown and an agent reading a pipe gets toon, with no flag. A
+program that parses the output asks for JSON, because a parser should never depend on whether
+stdout is a terminal.
 
 ## Best Practices
 
-### 1. Let Auto-Detection Work
+### 1. Let Auto-Detection Work for Readers
 
 ```bash
-# ✓ GOOD - Auto-detects correctly
+# ✓ GOOD - Markdown for you, toon for an agent reading the pipe
 logsift analyze app.log
+
+# ✗ BAD - jq cannot parse toon
 logsift analyze app.log | jq
 
-# ✗ UNNECESSARY - Auto would work
+# ✓ GOOD - ask for JSON when a program parses it
 logsift analyze app.log --format=json | jq
 ```
 

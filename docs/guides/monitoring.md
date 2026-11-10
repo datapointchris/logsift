@@ -29,7 +29,7 @@ logsift monitor -n my-app-build -- npm run build
 Control output format:
 
 ```bash
-# Auto-detect (terminal=Markdown, pipe=JSON)
+# Auto-detect (terminal=Markdown, pipe=toon)
 logsift monitor -- make test
 
 # Force JSON (for scripting)

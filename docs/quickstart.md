@@ -114,15 +114,15 @@ logsift monitor --minimal --format=json -- python -c "import nonexistent_module"
 
 logsift automatically detects the best output format:
 
-- **Terminal (TTY)**: Beautiful Markdown with colors
-- **Piped/headless**: Structured JSON for processing
+- **Terminal (TTY)**: Markdown
+- **Piped/headless**: compact toon for LLM consumption. Pass `--format json` for JSON.
 
 ```bash
 # Terminal → Markdown
 logsift analyze app.log
 
-# Piped → JSON automatically
-logsift analyze app.log | jq '.errors[0].message'
+# JSON for jq
+logsift analyze app.log --format=json | jq '.errors[0].message'
 
 # Force specific format
 logsift analyze app.log --format=json

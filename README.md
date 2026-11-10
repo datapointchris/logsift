@@ -24,7 +24,7 @@ Command produces 2000 lines → logsift extracts 20-50 lines
 ✅ Errors with file:line references
 ✅ Context around errors (±2 lines)
 ✅ Actionable fix suggestions
-✅ JSON for LLMs + Markdown for humans
+✅ toon for LLMs, JSON for programs, Markdown for humans
 ✅ Enables automated fix/retry loops
 ```
 
@@ -48,7 +48,7 @@ logsift monitor -n my-build --format=json -- npm run build
 Analyze an existing log file:
 
 ```bash
-# Auto-detect output format (JSON for pipes, Markdown for terminal)
+# Auto-detect output format (toon when piped, Markdown on a terminal)
 logsift analyze /var/log/app.log
 
 # Force JSON output (for LLMs)
@@ -97,15 +97,18 @@ logsift analyze --stream /var/log/app.log
 
 **Auto-detection** (recommended):
 
-- **Terminal (TTY)**: Beautiful Markdown with colors and formatting
-- **Piped/headless**: Structured JSON for LLM consumption
+- **Terminal (TTY)**: Markdown
+- **Piped/headless**: compact toon for LLM consumption. Pass `--format json` for JSON.
 
 ```bash
 # Terminal → Markdown
 logsift analyze app.log
 
-# Piped → JSON
-logsift analyze app.log | jq '.errors[0]'
+# Piped → toon
+logsift analyze app.log | head
+
+# JSON for jq
+logsift analyze app.log --format json | jq '.errors[0]'
 ```
 
 **Force specific format:**

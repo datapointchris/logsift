@@ -274,7 +274,7 @@ def detect_output_format() -> str:
     if sys.stdout.isatty():
         return 'markdown'  # Terminal - human readable
     else:
-        return 'json'  # Piped/redirected - machine readable
+        return 'toon'  # Piped/redirected - compact for an LLM; --format json for programs
 ```
 
 ## Anti-Patterns to Avoid

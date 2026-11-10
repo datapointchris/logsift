@@ -142,7 +142,7 @@ def monitor(
         str,
         typer.Option(
             '--format',
-            help='Output format: auto (detects TTY), json (for LLMs), markdown (for humans), plain (no colors)',
+            help='Output format: auto (markdown on a terminal, toon when piped), json, toon, markdown, plain (same as markdown)',
             envvar='LOGSIFT_OUTPUT_FORMAT',
         ),
     ] = 'auto',
@@ -194,7 +194,7 @@ def monitor(
 
     Common Options:
         -n, --name          Name for this monitoring session
-        --format            Output format: auto, json, markdown, plain
+        --format            Output format: auto, json, toon, markdown, plain
         --stream            Stream all output in real-time
         --update-interval   Seconds between updates (default: 60)
         --minimal           Suppress progress output (for LLM workflows)
@@ -236,7 +236,7 @@ def analyze(
         str,
         typer.Option(
             '--format',
-            help='Output format: auto (detects TTY), json (for LLMs), markdown (for humans), plain (no colors)',
+            help='Output format: auto (markdown on a terminal, toon when piped), json, toon, markdown, plain (same as markdown)',
             envvar='LOGSIFT_OUTPUT_FORMAT',
         ),
     ] = 'auto',

@@ -48,7 +48,7 @@ logsift monitor [OPTIONS] -- COMMAND [ARGS]...
 **Options:**
 
 - `-n, --name NAME` - Custom name for monitoring session (default: auto-generated timestamp)
-- `--format FORMAT` - Output format: `auto`, `json`, `markdown`, `plain` (default: `auto`)
+- `--format FORMAT` - Output format: `auto`, `json`, `toon`, `markdown`, or `plain`, which prints the same Markdown (default: `auto`)
 - `--stream` - Stream all output to terminal in real-time (default: show periodic updates)
 - `--update-interval SECONDS` - Seconds between progress updates when not streaming (default: 60)
 - `--minimal` - Suppress all progress output, only show final analysis (ideal for LLM workflows)
@@ -85,20 +85,20 @@ logsift monitor --append -- pytest tests/test_feature.py
 1. Runs the command and captures all output (stdout + stderr)
 2. Saves log to `~/.cache/logsift/monitor/<name>-<timestamp>.log`
 3. Analyzes output for errors, warnings, and patterns
-4. Outputs structured analysis (JSON or Markdown)
+4. Prints the analysis in the chosen format
 5. Exits with command's exit code (0 for success, non-zero for failure)
 
 **Auto-Format Detection:**
 
-- **Terminal (TTY)**: Outputs beautiful Markdown with colors
-- **Piped/headless**: Outputs structured JSON for processing
+- **Terminal (TTY)**: Markdown
+- **Piped/headless**: compact toon for LLM consumption. Pass `--format json` for JSON.
 
 ```bash
 # Terminal → Markdown
 logsift monitor -- make build
 
-# Piped → JSON automatically
-logsift monitor -- make build | jq '.errors'
+# JSON for jq
+logsift monitor --minimal --format json -- make build | jq '.errors'
 ```
 
 ### `analyze`
@@ -115,7 +115,7 @@ logsift analyze [OPTIONS] LOG_FILE
 
 **Options:**
 
-- `--format FORMAT` - Output format: `auto`, `json`, `markdown` (default: `auto`)
+- `--format FORMAT` - Output format: `auto`, `json`, `toon`, `markdown`, or `plain`, which prints the same Markdown (default: `auto`)
 
 **Examples:**
 
@@ -223,16 +223,22 @@ logsift help monitor
 
 Default behavior - automatically detects best format:
 
-- **TTY (terminal)**: Markdown with colors and formatting
-- **Non-TTY (piped)**: JSON for machine processing
+- **TTY (terminal)**: Markdown
+- **Non-TTY (piped)**: toon, a compact text form for LLM consumption
 
 ```bash
 # Auto-detects terminal → Markdown
 logsift analyze app.log
 
-# Auto-detects pipe → JSON
-logsift analyze app.log | jq
+# Auto-detects pipe → toon
+logsift analyze app.log | head
 ```
+
+### toon (`--format=toon`)
+
+The compact form an agent reads with the fewest tokens. Each issue keeps its id, severity, line,
+message, code and suggestion. It drops `pattern_name`, `tags`, `file_references` and the context
+lines, so a program that needs those asks for JSON.
 
 ### JSON (`--format=json`)
 
@@ -378,7 +384,7 @@ logsift supports the following environment variables:
 ### Monitor Command
 
 - `LOGSIFT_SESSION_NAME` - Default session name for monitor command
-- `LOGSIFT_OUTPUT_FORMAT` - Default output format: `auto`, `json`, `markdown`, `plain`
+- `LOGSIFT_OUTPUT_FORMAT` - Default output format for `monitor` and `analyze`: `auto`, `json`, `toon`, `markdown`, `plain`
 - `LOGSIFT_UPDATE_INTERVAL` - Default update interval in seconds (default: 60)
 
 **Examples:**
@@ -478,8 +484,8 @@ See [Agentic Integration](concepts/agentic-integration.md) for complete workflow
 
 1. **Use `--format=json` for scripting** - Stable schema, easy to parse
 2. **Name monitoring sessions** - Use `-n` for better organization
-3. **Let auto-format work** - Default `auto` usually does the right thing
-4. **Pipe to jq** - Extract specific fields from JSON output
+3. **Let auto-format work** - Markdown on a terminal, toon for an agent reading piped output
+4. **Pipe `--format=json` to jq** - Extract specific fields from JSON output
 5. **Create custom patterns** - Domain-specific error detection
 6. **Clean cache regularly** - Prevent disk space issues
 
