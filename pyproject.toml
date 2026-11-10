@@ -12,7 +12,7 @@ dependencies = [
     # 0.26.0 is the first Typer to run its own Click, and ignores an option's envvar.
     # Every older Typer resolves the newest click, whose Argument resets the help Typer sets.
     "typer>=0.26.1",
-    # Typer requires it, and logsift imports Console and Table from it directly.
+    # Typer requires it, and logsift imports it directly, so deptry needs it declared.
     "rich>=13.8.0",
     # Date parsing
     "python-dateutil>=2.8.0",

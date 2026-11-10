@@ -64,18 +64,8 @@ Detection strategy:
 - **First match wins**: custom files are tried first, then the built-in files by name with
   `common.toml` last, so its catch-alls such as `generic_error` never shadow a specific pattern
 
-Pattern matching:
-
-```python
-for entry in log_entries:
-    for pattern in all_patterns:
-        found = re.search(pattern['regex'], entry['message'])
-        if found:
-            # error and warning report the line: pattern_name, description, tags and suggestion
-            # come from the pattern, and the regex's (?P<code>...) group, if any, is the issue's code.
-            # info reports nothing, so a line known to be benign never reaches a later catch-all.
-            break  # First match wins
-```
+The first pattern to match a line decides it. An `info` pattern claims a benign line, so no later
+catch-all reports it. `IssueDetector` in `core/detectors.py` holds the loop.
 
 `Analyzer.__init__` loads the patterns, and detection tries them in this order:
 

@@ -248,16 +248,7 @@ def config_dir() -> Path:
 ### TTY Detection
 
 `output/analysis_format.py` resolves `--format auto` against the stream the analysis is printed
-to, which a test passes in rather than patching `sys.stdout`:
-
-```python
-def resolve_format(requested: str, stream: TextIO | None = None) -> AnalysisFormat:
-    chosen = AnalysisFormat(requested)
-    if chosen is not AnalysisFormat.AUTO:
-        return chosen
-    out = stream if stream is not None else sys.stdout
-    return AnalysisFormat.MARKDOWN if out.isatty() else AnalysisFormat.TOON
-```
+to, which a test passes in rather than patching `sys.stdout`.
 
 ## Anti-Patterns to Avoid
 

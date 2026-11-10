@@ -19,6 +19,7 @@ from logsift.core.analyzer import Analyzer
 from logsift.output.analysis_format import AnalysisFormat
 from logsift.output.analysis_format import render_analysis
 from logsift.output.analysis_format import renderings_to_save
+from logsift.utils.notifications import notifier_for
 from logsift.utils.notifications import notify_command_complete
 
 stderr_console = Console(stderr=True)
@@ -252,7 +253,9 @@ def monitor_command(
             duration_seconds=duration,
         )
         if not posted:
-            stderr_console.print('[yellow]Desktop notification not sent: it needs notify-send on Linux or osascript on macOS[/yellow]')
+            program = notifier_for(sys.platform)
+            reason = f'{program} refused it' if program else 'no notifier for this platform is installed'
+            stderr_console.print(f'[yellow]Desktop notification not sent: {reason}[/yellow]')
 
     if exit_code != 0:
         sys.exit(exit_code)

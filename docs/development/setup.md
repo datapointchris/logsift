@@ -34,10 +34,9 @@ uv tool install --editable .
    `feat: read a pattern's code group` or `fix: keep the level prefix in the message`.
 5. Push the branch and open a pull request on GitHub.
 
-The commit runs every hook `.pre-commit-config.yaml` declares, among them ruff, mypy, codespell,
-markdownlint and shellcheck, and the commit-msg hook checks the message. So nothing needs running
-by hand before a commit. `uv run pre-commit run <hook-id> --files <path>` reruns one hook on one
-file while fixing what it found.
+The commit runs every hook `.pre-commit-config.yaml` declares, and the commit-msg hook checks the
+message. So nothing needs running by hand before a commit. `uv run pre-commit run <hook-id>
+--files <path>` reruns one hook on one file while fixing what it found.
 
 ## Project Structure
 

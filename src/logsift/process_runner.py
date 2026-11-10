@@ -1,4 +1,4 @@
-"""Every external process logsift starts: fzf, bat, notify-send, osascript and the monitored command.
+"""Where every external process logsift starts, so no other module imports subprocess.
 
 `run()` takes a program to completion. `stream()` starts the command `logsift monitor` watches and
 hands back its merged output a line at a time. A program that is not installed raises

@@ -1,4 +1,4 @@
-"""Desktop notifications: osascript on macOS, notify-send on Linux."""
+"""Desktop notifications, through the notifier NOTIFIERS names for the platform."""
 
 import shutil
 import sys
