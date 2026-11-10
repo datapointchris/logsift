@@ -330,4 +330,4 @@ Make log analysis intelligent, efficient, and LLM-friendly to enable fully autom
 
 ---
 
-Built with Python 3.13+, Typer, and the uv build backend.
+Built with Python 3.13+, Typer, and the hatchling build backend.

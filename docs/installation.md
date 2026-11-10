@@ -223,12 +223,8 @@ It installs the newest release from the index over the running one.
 
 ## Dependencies
 
-Core dependencies (automatically installed):
-
-- `typer[all]>=0.15.0` - CLI framework
-- `tomli-w>=1.0.0` - TOML writing
-- `sh>=2.0.0` - Process handling
-- `python-dateutil>=2.8.0` - Date parsing
+Core dependencies are installed automatically. `[project] dependencies` in `pyproject.toml` is the
+list, and `uv tree --no-dev --depth 1` prints what an install resolves it to.
 
 Development dependencies (optional):
 
