@@ -143,7 +143,7 @@ def stream_analyze_log(log_file: str, interval: int = 1) -> None:
         lines_count = len(existing_content.splitlines())
         errors = result['stats']['total_errors']
         warnings = result['stats']['total_warnings']
-        console.print(f'[dim]Lines: {lines_count} | Errors: {errors} | Warnings: {warnings}[/dim]\n')
+        console.print(f'Lines: {lines_count} | Errors: {errors} | Warnings: {warnings}\n')
 
         if errors > 0 or warnings > 0:
             markdown = format_markdown(result)
@@ -168,7 +168,7 @@ def stream_analyze_log(log_file: str, interval: int = 1) -> None:
         lines_count = len(accumulated_content.splitlines())
         errors = result['stats']['total_errors']
         warnings = result['stats']['total_warnings']
-        console.print(f'[dim]Lines: {lines_count} | Errors: {errors} | Warnings: {warnings}[/dim]\n')
+        console.print(f'Lines: {lines_count} | Errors: {errors} | Warnings: {warnings}\n')
 
         if errors > 0 or warnings > 0:
             markdown = format_markdown(result)

@@ -233,7 +233,7 @@ def monitor_command(
     print(render_analysis(analysis_result, output_format))
 
     if log_file and show_progress:
-        stderr_console.print(f'\n[dim]Full log: {log_file}[/dim]')
+        stderr_console.print(f'\n[bold]Full log:[/bold] {log_file}')
 
     # Send notification if requested
     if notify:
