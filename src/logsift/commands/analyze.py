@@ -34,20 +34,17 @@ def analyze_log(log_file: str, output_format: str = AnalysisFormat.AUTO, save: b
         output_format: An AnalysisFormat value
         save: Whether to auto-save the analysis result (default: True)
     """
-    # Check if file exists
     log_path = Path(log_file)
     if not log_path.exists():
         print(f'Error: Log file not found: {log_file}', file=sys.stderr)
         sys.exit(1)
 
-    # Read log content
     try:
         log_content = log_path.read_text()
     except OSError as e:
         print(f'Error reading log file: {e}', file=sys.stderr)
         sys.exit(1)
 
-    # Run analysis
     analyzer = Analyzer()
     analysis_result = analyzer.analyze(log_content)
 
@@ -124,10 +121,8 @@ def stream_analyze_log(log_file: str, interval: int = 1) -> None:
     stderr_console.print(f'[blue]Stream analyzing:[/blue] {file_path}')
     stderr_console.print(f'[dim]Update interval: {interval}s (Press Ctrl+C to stop)[/dim]\n')
 
-    # Initialize analyzer
     analyzer = Analyzer()
 
-    # Read and analyze existing content first
     try:
         with file_path.open('r', encoding='utf-8') as f:
             existing_content = f.read()
@@ -135,7 +130,6 @@ def stream_analyze_log(log_file: str, interval: int = 1) -> None:
         stderr_console.print(f'[red]Error reading file: {e}[/red]')
         sys.exit(1)
 
-    # Initial analysis of existing content
     if existing_content:
         result = analyzer.analyze(existing_content)
         console.clear()
@@ -151,7 +145,6 @@ def stream_analyze_log(log_file: str, interval: int = 1) -> None:
         else:
             console.print('[green]✓[/green] No errors or warnings detected yet')
 
-    # Track accumulated content
     accumulated_content = existing_content
 
     def process_new_line(line: str) -> None:
@@ -159,10 +152,8 @@ def stream_analyze_log(log_file: str, interval: int = 1) -> None:
         nonlocal accumulated_content
         accumulated_content += line + '\n'
 
-        # Re-analyze with new content
         result = analyzer.analyze(accumulated_content)
 
-        # Display live update
         console.clear()
         console.print(f'[blue]Stream analyzing:[/blue] {file_path}')
         lines_count = len(accumulated_content.splitlines())
@@ -176,7 +167,6 @@ def stream_analyze_log(log_file: str, interval: int = 1) -> None:
         else:
             console.print('[green]✓[/green] No errors or warnings detected')
 
-    # Start watching for new lines
     watcher = LogWatcher(file_path, interval)
 
     try:

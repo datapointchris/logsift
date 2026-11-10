@@ -22,10 +22,8 @@ def format_toon(analysis_result: dict[str, Any]) -> str:
     Returns:
         TOON string formatted for LLM agents
     """
-    # Strip non-actionable fields before encoding
     compact_data = prepare_for_toon(analysis_result)
 
-    # Encode to TOON format
     return encode(compact_data)
 
 
@@ -45,15 +43,12 @@ def prepare_for_toon(data: dict[str, Any]) -> dict[str, Any]:
     """
     result: dict[str, Any] = {}
 
-    # Copy summary, stripping nulls
     if 'summary' in data:
         result['summary'] = strip_nulls(data['summary'])
 
-    # Copy stats
     if 'stats' in data:
         result['stats'] = data['stats']
 
-    # Include hooks if there are failed hooks (actionable for LLMs)
     if 'hooks' in data:
         hooks = data['hooks']
         failed_hooks = hooks.get('failed', [])
@@ -61,11 +56,9 @@ def prepare_for_toon(data: dict[str, Any]) -> dict[str, Any]:
             # Only include failed hooks for token efficiency
             result['hooks'] = {'failed': failed_hooks}
 
-    # Process errors - strip metadata and nulls
     if 'errors' in data:
         result['errors'] = [compact_error(error) for error in data['errors']]
 
-    # Process warnings - strip metadata and nulls
     if 'warnings' in data:
         result['warnings'] = [compact_error(warning) for warning in data['warnings']]
 
@@ -99,10 +92,8 @@ def compact_error(error: dict[str, Any]) -> dict[str, Any]:
         'suggestion',
     }
 
-    # Filter to keep only actionable fields, then strip nulls
     compact = {k: v for k, v in error.items() if k in keep_fields}
 
-    # For multi-line errors, include context_after as simple list of messages
     if error.get('pattern_context_lines_after') and error.get('context_after'):
         context_messages = [entry.get('message', '') for entry in error['context_after'] if isinstance(entry, dict)]
         if context_messages:

@@ -20,7 +20,6 @@ def format_json(analysis_result: dict[str, Any]) -> str:
     """
     output = {'schema_version': SCHEMA_VERSION} | prepare_for_json(analysis_result)
 
-    # Pretty-print with 2-space indentation for readability
     return json.dumps(output, indent=2, ensure_ascii=False)
 
 
@@ -33,7 +32,6 @@ def prepare_for_json(data: dict[str, Any]) -> dict[str, Any]:
     Returns:
         Data with tuples converted to lists
     """
-    # Deep copy to avoid modifying original
     result = {}
 
     for key, value in data.items():
@@ -58,7 +56,6 @@ def convert_item(item: Any) -> Any:
         converted = {}
         for key, value in item.items():
             if key == 'file_references' and isinstance(value, list):
-                # Convert list of tuples to list of lists
                 converted[key] = [list(ref) if isinstance(ref, tuple) else ref for ref in value]
             elif isinstance(value, dict | list):
                 converted[key] = convert_item(value)

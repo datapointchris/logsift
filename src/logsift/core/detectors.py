@@ -36,12 +36,10 @@ class IssueDetector:
         error_id = 1
         warning_id = 1
 
-        # Flatten patterns for easier iteration
         all_patterns = []
         for category_patterns in patterns.values():
             all_patterns.extend(category_patterns)
 
-        # Single pass through all log entries
         for entry in log_entries:
             format_type = entry.get('format', 'plain')
             level = entry.get('level', '').upper()
@@ -127,7 +125,6 @@ class IssueDetector:
         if code:
             issue['code'] = code
 
-        # Preserve additional fields from original entry
         for key in ('timestamp', 'format', 'file', 'file_line'):
             if key in entry:
                 issue[key] = entry[key]

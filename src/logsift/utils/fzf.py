@@ -36,8 +36,6 @@ def select_log_file(log_files: list[dict[str, str | int]], prompt: str = 'Select
     if not log_files:
         return None
 
-    # Format log entries for fzf display
-    # Format: "name (size) - date"
     entries = []
     for log in log_files:
         modified = str(log['modified_iso']).split('T')[0]
@@ -47,11 +45,9 @@ def select_log_file(log_files: list[dict[str, str | int]], prompt: str = 'Select
         # Store as "display|path" so we can extract the path later
         entries.append(f'{display}|{path}')
 
-    # Join entries with newlines for fzf input
     input_text = '\n'.join(entries)
 
     try:
-        # Run fzf with enhanced options
         # 100% width, 100% height, with 80% preview and 20% for list (showing ~10 logs)
         result = process_runner.run(
             [
@@ -78,7 +74,6 @@ def select_log_file(log_files: list[dict[str, str | int]], prompt: str = 'Select
         )
 
         if result.returncode == 0 and result.stdout.strip():
-            # Extract path from "display|path" format
             selected = result.stdout.strip()
             if '|' in selected:
                 return selected.split('|', 1)[1]
@@ -110,11 +105,9 @@ def search_log_lines(log_path: Path) -> bool:
         return False
 
     try:
-        # Read log file lines
         with log_path.open('r', encoding='utf-8', errors='replace') as f:
             lines = f.readlines()
 
-        # Add line numbers
         numbered_lines = [f'{i + 1:6d} | {line.rstrip()}' for i, line in enumerate(lines)]
         input_text = '\n'.join(numbered_lines)
 

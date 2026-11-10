@@ -40,7 +40,6 @@ class PatternLoader:
             category = pattern_file.name.removesuffix('.toml')
             loaded_patterns[category] = self.load_pattern_file(pattern_file)['patterns']
 
-        # Store in instance
         self.patterns.update(loaded_patterns)
 
         return loaded_patterns
@@ -69,7 +68,6 @@ class PatternLoader:
 
             loaded_patterns[pattern_file.stem] = pattern_data['patterns']
 
-        # Store in instance
         self.patterns.update(loaded_patterns)
 
         return loaded_patterns

@@ -43,22 +43,18 @@ def generate_log_name(command: list[str]) -> str:
 
     parts: list[str] = []
 
-    # Add first command (basename only, no path)
     first_cmd = Path(command[0]).name
     parts.append(first_cmd)
 
-    # Add up to 3 more non-flag arguments
     for arg in command[1:]:
         if len(parts) >= 4:  # First cmd + 3 args = 4 total
             break
         if not arg.startswith('-'):
-            # Strip common script extensions and path
             clean_arg = Path(arg).name
             for ext in ('.sh', '.py', '.js', '.rb', '.pl', '.php'):
                 clean_arg = clean_arg.removesuffix(ext)
             parts.append(clean_arg)
 
-    # Join and sanitize
     name = '-'.join(parts)
 
     # Limit length to keep filenames reasonable
@@ -92,11 +88,9 @@ def monitor_command(
         notify: Whether to send desktop notification on completion
         append: Whether to append to existing log instead of creating new
     """
-    # Use command name if no name provided
     if name is None:
         name = generate_log_name(command)
 
-    # Determine log file paths
     log_file = None
     log_paths = None
     if save_log:
@@ -106,14 +100,12 @@ def monitor_command(
             log_file = cache.latest_run(name)
 
         if not log_file or not append:
-            # Create new log file paths (all 4 formats)
             log_paths = cache.create_paths(name)
             log_file = log_paths[SavedKind.RAW]
 
     # Progress goes to stderr so it never mixes into the analysis on stdout
     show_progress = not quiet
 
-    # Print initial banner naming the command and its log - only in interactive mode
     if show_progress:
         stderr_console.print('\n[bold cyan]## Starting Monitored Process[/bold cyan]')
         stderr_console.print(f'[bold]Command:[/bold] {" ".join(command)}')
@@ -123,7 +115,6 @@ def monitor_command(
         start_time_str = dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         stderr_console.print(f'[bold]Started:[/bold] {start_time_str}\n')
 
-    # Run command and stream output
     start_time = time.time()
     output_lines: list[str] = []
 
@@ -148,7 +139,6 @@ def monitor_command(
             else:
                 stderr_console.print(f'[dim]Showing updates every {update_interval}s (use --stream for real-time output)...[/dim]\n')
 
-        # Track time for periodic updates
         last_update_time = time.time()
         update_count = 0
 
@@ -170,10 +160,8 @@ def monitor_command(
                         )
                         last_update_time = current_time
 
-        # Wait for process to complete
         exit_code = process.wait()
 
-        # Close log file
         if log_handle:
             log_handle.close()
 
@@ -191,10 +179,8 @@ def monitor_command(
             log_handle.close()
         sys.exit(1)
 
-    # Calculate duration
     duration = time.time() - start_time
 
-    # Print completion banner - only in interactive mode
     if show_progress:
         stderr_console.print('\n[bold green]## Process Completed[/bold green]')
         end_time_str = dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -202,14 +188,12 @@ def monitor_command(
         stderr_console.print(f'[bold]Duration:[/bold] {duration:.1f}s ({int(duration // 60)}m {int(duration % 60)}s)')
         stderr_console.print(f'[bold]Exit code:[/bold] {exit_code}\n')
 
-    # Analyze the output
     if show_progress:
         stderr_console.print('[dim]Generating analysis summary...[/dim]\n')
     output_text = '\n'.join(output_lines)
     analyzer = Analyzer()
     analysis_result = analyzer.analyze(output_text)
 
-    # Add command metadata
     analysis_result['summary'] = {
         'status': 'success' if exit_code == 0 else 'failed',
         'exit_code': exit_code,
@@ -222,18 +206,15 @@ def monitor_command(
     if log_paths:
         report_unsaved(cache.save_analysis(analysis_result, log_paths[SavedKind.RAW].stem))
 
-    # Print analysis summary header - only in interactive mode
     if show_progress:
         stderr_console.print('[bold cyan]## Analysis Summary[/bold cyan]')
         stderr_console.print('[dim]' + '─' * 60 + '[/dim]')
 
-    # Format and output results (to stdout, not stderr)
     print(render_analysis(analysis_result, output_format))
 
     if log_file and show_progress:
         stderr_console.print(f'\n[bold]Full log:[/bold] {log_file}')
 
-    # Send notification if requested
     if notify:
         posted = notify_command_complete(
             command=' '.join(command),
@@ -245,6 +226,5 @@ def monitor_command(
         if not posted:
             stderr_console.print('[yellow]Desktop notification not sent: it needs notify-send on Linux or osascript on macOS[/yellow]')
 
-    # Exit with command's exit code
     if exit_code != 0:
         sys.exit(exit_code)

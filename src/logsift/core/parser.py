@@ -72,7 +72,6 @@ class LogParser:
         if not log_content or not log_content.strip():
             return 'plain'
 
-        # Get first non-empty line for format detection
         first_line = next((line for line in log_content.splitlines() if line.strip()), '')
 
         return self._detect_line_format(first_line)
@@ -88,7 +87,6 @@ class LogParser:
         """
         line = line.strip()
 
-        # Try JSON
         if line.startswith('{') and line.endswith('}'):
             try:
                 json.loads(line)
@@ -96,17 +94,13 @@ class LogParser:
             except (json.JSONDecodeError, ValueError):
                 pass
 
-        # Try syslog
         if self.SYSLOG_PATTERN.match(line):
             return 'syslog'
 
-        # Try structured (key=value format)
-        # Look for at least 2 key=value pairs
         kv_matches = self.KEY_VALUE_PAIR.findall(line)
         if len(kv_matches) >= 2:
             return 'structured'
 
-        # Default to plain text
         return 'plain'
 
     def _parse_json_line(self, line: str, line_num: int) -> dict[str, Any] | None:
@@ -124,7 +118,6 @@ class LogParser:
             entry['format'] = 'json'
             entry['line_number'] = line_num
 
-            # Ensure standard fields exist
             if 'level' not in entry:
                 entry['level'] = 'INFO'
             if 'message' not in entry:
@@ -151,14 +144,11 @@ class LogParser:
             'message': '',
         }
 
-        # Extract timestamp if present at start
         timestamp_match = self.TIMESTAMP_ISO.match(line)
         if timestamp_match:
             entry['timestamp'] = timestamp_match.group(0)
 
-        # Extract key=value pairs
         for key, value in self.KEY_VALUE_PAIR.findall(line):
-            # Remove quotes from quoted values
             if value.startswith('"') and value.endswith('"'):
                 value = value[1:-1]
             entry[key] = value
@@ -167,7 +157,6 @@ class LogParser:
         if not entry['message']:
             entry['message'] = entry.get('msg') or line.strip()
 
-        # Normalize level field
         if 'level' in entry:
             entry['level'] = entry['level'].upper()
 
@@ -189,7 +178,6 @@ class LogParser:
             'level': 'INFO',
         }
 
-        # Extract priority
         priority_match = re.match(r'^<(\d+)>', line)
         if priority_match:
             priority = int(priority_match.group(1))
@@ -223,7 +211,6 @@ class LogParser:
             - message: Full original message (after removing ANSI and optionally timestamp)
             - timestamp: ISO8601 timestamp if present
         """
-        # Remove ANSI color codes
         clean_line = self.ANSI_ESCAPE.sub('', line)
 
         # Start with full message - DO NOT remove level indicators

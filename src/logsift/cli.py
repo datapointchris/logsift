@@ -261,7 +261,6 @@ def analyze(
         analyze_log(log_file, output_format=format, save=not no_save)
 
 
-# Create logs command group
 logs_app = typer.Typer(
     help='Manage cached log files',
     no_args_is_help=True,
@@ -270,7 +269,6 @@ logs_app = typer.Typer(
 app.add_typer(logs_app, name='logs', rich_help_panel=BROWSE_PANEL)
 
 
-# Create analyzed command group
 analyzed_app = typer.Typer(
     help='Manage saved analysis results',
     no_args_is_help=True,

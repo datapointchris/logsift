@@ -3,6 +3,7 @@
 Monitors log files in real-time and provides live analysis.
 """
 
+import os
 import time
 from collections.abc import Callable
 from pathlib import Path
@@ -34,19 +35,15 @@ class LogWatcher:
         if not self.log_file.exists():
             raise FileNotFoundError(f'Log file not found: {self.log_file}')
 
-        # Open file and seek to end
         with self.log_file.open('r', encoding='utf-8') as f:
-            # Go to end of file
-            f.seek(0, 2)
+            f.seek(0, os.SEEK_END)
 
             while not self.stop_requested:
                 line = f.readline()
 
                 if line:
-                    # New line available - process it
                     callback(line.rstrip('\n'))
                 else:
-                    # No new data - wait before checking again
                     time.sleep(self.interval)
 
     def stop(self) -> None:
