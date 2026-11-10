@@ -18,7 +18,10 @@ class PatternLoader:
         self.patterns: dict[str, Any] = {}
 
     def load_builtin_patterns(self) -> dict[str, Any]:
-        """Load built-in pattern libraries.
+        """Load built-in pattern libraries, in the order detection tries them.
+
+        The first pattern to match a line wins. Files are tried by name, and common.toml goes last,
+        because its catch-alls such as generic_error would otherwise shadow a tool's specific pattern.
 
         Returns:
             Dictionary of loaded patterns organized by category
@@ -29,8 +32,7 @@ class PatternLoader:
         if not defaults_dir.exists():
             return {}
 
-        # Load all .toml files from defaults directory
-        pattern_files = defaults_dir.glob('*.toml')
+        pattern_files = sorted(defaults_dir.glob('*.toml'), key=lambda path: (path.stem == 'common', path.stem))
 
         loaded_patterns: dict[str, list[dict[str, Any]]] = {}
         for pattern_file in pattern_files:

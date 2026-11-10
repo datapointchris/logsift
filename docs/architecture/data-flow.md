@@ -60,7 +60,8 @@ Detection strategy:
 - **For JSON/structured logs**: Use explicit `level` field if present
 - **For plain text logs**: Apply TOML pattern regex to message content
 - **Single pass**: All pattern matching happens in one iteration
-- **First match wins**: Patterns are ordered by specificity
+- **First match wins**: the built-in files are tried by name, and `common.toml` goes last, so its
+  catch-alls such as `generic_error` never shadow a tool's specific pattern
 
 Pattern matching:
 
