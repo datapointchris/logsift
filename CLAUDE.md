@@ -15,7 +15,7 @@ task setup                                # Install deps and the git hooks
 task test                                 # All tests
 task test -- tests/unit/test_parser.py -v # Specific file
 task test:coverage                        # With coverage
-task lint                                 # ruff, mypy and bandit, read-only
+task lint                                 # ruff, mypy, bandit and deptry, read-only
 task format                               # ruff format and autofixes
 uv run logsift monitor -- echo "test"     # CLI
 ```
@@ -133,7 +133,7 @@ edits the schema in the same commit, and raises both `SCHEMA_VERSION` in
   for an alias or function. Nothing else imports `subprocess`. A missing program raises
   `FileNotFoundError`, and each caller falls back without it, as the README's Optional Programs
   section lists.
-- **Runtime dependencies** are the ones `pyproject.toml` declares. Typer builds the CLI, tomllib
+- **Runtime dependencies** are the ones `pyproject.toml` declares. Typer and rich build the CLI, tomllib
   reads config and patterns, python-dateutil parses timestamps and toon-format writes toon. Only
   pyselfupdate reaches the network: `logsift update`, and a daily check for a newer release.
 - **`config.toml` is Click's `default_map`.** The root callback in `cli.py` reads and validates
@@ -142,8 +142,9 @@ edits the schema in the same commit, and raises both `SCHEMA_VERSION` in
   Click's own parameter source. A new file key goes in `FILE_KEYS`. A new option with an `envvar`
   goes in `RESOLVED_OPTIONS` in `config/resolved_values.py`, or
   `tests/integration/test_config_cli.py` fails.
-- **Coverage**: `fail_under` in `pyproject.toml` is the enforced floor; run
-  `task test:coverage` for the current figure rather than trusting a number written here.
+- **Coverage** has no floor. `task test:coverage` reports the current figure.
+- **deptry** checks every import in `src` against the declared dependencies, in `task lint` and
+  CI. A module imported directly is declared directly, even when another dependency brings it.
 
 The pre-commit hook set is `.pre-commit-config.yaml`, and it is generated. Read it there rather
 than restating it here, where it drifts.

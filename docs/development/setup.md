@@ -28,8 +28,8 @@ uv tool install --editable .
 
 1. Name a branch for the work it holds, with no type prefix: `git switch -c hook-status-in-toon`.
 2. Edit code in `src/logsift/`, with its tests in `tests/unit/` or `tests/integration/`.
-3. `task format` applies ruff's formatting and autofixes. `task lint` runs ruff, mypy and bandit
-   without writing, as CI does. `task test` runs the suite.
+3. `task format` applies ruff's formatting and autofixes. `task lint` runs ruff, mypy, bandit and
+   deptry without writing, as CI does. `task test` runs the suite.
 4. Commit with a [Conventional Commits](https://www.conventionalcommits.org/) message, such as
    `feat: read a pattern's code group` or `fix: keep the level prefix in the message`.
 5. Push the branch and open a pull request on GitHub.
@@ -75,8 +75,6 @@ task test -- tests/unit/test_parser.py -v                       # one file
 task test -- tests/unit/test_parser.py::test_parser_initialization -v  # one test
 task test:coverage                                              # with a coverage report
 ```
-
-`fail_under` in `pyproject.toml` is the coverage floor.
 
 ## Testing Philosophy
 

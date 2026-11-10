@@ -27,12 +27,13 @@ tasks:
       - uv run --group test pytest --cov=logsift --cov-report=term {{.CLI_ARGS}}
 
   lint:
-    desc: Run ruff, mypy and bandit without writing any file
+    desc: Run ruff, mypy, bandit and deptry without writing any file
     cmds:
       - uv run ruff format --check src/ tests/
       - uv run ruff check src/ tests/
       - task: typecheck
       - uv run bandit -c pyproject.toml -r src
+      - uv run deptry src
 
   typecheck:
     desc: Type check with mypy

@@ -1,7 +1,6 @@
 site_name: logsift
 site_description: Intelligent log analysis for agentic workflows
 site_author: Chris Birch
-site_url: https://datapointchris.github.io/logsift
 
 repo_name: datapointchris/logsift
 repo_url: https://github.com/datapointchris/logsift

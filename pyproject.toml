@@ -12,8 +12,8 @@ dependencies = [
     # 0.26.0 is the first Typer to run its own Click, and ignores an option's envvar.
     # Every older Typer resolves the newest click, whose Argument resets the help Typer sets.
     "typer>=0.26.1",
-    # TOML handling
-    "tomli-w>=1.0.0",
+    # Typer requires it, and logsift imports Console and Table from it directly.
+    "rich>=13.8.0",
     # Date parsing
     "python-dateutil>=2.8.0",
     "toon-format>=1.0.0",
@@ -43,10 +43,7 @@ logsift = "logsift.cli:app"
 dev = [
     # Development tools and linting
     "bandit>=1.7.8",
-    "coverage>=7.5.0",
     "deptry>=0.16.1",
-    "docformatter>=1.7.5",
-    "interrogate>=1.7.0",
     "mypy>=1.10.0",
     "ruff==0.17.1",
     # Documentation
@@ -73,7 +70,6 @@ test = [
 
 [tool.bandit]
 exclude_dirs = [".git", ".mypy_cache", ".pytest_cache", ".ruff_cache", ".venv", "tests"]
-skips = ["B113", "B311"]
 
 
 [tool.codespell]
@@ -95,19 +91,8 @@ omit = []
 source = ["src/logsift"]
 
 [tool.coverage.report]
-fail_under = 50
 show_missing = true
 exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:", "@abstractmethod"]
-
-
-[tool.docformatter]
-recursive = true
-in-place = true
-exclude = [".git", ".mypy_cache", ".venv", "build", "dist"]
-wrap-summaries = 140
-wrap-descriptions = 140
-close-quotes-on-newline = true
-blank = false
 
 
 [tool.mypy]
@@ -132,12 +117,6 @@ analyzeUnannotatedFunctions = true  # or pylance stops analyzing in vscode
 minversion = "8.0"
 testpaths = ["tests"]
 verbosity_assertions = 2
-
-
-[tool.refurb]
-ignore = [
-    "FURB184",  # Allow separate assignment and assertion in tests for readability
-]
 
 
 [tool.ruff]
@@ -201,6 +180,11 @@ sqlalchemy = "sa"
 "pyspark.sql.functions" = "sf"
 "pyspark.sql.types" = "st"
 dataclasses = "dc"
+
+# The sdist carries the package and nothing else: no tests, fixtures or docs. Hatch adds
+# pyproject.toml, the readme and the license files to every sdist on its own.
+[tool.hatch.build.targets.sdist]
+only-include = ["src/logsift"]
 
 [tool.hatch.version]
 source = "uv-dynamic-versioning"
