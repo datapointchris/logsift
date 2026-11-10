@@ -165,8 +165,9 @@ logsift logs [SUBCOMMAND]
 **Subcommands:**
 
 - `list` - List all cached log files
-- `clean` - Clean old log files (planned)
-- `show` - Show a specific log file (planned)
+- `clean` - Delete cached logs older than `--days`, 90 by default or `LOGSIFT_RETENTION_DAYS`. `--dry-run` previews
+- `browse` - Pick a cached log with fzf
+- `latest [NAME]` - Show the newest log, or the newest whose name contains NAME
 
 **Examples:**
 
@@ -174,7 +175,8 @@ logsift logs [SUBCOMMAND]
 # List cached logs
 logsift logs list
 
-# Clean old logs (planned)
+# Preview, then delete logs older than 30 days
+logsift logs clean --days=30 --dry-run
 logsift logs clean --days=30
 ```
 

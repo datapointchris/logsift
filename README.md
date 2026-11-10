@@ -173,12 +173,9 @@ newest one.
 
 Clean old logs (older than 90 days by default):
 
-```python
-from logsift.cache.rotation import clean_old_logs
-from pathlib import Path
-
-deleted = clean_old_logs(Path.home() / '.cache' / 'logsift', retention_days=30)
-print(f'Deleted {deleted} old log files')
+```bash
+logsift logs clean --dry-run   # list what would go
+logsift logs clean --days 30
 ```
 
 ## Installation

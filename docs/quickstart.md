@@ -202,13 +202,9 @@ See [Config Format](api/config-format.md) for all options.
 Raw logs are saved to `~/.cache/logsift/raw/`, and their analyses beside them under `json/`,
 `toon/` and `md/`. Clean old logs:
 
-```python
-from logsift.cache.rotation import clean_old_logs
-from pathlib import Path
-
+```bash
 # Clean logs older than 30 days
-deleted = clean_old_logs(Path.home() / '.cache' / 'logsift', retention_days=30)
-print(f'Deleted {deleted} old log files')
+logsift logs clean --days 30
 ```
 
 ## Next Steps

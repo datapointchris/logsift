@@ -137,11 +137,8 @@ logsift analyze ~/.cache/logsift/raw/2024-01-15T10:30:00-npm-run-build.log
 
 Clean old logs:
 
-```python
-from logsift.cache.rotation import clean_old_logs
-from pathlib import Path
-
-deleted = clean_old_logs(Path.home() / '.cache' / 'logsift', retention_days=30)
+```bash
+logsift logs clean --days 30
 ```
 
 ## Best Practices
