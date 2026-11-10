@@ -21,7 +21,7 @@ logsift config            # every setting's value, and the flag, variable or fil
 ## Exit Codes
 
 - **0**: the command did what it was asked. `analyze` exits 0 whatever it found in the log.
-- **1**: logsift could not do it: a log file that does not exist, a `latest` with nothing saved,
+- **1**: logsift could not do it: a log file that does not exist, a `latest` or `choose` with nothing saved,
   a file `clean` could not delete, a `config.toml` that fails to parse, or fzf missing.
 - **2**: the command line was wrong: an unknown command or flag, a value outside a flag's set,
   `analyze` given more or fewer than one of a path, `--latest` and `--choose`, `analyze latest`

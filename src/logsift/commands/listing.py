@@ -10,7 +10,8 @@ from rich.table import Table
 
 from logsift.cache.manager import CacheManager
 from logsift.cache.manager import SavedKind
-from logsift.commands.analyze import CAPTURE_HINT
+from logsift.commands.find_saved_file import CAPTURE_HINT
+from logsift.commands.find_saved_file import NOUNS
 from logsift.utils.display import human_size
 
 console = Console()
@@ -30,7 +31,7 @@ ListFormatOption = Annotated[
 LimitOption = Annotated[int | None, typer.Option('--limit', '-n', min=0, help='Print only the newest N files')]
 
 
-def print_listing(kind: SavedKind, output_format: ListFormat, limit: int | None, title: str, empty_message: str) -> None:
+def print_listing(kind: SavedKind, output_format: ListFormat, limit: int | None) -> None:
     """Print the saved files of kind, newest first, at most limit of them.
 
     An empty cache prints `[]` as json and nothing as plain, so a program reads it like any other
@@ -48,11 +49,11 @@ def print_listing(kind: SavedKind, output_format: ListFormat, limit: int | None,
         return
 
     if not rows:
-        stderr_console.print(f'[yellow]{empty_message}[/yellow]')
+        stderr_console.print(f'[yellow]No {NOUNS[kind]} saved yet[/yellow]')
         stderr_console.print(CAPTURE_HINT)
         return
 
-    table = Table(title=title)
+    table = Table(title=f'Saved {NOUNS[kind]}')
     table.add_column('Name', style='white')
     table.add_column('Size', justify='right', style='green')
     table.add_column('Modified (UTC)', style='yellow')

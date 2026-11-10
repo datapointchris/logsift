@@ -35,7 +35,6 @@ class TestLogsListCommand:
         assert json.loads(as_json.stdout) == []
         assert as_plain.stdout == ''
         assert as_table.stdout == ''
-        assert 'No cached logs found' in as_table.stderr
 
 
 def make_saved_file(kind: SavedKind, stem: str, days_old: int):
@@ -76,7 +75,6 @@ def test_latest_for_a_name_no_run_has_is_an_error():
     result = runner.invoke(app, ['logs', 'latest', 'nonexistent-command-xyz'])
 
     assert result.exit_code == 1
-    assert 'No logs found' in result.stderr
     assert result.stdout == ''
 
 

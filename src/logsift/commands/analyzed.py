@@ -1,4 +1,4 @@
-"""The `analyzed` group: saved analyses, each shown rendered as Markdown."""
+"""What only the `analyzed` group does: show a saved analysis rendered as Markdown, and clean."""
 
 import json
 from pathlib import Path
@@ -7,16 +7,13 @@ import typer
 from rich.console import Console
 
 from logsift.cache.manager import ANALYSIS_RENDERERS
-from logsift.cache.manager import CacheManager
 from logsift.cache.manager import SavedKind
-from logsift.commands.analyze import CAPTURE_HINT
-from logsift.commands.choose import require_picker
 from logsift.commands.clean import clean_saved_files
+from logsift.commands.find_saved_file import choose_file
+from logsift.commands.find_saved_file import latest_file
 from logsift.output.markdown_formatter import format_markdown
 from logsift.utils.display import display_with_bat
-from logsift.utils.fzf import select_log_file
 
-console = Console()
 stderr_console = Console(stderr=True)
 
 
@@ -32,37 +29,16 @@ def show_analysis(json_path: Path) -> None:
 
 def choose_analysis() -> None:
     """Pick a saved analysis with fzf and page it as Markdown."""
-    require_picker('`logsift analyzed latest <name>`')
-
-    analyses = CacheManager().listing(SavedKind.JSON)
-    if not analyses:
-        stderr_console.print('[yellow]No saved analyses found[/yellow]')
-        stderr_console.print(CAPTURE_HINT)
-        return
-
-    selected_path = select_log_file(analyses, 'Select analysis result to view')
-    if not selected_path:
-        stderr_console.print('[dim]No file selected[/dim]')
-        return
-
-    stderr_console.print(f'[cyan]Analysis: {selected_path}[/cyan]\n')
-    show_analysis(Path(selected_path))
+    chosen = choose_file(SavedKind.JSON, 'Choose an analysis to read', '`logsift analyzed latest <name>`')
+    stderr_console.print(f'[cyan]Analysis: {chosen}[/cyan]\n')
+    show_analysis(chosen)
 
 
 def show_latest_analyzed(name: str | None) -> None:
-    """Page the newest saved analysis, or the newest whose run name contains name, as Markdown."""
-    latest_analysis = CacheManager().latest(SavedKind.JSON, name)
-    if not latest_analysis:
-        if name:
-            stderr_console.print(f'[red]Error: No analyses found matching "{name}"[/red]')
-            stderr_console.print('[dim]Run `logsift analyzed list` to see the saved names[/dim]')
-        else:
-            stderr_console.print('[red]Error: No saved analyses found[/red]')
-            stderr_console.print(CAPTURE_HINT)
-        raise typer.Exit(1)
-
-    stderr_console.print(f'[cyan]Latest analysis: {latest_analysis}[/cyan]\n')
-    show_analysis(latest_analysis)
+    """Page the most recently written analysis, or the most recent whose run name contains name, as Markdown."""
+    path = latest_file(SavedKind.JSON, name)
+    stderr_console.print(f'[cyan]Latest analysis: {path}[/cyan]\n')
+    show_analysis(path)
 
 
 def clean_analyzed(days: int, dry_run: bool) -> None:

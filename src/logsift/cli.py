@@ -22,15 +22,15 @@ from logsift.commands.analyzed import choose_analysis
 from logsift.commands.analyzed import clean_analyzed
 from logsift.commands.analyzed import show_latest_analyzed
 from logsift.commands.config import show_config
-from logsift.commands.format_commands import create_format_commands
-from logsift.commands.listing import LimitOption
-from logsift.commands.listing import ListFormat
-from logsift.commands.listing import ListFormatOption
-from logsift.commands.listing import print_listing
+from logsift.commands.find_saved_file import IntervalOption
+from logsift.commands.find_saved_file import NameArgument
+from logsift.commands.find_saved_file import TailOption
 from logsift.commands.logs import choose_log
 from logsift.commands.logs import clean_logs
-from logsift.commands.logs import show_latest_log
 from logsift.commands.monitor import monitor_command
+from logsift.commands.saved_file_commands import add_latest_command
+from logsift.commands.saved_file_commands import add_list_command
+from logsift.commands.saved_file_commands import create_kind_group
 from logsift.config.loader import ConfigError
 from logsift.config.loader import default_map
 from logsift.config.loader import load_user_config
@@ -269,6 +269,8 @@ logs_app = typer.Typer(
     pretty_exceptions_enable=False,
 )
 app.add_typer(logs_app, name='logs', rich_help_panel=BROWSE_PANEL)
+add_list_command(logs_app, SavedKind.RAW, 'logs')
+add_latest_command(logs_app, SavedKind.RAW, 'logs')
 
 
 analyzed_app = typer.Typer(
@@ -277,24 +279,7 @@ analyzed_app = typer.Typer(
     pretty_exceptions_enable=False,
 )
 app.add_typer(analyzed_app, name='analyzed', rich_help_panel=BROWSE_PANEL)
-
-
-@logs_app.command('list')
-def logs_list(format: ListFormatOption = ListFormat.TABLE, limit: LimitOption = None) -> None:
-    """List the cached raw logs, newest first, with their size and modification time.
-
-    \b
-    Examples:
-        # The ten newest logs
-        logsift logs list -n 10
-
-        # Every log, as JSON for a script
-        logsift logs list --format json
-
-        # One tab-separated path, size and time per log
-        logsift logs list --format plain
-    """
-    print_listing(SavedKind.RAW, format, limit, 'Cached Log Files', 'No cached logs found')
+add_list_command(analyzed_app, SavedKind.JSON, 'analyzed')
 
 
 @logs_app.command('clean')
@@ -341,8 +326,8 @@ def logs_clean(
 @logs_app.command('choose')
 def logs_choose(
     view: Annotated[bool, typer.Option('--view', help="Search the chosen log's lines in fzf instead of analyzing it")] = False,
-    tail: Annotated[bool, typer.Option('--tail', help='Tail the chosen log in real-time instead of analyzing it')] = False,
-    interval: Annotated[int, typer.Option('-i', '--interval', help='Update interval in seconds when tailing')] = 1,
+    tail: TailOption = False,
+    interval: IntervalOption = 1,
 ) -> None:
     """Pick a cached log with fzf, then analyze it, search it or tail it.
 
@@ -370,63 +355,6 @@ def logs_choose(
     choose_log(action=action, interval=interval)
 
 
-@logs_app.command('latest')
-def logs_latest(
-    name: Annotated[
-        str | None,
-        typer.Argument(help='Name of log to find (e.g., "echo", "pytest"). If omitted, shows absolute latest log'),
-    ] = None,
-    tail: Annotated[
-        bool,
-        typer.Option(
-            '--tail',
-            help='Tail the log file in real-time instead of displaying it',
-        ),
-    ] = False,
-    interval: Annotated[
-        int,
-        typer.Option(
-            '-i',
-            '--interval',
-            help='Update interval in seconds when tailing',
-        ),
-    ] = 1,
-) -> None:
-    """Show the most recent log file, optionally tailing it in real-time.
-
-    Finds the latest log file by name and displays its raw contents. Use --tail
-    to watch it in real-time. If no name is provided, uses the absolute latest
-    log across all cached logs.
-
-    \b
-    Examples:
-        # Show the latest pytest log
-        logsift logs latest pytest
-
-        # Tail the latest build log in real-time
-        logsift logs latest make --tail
-
-        # Show the absolute latest log (any name)
-        logsift logs latest
-
-        # Tail with custom update interval
-        logsift logs latest pytest --tail --interval 5
-    """
-    show_latest_log(name, tail, interval)
-
-
-@analyzed_app.command('list')
-def analyzed_list(format: ListFormatOption = ListFormat.TABLE, limit: LimitOption = None) -> None:
-    """List the saved analyses by their JSON file, newest first, with their size and modification time.
-
-    \b
-    Examples:
-        logsift analyzed list
-        logsift analyzed list -n 5 --format json
-    """
-    print_listing(SavedKind.JSON, format, limit, 'Saved Analysis Results', 'No saved analyses found')
-
-
 @analyzed_app.command('choose')
 def analyzed_choose() -> None:
     """Pick a saved analysis with fzf and page it as Markdown.
@@ -442,15 +370,8 @@ def analyzed_choose() -> None:
 
 
 @analyzed_app.command('latest')
-def analyzed_latest(
-    name: Annotated[
-        str | None,
-        typer.Argument(help='Name to filter by (substring match). If omitted, shows absolute latest'),
-    ] = None,
-) -> None:
-    """Show the most recent saved analysis.
-
-    Displays the latest saved analysis result, optionally filtered by name.
+def analyzed_latest(name: NameArgument = None) -> None:
+    """Page the most recently written analysis, rendered as Markdown.
 
     \b
     Examples:
@@ -502,7 +423,7 @@ def analyzed_clean(
 
 
 for kind in SavedKind:
-    app.add_typer(create_format_commands(kind), name=kind, rich_help_panel=BROWSE_PANEL)
+    app.add_typer(create_kind_group(kind), name=kind, rich_help_panel=BROWSE_PANEL)
 
 
 @app.command('config')
