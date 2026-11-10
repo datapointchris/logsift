@@ -317,14 +317,6 @@ tags = ["docker", "infrastructure", "socket"]
 suggestion = "Start Docker: 'open -a Docker' or 'colima start'"
 
 [[patterns]]
-name = "docker_daemon_not_running"
-regex = "Cannot connect to the Docker daemon"
-severity = "error"
-description = "Docker daemon is not running"
-tags = ["docker", "infrastructure", "daemon"]
-suggestion = "Start Docker: 'open -a Docker' or 'colima start'"
-
-[[patterns]]
 name = "pre_commit_check_log"
 regex = "Check the log at (.+\\.log)"
 severity = "warning"
