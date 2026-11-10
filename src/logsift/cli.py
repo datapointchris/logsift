@@ -8,18 +8,17 @@ import json
 from pathlib import Path
 from typing import Annotated
 
-import click
 import typer
 from pyselfupdate import Config
 from pyselfupdate import notify
 from pyselfupdate.typercmd import add_update_command
 from rich.console import Console
 from rich.table import Table
-from typer.core import TyperGroup
 
 from logsift import __version__
 from logsift import xdg_dirs
 from logsift.cache.manager import CacheManager
+from logsift.cli_formatter import ColoredTyperGroup
 from logsift.cli_formatter import format_help_with_colors
 from logsift.commands.analyze import analyze_log
 from logsift.commands.analyze import stream_analyze_log
@@ -39,17 +38,6 @@ from logsift.utils.display import display_file_with_bat
 from logsift.utils.display import display_with_bat
 from logsift.utils.fzf import is_fzf_available
 from logsift.utils.fzf import select_log_file
-
-
-class ColoredTyperGroup(TyperGroup):
-    """Custom TyperGroup that uses our uv-style colored formatter."""
-
-    def format_help(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
-        """Override help formatting to use our custom colored formatter."""
-        help_text = format_help_with_colors(ctx)
-        # Use click.echo to properly handle ANSI color codes
-        click.echo(help_text, color=True)
-
 
 app = typer.Typer(
     name='logsift',
@@ -221,7 +209,7 @@ def monitor(
     # Show help if no command provided
     if command is None or len(command) == 0:
         help_text = format_help_with_colors(ctx)
-        click.echo(help_text, color=True)
+        typer.echo(help_text, color=True)
         raise typer.Exit()
 
     monitor_command(
@@ -294,7 +282,7 @@ def analyze(
     # Show help if no arguments provided
     if not log_file:
         help_text = format_help_with_colors(ctx)
-        click.echo(help_text, color=True)
+        typer.echo(help_text, color=True)
         raise typer.Exit()
 
     # Handle "latest" shortcut
@@ -361,7 +349,7 @@ def logs_callback(ctx: typer.Context) -> None:
     # Show help if no subcommand provided
     if ctx.invoked_subcommand is None:
         help_text = format_help_with_colors(ctx)
-        click.echo(help_text, color=True)
+        typer.echo(help_text, color=True)
         raise typer.Exit()
 
 
@@ -382,7 +370,7 @@ def analyzed_callback(ctx: typer.Context) -> None:
     # Show help if no subcommand provided
     if ctx.invoked_subcommand is None:
         help_text = format_help_with_colors(ctx)
-        click.echo(help_text, color=True)
+        typer.echo(help_text, color=True)
         raise typer.Exit()
 
 
@@ -824,23 +812,23 @@ def help(
         logsift help monitor
         logsift help analyze
     """
-    # Get the Click context for the main app
-    click_ctx = ctx.parent or ctx
+    root_ctx = ctx.parent or ctx
 
     if command is None:
         # Show main help using custom formatter
-        help_text = format_help_with_colors(click_ctx)
-        click.echo(help_text, color=True)
+        help_text = format_help_with_colors(root_ctx)
+        typer.echo(help_text, color=True)
     else:
-        get_command = getattr(click_ctx.command, 'get_command', None)
-        cmd = get_command(click_ctx, command) if get_command else None
+        get_command = getattr(root_ctx.command, 'get_command', None)
+        cmd = get_command(root_ctx, command) if get_command else None
         if cmd is None:
             # A usage error exits 2, so a caller can tell a mistyped name from a command that ran and failed.
             typer.echo(f'Error: Unknown command "{command}". Run "logsift help" to see available commands.', err=True)
             raise typer.Exit(2)
-        with click.Context(cmd, info_name=command, parent=click_ctx) as cmd_ctx:
+        # The command's own context class, which is the one Typer would build for it.
+        with cmd.context_class(cmd, info_name=command, parent=root_ctx) as cmd_ctx:
             help_text = format_help_with_colors(cmd_ctx)
-            click.echo(help_text, color=True)
+            typer.echo(help_text, color=True)
 
 
 if __name__ == '__main__':

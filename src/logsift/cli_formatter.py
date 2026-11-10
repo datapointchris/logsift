@@ -1,63 +1,49 @@
-"""Custom CLI help formatter matching uv's style.
+"""Help in uv's style: colored, sectioned, with no boxes.
 
-Provides colored, well-structured help output without boxes or excessive formatting.
+Typer from 0.27 runs its own copy of Click as `typer._click`, a private module. A group, an
+argument and an option are told apart by `typer.core`'s classes, which are the ones Typer builds.
+A context and a help formatter have no public name but `typer.Context`, which subclasses the copy's
+context and is never what Typer passes in. So both are typed `Any`, and the formatter is made by the
+context's own `formatter_class`.
 """
 
 from __future__ import annotations
 
 import re
 from collections.abc import Sequence
+from typing import Any
 
-import click
-from click import Context
-
-
-class UVStyleHelpFormatter(click.HelpFormatter):
-    """Help formatter that matches uv's clean, colored style."""
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.current_section = None
-
-    def write_heading(self, heading: str) -> None:
-        """Write a section heading in bright green."""
-        if heading:
-            # Use click.style with color=True to force ANSI codes
-            styled = click.style(f'{heading}:', fg='bright_green', bold=True)
-            # Get the ANSI-encoded string
-            self.write(f'{styled}\n')
-
-    def write_dl(
-        self,
-        rows: Sequence[tuple[str, str]],
-        col_max: int = 30,
-        col_spacing: int = 2,
-    ) -> None:
-        """Write a definition list with proper alignment and colors."""
-        # Calculate max width for first column
-        widths = [len(row[0]) for row in rows]
-        max_width = min(max(widths) if widths else 0, col_max)
-
-        for first, second in rows:
-            # Color command names and option flags blue
-            if self.current_section in ('Commands', 'Output options', 'Global options'):
-                # Use click.style and get actual length for padding
-                colored_first = click.style(first, fg='bright_blue')
-                first_len = len(first)  # Length without ANSI codes
-                # Write with proper indentation
-                self.write(f'  {colored_first}')
-            else:
-                first_len = len(first)
-                self.write(f'  {first}')
-
-            if second:
-                # Add spacing and description
-                padding = ' ' * (max_width - first_len + col_spacing)
-                self.write(f'{padding}{second}')
-            self.write('\n')
+import typer
+from typer.core import TyperArgument
+from typer.core import TyperGroup
+from typer.core import TyperOption
 
 
-def commands_by_section(ctx: Context, group: click.Group) -> list[tuple[str, str]]:
+class ColoredTyperGroup(TyperGroup):
+    """A Typer group whose help is `format_help_with_colors`."""
+
+    def format_help(self, ctx: Any, formatter: Any) -> None:
+        typer.echo(format_help_with_colors(ctx), color=True)
+
+
+def heading_line(heading: str) -> str:
+    """A section heading in bright green."""
+    return f'{typer.style(f"{heading}:", fg="bright_green", bold=True)}\n'
+
+
+def definition_list(rows: Sequence[tuple[str, str]], *, colored: bool, col_max: int = 30, col_spacing: int = 2) -> str:
+    """Rows of a term and its description, the descriptions aligned, the terms bright blue where colored."""
+    max_width = min(max((len(first) for first, _ in rows), default=0), col_max)
+    lines = []
+    for first, second in rows:
+        term = typer.style(first, fg='bright_blue') if colored else first
+        # Padded by the term's own length, which the color codes do not count toward.
+        padding = ' ' * (max_width - len(first) + col_spacing)
+        lines.append(f'  {term}{padding}{second}\n' if second else f'  {term}\n')
+    return ''.join(lines)
+
+
+def commands_by_section(ctx: Any, group: TyperGroup) -> list[tuple[str, str]]:
     """Pair each subcommand name with the help section it is listed under.
 
     Commands sharing a `rich_help_panel` are listed together, sections in the order their first
@@ -80,16 +66,16 @@ def commands_by_section(ctx: Context, group: click.Group) -> list[tuple[str, str
     return pairs
 
 
-def format_help_with_colors(ctx: Context) -> str:
+def format_help_with_colors(ctx: Any) -> str:
     """Format help text with uv-style colors and structure."""
-    formatter = UVStyleHelpFormatter(width=ctx.terminal_width, max_width=120)
+    formatter = ctx.formatter_class(width=ctx.terminal_width, max_width=120)
 
     # Write description (clean up by removing Common Options and Examples sections)
     if ctx.command.help:
         formatter.write_paragraph()
         # For individual commands, only show the main description, not Common Options or Examples
         help_text = ctx.command.help
-        if not isinstance(ctx.command, click.Group):
+        if not isinstance(ctx.command, TyperGroup):
             # Split by double newlines and only take paragraphs before "Common Options:" or "Examples:"
             paragraphs = help_text.split('\n\n')
             clean_paragraphs = []
@@ -102,40 +88,37 @@ def format_help_with_colors(ctx: Context) -> str:
 
     # Write usage on same line with blue color
     formatter.write_paragraph()
-    formatter.current_section = 'Usage'
     usage_text = ctx.command.get_usage(ctx).replace('Usage: ', '')
     # Color the usage text blue and put it on same line as heading
-    usage_heading = click.style('Usage:', fg='bright_green', bold=True)
-    usage_colored = click.style(usage_text, fg='bright_blue')
+    usage_heading = typer.style('Usage:', fg='bright_green', bold=True)
+    usage_colored = typer.style(usage_text, fg='bright_blue')
     formatter.write(f'{usage_heading} {usage_colored}\n')
 
     # Write Arguments section for individual commands
-    if not isinstance(ctx.command, click.Group):
+    if not isinstance(ctx.command, TyperGroup):
         arguments = []
         for param in ctx.command.get_params(ctx):
-            if isinstance(param, click.Argument):
+            if isinstance(param, TyperArgument):
                 opts = param.get_help_record(ctx)
                 if opts:
                     arguments.append(opts)
 
         if arguments:
             formatter.write_paragraph()
-            formatter.write_heading('Arguments')
-            formatter.current_section = 'Arguments'
-            formatter.write_dl(arguments)
+            formatter.write(heading_line('Arguments'))
+            formatter.write(definition_list(arguments, colored=False))
 
     # Get command object
-    if isinstance(ctx.command, click.Group) and ctx.command.list_commands(ctx):
+    if isinstance(ctx.command, TyperGroup) and ctx.command.list_commands(ctx):
         # Main help - show commands under their sections with expanded descriptions, flags, and examples
         formatter.write_paragraph()
-        formatter.current_section = 'Commands'
         current_heading = None
 
         for heading, name in commands_by_section(ctx, ctx.command):
             cmd = ctx.command.get_command(ctx, name)
             if cmd and not cmd.hidden:
                 if heading != current_heading:
-                    formatter.write_heading(heading)
+                    formatter.write(heading_line(heading))
                     current_heading = heading
 
                 # Get full help text
@@ -146,7 +129,7 @@ def format_help_with_colors(ctx: Context) -> str:
                 summary = help_lines[0].replace('\n', ' ').strip() if help_lines else ''
 
                 # Write command name in blue
-                colored_name = click.style(name, fg='bright_blue')
+                colored_name = typer.style(name, fg='bright_blue')
                 formatter.write(f'  {colored_name}\n')
 
                 # Write summary
@@ -185,7 +168,7 @@ def format_help_with_colors(ctx: Context) -> str:
 
                         # Write aligned options
                         for flag, desc in options:
-                            colored_flag = click.style(flag, fg='cyan')
+                            colored_flag = typer.style(flag, fg='cyan')
                             padding = ' ' * (max_width - len(flag) + 2)
                             formatter.write(f'      {colored_flag}{padding}{desc}\n')
 
@@ -202,12 +185,12 @@ def format_help_with_colors(ctx: Context) -> str:
                             if line and not line.startswith('#') and example_count < 2:
                                 # Add descriptive comment based on example content
                                 if example_count == 0:
-                                    formatter.write(f'      {click.style("# Basic usage", dim=True)}\n')
+                                    formatter.write(f'      {typer.style("# Basic usage", dim=True)}\n')
                                 elif example_count == 1:
-                                    formatter.write(f'      {click.style("# With options", dim=True)}\n')
+                                    formatter.write(f'      {typer.style("# With options", dim=True)}\n')
 
                                 # Write example in yellow
-                                formatter.write(f'      {click.style(line, fg="yellow")}\n')
+                                formatter.write(f'      {typer.style(line, fg="yellow")}\n')
                                 example_count += 1
                                 if example_count >= 2:
                                     break
@@ -219,7 +202,7 @@ def format_help_with_colors(ctx: Context) -> str:
     global_options: list[tuple[str, str]] = []
 
     for param in ctx.command.get_params(ctx):
-        if isinstance(param, click.Option):
+        if isinstance(param, TyperOption):
             opts = param.get_help_record(ctx)
             if not opts:
                 continue
@@ -242,25 +225,22 @@ def format_help_with_colors(ctx: Context) -> str:
     # Write option groups in order
     if output_options:
         formatter.write_paragraph()
-        formatter.write_heading('Output options')
-        formatter.current_section = 'Output options'
-        formatter.write_dl(output_options)
+        formatter.write(heading_line('Output options'))
+        formatter.write(definition_list(output_options, colored=True))
 
     if global_options:
         formatter.write_paragraph()
-        formatter.write_heading('Global options')
-        formatter.current_section = 'Global options'
-        formatter.write_dl(global_options)
+        formatter.write(heading_line('Global options'))
+        formatter.write(definition_list(global_options, colored=True))
 
     # Write Examples section for individual commands
-    if not isinstance(ctx.command, click.Group) and ctx.command.help:
+    if not isinstance(ctx.command, TyperGroup) and ctx.command.help:
         # Extract examples from the original help text
         help_paragraphs = ctx.command.help.split('\n\n')
         for para in help_paragraphs:
             if para.strip().startswith('Examples:'):
                 formatter.write_paragraph()
-                formatter.write_heading('Examples')
-                formatter.current_section = 'Examples'
+                formatter.write(heading_line('Examples'))
 
                 # Get example lines
                 examples_text = para.replace('Examples:', '').strip()
@@ -271,10 +251,10 @@ def format_help_with_colors(ctx: Context) -> str:
                     if line:
                         # Skip comment lines, but show them as dimmed
                         if line.startswith('#'):
-                            formatter.write(f'  {click.style(line, dim=True)}\n')
+                            formatter.write(f'  {typer.style(line, dim=True)}\n')
                         else:
                             # Show example in yellow
-                            formatter.write(f'  {click.style(line, fg="yellow")}\n')
+                            formatter.write(f'  {typer.style(line, fg="yellow")}\n')
                 break
 
     # Write epilog

@@ -9,13 +9,12 @@ import time
 from pathlib import Path
 from typing import Annotated
 
-import click
 import typer
 from rich.console import Console
 from rich.table import Table
-from typer.core import TyperGroup
 
 from logsift.cache.manager import CacheManager
+from logsift.cli_formatter import ColoredTyperGroup
 from logsift.cli_formatter import format_help_with_colors
 from logsift.utils.display import display_file_with_bat
 from logsift.utils.fzf import is_fzf_available
@@ -47,15 +46,6 @@ def create_format_commands(
         - logsift {format} latest [name] [--tail]
         - logsift {format} list
     """
-
-    class ColoredTyperGroup(TyperGroup):
-        """Custom TyperGroup that uses our uv-style colored formatter."""
-
-        def format_help(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
-            """Override help formatting to use our custom colored formatter."""
-            help_text = format_help_with_colors(ctx)
-            click.echo(help_text, color=True)
-
     app = typer.Typer(
         name=format_name,
         help=f'View {format_name} format files',
@@ -71,7 +61,7 @@ def create_format_commands(
         # Show help if no subcommand provided
         if ctx.invoked_subcommand is None:
             help_text = format_help_with_colors(ctx)
-            click.echo(help_text, color=True)
+            typer.echo(help_text, color=True)
             raise typer.Exit()
 
     @app.command('list')
