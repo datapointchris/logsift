@@ -2,7 +2,7 @@
 
 Each option row is read from a Click context built the way the command itself would build it, so
 the value and its source are the ones the command would get, not a second walk of the layers.
-Typer from 0.27 runs its own copy of Click, so nothing here names a class from the `click` package.
+Typer from 0.26 runs its own copy of Click, so nothing here names a class from the `click` package.
 """
 
 from typing import NamedTuple

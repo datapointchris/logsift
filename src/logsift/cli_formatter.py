@@ -1,6 +1,6 @@
 """Help in uv's style: colored, sectioned, with no boxes.
 
-Typer from 0.27 runs its own copy of Click as `typer._click`, a private module. A group, an
+Typer from 0.26 runs its own copy of Click as `typer._click`, a private module. A group, an
 argument and an option are told apart by `typer.core`'s classes, which are the ones Typer builds.
 A context and a help formatter have no public name but `typer.Context`, which subclasses the copy's
 context and is never what Typer passes in. So both are typed `Any`, and the formatter is made by the
