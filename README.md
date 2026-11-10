@@ -140,20 +140,28 @@ line both match. A file that fails validation stops the run, and the error names
 
 ### Configuration
 
-Create `~/.config/logsift/config.toml` to customize settings:
+logsift runs on its defaults, and reads `$XDG_CONFIG_HOME/logsift/config.toml`, else
+`~/.config/logsift/config.toml`, when it exists. Each key below is set to logsift's default:
 
 ```toml
-[cache]
-directory = "~/.cache/logsift"
-retention_days = 90
+# How monitor and analyze print the analysis: auto, json, toon, markdown or plain.
+print_analysis_as = "auto"
 
-[analysis]
-context_lines = 2
-max_errors = 100
+[monitor]
+# Seconds between monitor's progress reports.
+report_progress_every_seconds = 60
 
-[output]
-default_format = "auto"  # auto, json, markdown
+[logs.clean]
+# `logsift logs clean` deletes raw logs older than this many days.
+delete_older_than_days = 90
+
+[analyzed.clean]
+# `logsift analyzed clean` deletes saved analyses older than this many days.
+delete_older_than_days = 30
 ```
+
+A flag beats its `LOGSIFT_*` variable, which beats the file. A file that fails to parse, or names
+a key logsift does not read, stops every command and names the problem. [Config Format](docs/api/config-format.md) has the details.
 
 ### Cache Management
 

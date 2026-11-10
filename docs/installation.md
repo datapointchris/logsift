@@ -164,28 +164,18 @@ See [Development Setup](development/setup.md) for complete details.
 
 ## Configuration
 
-After installation, optionally configure logsift:
+logsift runs on its defaults, so a config file is optional. To keep raw logs for 30 days instead
+of 90:
 
 ```bash
-# Create config directory
-mkdir -p ~/.config/logsift/patterns
-
-# Create config file
-cat > ~/.config/logsift/config.toml << 'EOF'
-[cache]
-directory = "~/.cache/logsift"
-retention_days = 90
-
-[analysis]
-context_lines = 2
-max_errors = 100
-
-[output]
-default_format = "auto"
+mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/logsift"
+cat > "${XDG_CONFIG_HOME:-$HOME/.config}/logsift/config.toml" << 'EOF'
+[logs.clean]
+delete_older_than_days = 30
 EOF
 ```
 
-See [Config Format](api/config-format.md) for all options.
+See [Config Format](api/config-format.md) for every key.
 
 ## Upgrading
 

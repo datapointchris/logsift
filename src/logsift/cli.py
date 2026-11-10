@@ -18,6 +18,7 @@ from rich.table import Table
 from typer.core import TyperGroup
 
 from logsift import __version__
+from logsift import xdg_dirs
 from logsift.cache.manager import CacheManager
 from logsift.cli_formatter import format_help_with_colors
 from logsift.commands.analyze import analyze_log
@@ -29,6 +30,9 @@ from logsift.commands.logs import clean_logs
 from logsift.commands.logs import list_logs
 from logsift.commands.logs import tail_log
 from logsift.commands.monitor import monitor_command
+from logsift.config.loader import ConfigError
+from logsift.config.loader import default_map
+from logsift.config.loader import load_user_config
 from logsift.output.markdown_formatter import format_markdown
 from logsift.utils.display import display_file_with_bat
 from logsift.utils.display import display_with_bat
@@ -122,6 +126,12 @@ def main(
     if ctx.invoked_subcommand is None:
         console.print(ctx.get_help())
         raise typer.Exit()
+
+    # Click builds the subcommand's context after this callback, so it inherits this default_map.
+    try:
+        ctx.default_map = default_map(load_user_config(xdg_dirs.config_file()))
+    except ConfigError as fault:
+        raise click.ClickException(str(fault)) from None
 
 
 @app.command(rich_help_panel=ANALYZE_PANEL)

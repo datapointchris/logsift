@@ -1,62 +1,76 @@
-"""Load and merge configuration from TOML files.
+"""The user's config.toml: read whole or refused, then handed to Click as its default_map.
 
-Handles loading from $XDG_CONFIG_HOME/logsift/config.toml and merging with defaults.
+Click resolves an option from its flag, then its environment variable, then the default_map,
+then the option's own default. Loading the file into the default_map is the whole file layer, so
+the precedence and the source `logsift config` reports both come from Click and cannot drift.
 """
 
-import copy
 import tomllib
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
-
-from logsift import xdg_dirs
-from logsift.config.defaults import DEFAULT_CONFIG
+from typing import NamedTuple
 
 
-def load_config(config_file: Path | None = None) -> dict[str, Any]:
-    """Load configuration from file and merge with defaults.
-
-    Args:
-        config_file: Optional path to config file (defaults to config.toml in $XDG_CONFIG_HOME/logsift, else ~/.config/logsift)
-
-    Returns:
-        Merged configuration dictionary
-    """
-    # Start with a deep copy of defaults
-    config = copy.deepcopy(DEFAULT_CONFIG)
-
-    # Determine config file path
-    if config_file is None:
-        config_file = xdg_dirs.config_dir() / 'config.toml'
-
-    # If config file doesn't exist, return defaults
-    if not config_file.exists():
-        return config
-
-    # Load TOML config
-    try:
-        with config_file.open('rb') as f:
-            user_config = tomllib.load(f)
-    except (tomllib.TOMLDecodeError, OSError):
-        # If there's an error reading/parsing, return defaults
-        return config
-
-    # Merge user config into defaults
-    deep_merge(config, user_config)
-
-    return config
+class FileKey(NamedTuple):
+    toml_type: type
+    # Each option the key sets, as its command path then the option's parameter name.
+    sets: tuple[tuple[str, ...], ...]
 
 
-def deep_merge(base: dict[str, Any], override: dict[str, Any]) -> None:
-    """Recursively merge override dict into base dict.
+# Every key config.toml may carry.
+FILE_KEYS = {
+    'print_analysis_as': FileKey(str, (('monitor', 'format'), ('analyze', 'format'))),
+    'monitor.report_progress_every_seconds': FileKey(int, (('monitor', 'update_interval'),)),
+    'logs.clean.delete_older_than_days': FileKey(int, (('logs', 'clean', 'days'),)),
+    'analyzed.clean.delete_older_than_days': FileKey(int, (('analyzed', 'clean', 'days'),)),
+}
 
-    Args:
-        base: Base dictionary (will be modified in-place)
-        override: Override dictionary to merge in
-    """
-    for key, value in override.items():
-        if key in base and isinstance(base[key], dict) and isinstance(value, dict):
-            # Recursively merge nested dicts
-            deep_merge(base[key], value)
+
+class ConfigError(Exception):
+    """A config.toml that exists and cannot be honored."""
+
+
+def leaf_keys(table: dict[str, Any], prefix: str = '') -> Iterator[tuple[str, Any]]:
+    """Yield each value in a parsed TOML document under its dotted key."""
+    for key, value in table.items():
+        if isinstance(value, dict):
+            yield from leaf_keys(value, f'{prefix}{key}.')
         else:
-            # Override the value
-            base[key] = value
+            yield f'{prefix}{key}', value
+
+
+def load_user_config(path: Path) -> dict[str, Any]:
+    """Return config.toml's values by dotted key, or nothing when the file is absent.
+
+    A present file is honored whole or refused. A key left under an old name would otherwise
+    leave its setting on the default in silence, which reads exactly like a file that never set it.
+    """
+    if not path.exists():
+        return {}
+    try:
+        parsed = tomllib.loads(path.read_text())
+    except (tomllib.TOMLDecodeError, OSError) as exc:
+        raise ConfigError(f'{path}: {exc}') from exc
+    values = dict(leaf_keys(parsed))
+    unknown = sorted(set(values) - set(FILE_KEYS))
+    if unknown:
+        raise ConfigError(f'{path}: unknown key(s) {", ".join(unknown)}; known: {", ".join(FILE_KEYS)}')
+    for key, value in values.items():
+        expected = FILE_KEYS[key].toml_type
+        # TOML's true and false are ints to Python, and neither is a count of anything.
+        if not isinstance(value, expected) or (expected is int and isinstance(value, bool)):
+            raise ConfigError(f'{path}: {key} must be a TOML {expected.__name__}, not {value!r}')
+    return values
+
+
+def default_map(values: dict[str, Any]) -> dict[str, Any]:
+    """Nest config.toml's values by command, the shape Click's default_map reads."""
+    nested: dict[str, Any] = {}
+    for key, value in values.items():
+        for *command_path, parameter in FILE_KEYS[key].sets:
+            scope = nested
+            for command in command_path:
+                scope = scope.setdefault(command, {})
+            scope[parameter] = value
+    return nested

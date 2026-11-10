@@ -117,9 +117,10 @@ edits the schema in the same commit, and raises both `SCHEMA_VERSION` in
 ## Conventions specific to logsift
 
 - **Process monitoring**: `commands/monitor.py` runs the command with `subprocess.Popen` and streams its output line by line. It is the one place logsift runs a monitored command.
-- **Config validation is not implemented.** `config/validator.py` is a stub raising
-  `NotImplementedError`. When it is written, it validates once at startup and nowhere else.
-  Configuration fails fast at that one site, so no later code re-checks it.
+- **`config.toml` is Click's `default_map`.** The root callback in `cli.py` reads and validates
+  it once, through `config/loader.py`, and no later code re-checks it. Click then resolves each
+  option from its flag, its variable, the file, then its default. A new file key goes in
+  `FILE_KEYS`.
 - **Coverage**: `fail_under` in `pyproject.toml` is the enforced floor; run
   `task test:coverage` for the current figure rather than trusting a number written here.
 

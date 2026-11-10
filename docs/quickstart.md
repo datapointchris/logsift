@@ -180,22 +180,14 @@ See [Custom Patterns](guides/custom-patterns.md) for detailed guidance.
 
 ## Configuration
 
-Customize behavior via `~/.config/logsift/config.toml`:
+logsift needs no config file. To make every run print JSON, create
+`$XDG_CONFIG_HOME/logsift/config.toml`, else `~/.config/logsift/config.toml`:
 
 ```toml
-[cache]
-directory = "~/.cache/logsift"
-retention_days = 90
-
-[analysis]
-context_lines = 2
-max_errors = 100
-
-[output]
-default_format = "auto"  # auto, json, markdown
+print_analysis_as = "json"
 ```
 
-See [Config Format](api/config-format.md) for all options.
+See [Config Format](api/config-format.md) for every key.
 
 ## Cache Management
 

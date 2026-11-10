@@ -1,142 +1,70 @@
 # Configuration File Format
 
-TOML specification for logsift configuration.
+logsift reads one optional TOML file, `$XDG_CONFIG_HOME/logsift/config.toml`, else
+`~/.config/logsift/config.toml`. Without it, logsift runs on its defaults.
 
-## File Location
+## Every key, set to logsift's default
 
-Create config file at:
-
-```text
-~/.config/logsift/config.toml
-```
-
-## Full Example
+This file sets each key to the value logsift uses when the key is absent. Copy only the keys you
+mean to change.
 
 ```toml
-[cache]
-directory = "~/.cache/logsift"
-retention_days = 90
+# How monitor and analyze print the analysis: auto, json, toon, markdown or plain.
+# auto prints Markdown on a terminal and toon when piped. plain prints the same Markdown.
+print_analysis_as = "auto"
 
-[analysis]
-context_lines = 2
-max_errors = 100
+[monitor]
+# Seconds between monitor's progress reports. --stream and --minimal print none.
+report_progress_every_seconds = 60
 
-[output]
-default_format = "auto"  # auto, json, markdown
+[logs.clean]
+# `logsift logs clean` deletes raw logs older than this many days.
+delete_older_than_days = 90
 
-[patterns]
-custom_dir = "~/.config/logsift/patterns"
+[analyzed.clean]
+# `logsift analyzed clean` deletes saved analyses older than this many days.
+delete_older_than_days = 30
 ```
 
-## [cache]
+## A flag beats its variable, which beats the file
 
-Cache directory settings:
+Each value comes from the first of these that sets it:
 
-```toml
-[cache]
-directory = "~/.cache/logsift"  # Cache directory path
-retention_days = 90              # Days to keep logs
-```
+1. Its flag, such as `--format json`.
+2. Its environment variable, such as `LOGSIFT_OUTPUT_FORMAT=json`.
+3. Its key in `config.toml`.
+4. logsift's default.
 
-**Fields:**
+| Key | Flag | Variable |
+| --- | --- | --- |
+| `print_analysis_as` | `monitor --format`, `analyze --format` | `LOGSIFT_OUTPUT_FORMAT` |
+| `monitor.report_progress_every_seconds` | `monitor --update-interval` | `LOGSIFT_UPDATE_INTERVAL` |
+| `logs.clean.delete_older_than_days` | `logs clean --days` | `LOGSIFT_RETENTION_DAYS` |
+| `analyzed.clean.delete_older_than_days` | `analyzed clean --days` | none |
 
-- `directory` (string) - Path to cache directory
-  - Default: `~/.cache/logsift`
-  - Tilde expansion supported
-  - Created automatically if missing
+`monitor --name` and `LOGSIFT_SESSION_NAME` have no key. A name in the file would give every run
+the same name.
 
-- `retention_days` (integer) - Log retention period
-  - Default: `90`
-  - Logs older than this are deleted by cleanup
-  - Set to `0` for infinite retention
+## A file logsift cannot honor stops every command
 
-## [analysis]
+logsift reads `config.toml` once, before any command runs. These stop the command with exit code 1:
 
-Analysis behavior settings:
+- A file that fails to parse. The error names the file and the parser's message.
+- A key logsift does not read, such as one left under an old name. The error names it and every key
+  logsift reads.
+- A value of the wrong TOML type, such as `report_progress_every_seconds = "60"`. The error names
+  the key.
 
-```toml
-[analysis]
-context_lines = 2      # Lines of context around errors
-max_errors = 100       # Maximum errors to extract
-```
+None of them falls back to the defaults.
 
-**Fields:**
+## No key moves a directory
 
-- `context_lines` (integer) - Context lines around errors
-  - Default: `2`
-  - Extracts N lines before and after each error
-  - Range: 0-10
+The XDG variables move logsift's directories:
 
-- `max_errors` (integer) - Maximum errors to extract
-  - Default: `100`
-  - Prevents unbounded memory usage
-  - First N errors are extracted
-
-## [output]
-
-Output format settings:
-
-```toml
-[output]
-default_format = "auto"  # auto, json, markdown
-```
-
-**Fields:**
-
-- `default_format` (string) - Default output format
-  - Default: `"auto"`
-  - Valid values: `"auto"`, `"json"`, `"markdown"`
-  - Can be overridden with `--format` flag
-
-## [patterns]
-
-Pattern loading settings:
-
-```toml
-[patterns]
-custom_dir = "~/.config/logsift/patterns"
-```
-
-**Fields:**
-
-- `custom_dir` (string) - Custom patterns directory
-  - Default: `~/.config/logsift/patterns`
-  - Tilde expansion supported
-  - All `*.toml` files loaded automatically
-
-## Minimal Configuration
-
-Default values are sensible. Minimal config:
-
-```toml
-# Empty config file uses all defaults
-```
-
-Or override only what you need:
-
-```toml
-[cache]
-retention_days = 30  # Keep logs for 30 days instead of 90
-```
-
-## Environment Variables
-
-Each `LOGSIFT_*` variable sets the flag it names.
-The [CLI Reference](../cli-reference.md#environment-variables) lists them all.
-
-## Validation
-
-Configuration is validated on load. Invalid config causes startup failure.
-
-Checks:
-
-- [ ] Valid TOML syntax
-- [ ] All sections optional
-- [ ] Field types correct
-- [ ] Paths exist (created if missing)
-- [ ] Valid enum values
+- Custom patterns: `$XDG_CONFIG_HOME/logsift/patterns/`, else `~/.config/logsift/patterns/`.
+- Captured logs and saved analyses: `$XDG_CACHE_HOME/logsift/`, else `~/.cache/logsift/`.
 
 ## See Also
 
-- [Installation](../installation.md) - Setup and config
-- [CLI Reference](../cli-reference.md) - Override config with flags
+- [CLI Reference](../cli-reference.md) - Every flag and variable
+- [Custom Patterns](../guides/custom-patterns.md) - Pattern files under the patterns directory

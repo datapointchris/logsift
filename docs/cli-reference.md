@@ -165,7 +165,7 @@ logsift logs [SUBCOMMAND]
 **Subcommands:**
 
 - `list` - List all cached log files
-- `clean` - Delete cached logs older than `--days`, 90 by default or `LOGSIFT_RETENTION_DAYS`. `--dry-run` previews
+- `clean` - Delete cached logs older than `--days`, else `LOGSIFT_RETENTION_DAYS`, else `logs.clean.delete_older_than_days` in `config.toml`, else 90. `--dry-run` previews
 - `browse` - Pick a cached log with fzf
 - `latest [NAME]` - Show the newest log, or the newest whose name contains NAME
 
@@ -193,7 +193,7 @@ logsift analyzed [SUBCOMMAND]
 - `list` - List the saved analyses in `json/`
 - `browse` - Pick a saved analysis with fzf
 - `latest` - Show the newest saved analysis
-- `clean` - Delete the `json/`, `toon/` and `md/` analyses older than `--days`, 30 by default. `--dry-run` previews
+- `clean` - Delete the `json/`, `toon/` and `md/` analyses older than `--days`, else `analyzed.clean.delete_older_than_days` in `config.toml`, else 30. `--dry-run` previews
 
 ### `raw`, `json`, `toon`, `md`
 
@@ -322,22 +322,18 @@ logsift analyzed clean          # json/, toon/ and md/ analyses older than 30 da
 
 ### Configuration File
 
-Create `~/.config/logsift/config.toml`:
+logsift reads `$XDG_CONFIG_HOME/logsift/config.toml`, else `~/.config/logsift/config.toml`, when
+it exists. A flag or variable beats the file. This one prints JSON and keeps raw logs for 30 days:
 
 ```toml
-[cache]
-directory = "~/.cache/logsift"
-retention_days = 90
+print_analysis_as = "json"
 
-[analysis]
-context_lines = 2      # Lines of context around errors
-max_errors = 100       # Maximum errors to extract
-
-[output]
-default_format = "auto"  # auto, json, markdown
+[logs.clean]
+delete_older_than_days = 30
 ```
 
-See [Config Format](api/config-format.md) for all options.
+A file that fails to parse, or names a key logsift does not read, stops every command and names
+the problem. See [Config Format](api/config-format.md) for every key.
 
 ### Custom Patterns
 
@@ -386,17 +382,19 @@ fi
 
 ## Environment Variables
 
-logsift supports the following environment variables:
+A variable beats its `config.toml` key, and a flag beats both.
 
-### Cache
+### Locations
 
+- `XDG_CONFIG_HOME` - logsift reads `config.toml` and custom patterns from `$XDG_CONFIG_HOME/logsift`, else `~/.config/logsift`
 - `XDG_CACHE_HOME` - logsift keeps its cache in `$XDG_CACHE_HOME/logsift`, else `~/.cache/logsift`
 
-### Monitor Command
+### Options
 
-- `LOGSIFT_SESSION_NAME` - Default session name for monitor command
-- `LOGSIFT_OUTPUT_FORMAT` - Default output format for `monitor` and `analyze`: `auto`, `json`, `toon`, `markdown`, `plain`
-- `LOGSIFT_UPDATE_INTERVAL` - Default update interval in seconds (default: 60)
+- `LOGSIFT_SESSION_NAME` - `monitor --name`. No `config.toml` key
+- `LOGSIFT_OUTPUT_FORMAT` - `--format` for `monitor` and `analyze`: `auto`, `json`, `toon`, `markdown`, `plain`. Key `print_analysis_as`
+- `LOGSIFT_UPDATE_INTERVAL` - `monitor --update-interval`, in seconds. Key `monitor.report_progress_every_seconds`
+- `LOGSIFT_RETENTION_DAYS` - `logs clean --days`. Key `logs.clean.delete_older_than_days`
 
 **Examples:**
 

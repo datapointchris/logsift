@@ -27,3 +27,8 @@ def config_dir() -> Path:
 def cache_dir() -> Path:
     """Return logsift's cache directory: `$XDG_CACHE_HOME/logsift`, else `~/.cache/logsift`."""
     return _base_dir('XDG_CACHE_HOME', '.cache') / APP_NAME
+
+
+def config_file() -> Path:
+    """Return the user's config file, which may not exist."""
+    return config_dir() / 'config.toml'

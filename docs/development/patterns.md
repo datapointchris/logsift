@@ -38,7 +38,7 @@ value = config.key  # Raises AttributeError if missing
 value = getattr(config, 'key', 'default')
 ```
 
-Configuration validation happens once at startup in `config/validator.py`. Business logic should assume valid configuration.
+`config.toml` is read and validated once, in the CLI's root callback, by `config/loader.py`. Business logic should assume valid configuration.
 
 ### Docstrings
 
@@ -231,24 +231,18 @@ def validate_pattern(pattern: dict[str, Any]) -> None:
 
 ### File Path Handling
 
+Resolve a config or cache path through its XDG variable, as `xdg_dirs.py` does, rather than
+hardcoding `~/.config`:
+
 ```python
+import os
 from pathlib import Path
 
 
-def load_config(config_path: Path | str | None = None) -> dict:
-    """Load configuration from file."""
-    if config_path is None:
-        config_path = Path.home() / '.config' / 'logsift' / 'config.toml'
-    else:
-        config_path = Path(config_path)
-
-    # Expand tilde
-    config_path = config_path.expanduser()
-
-    if not config_path.exists():
-        raise FileNotFoundError(f'Config not found: {config_path}')
-
-    return load_toml(config_path)
+def config_dir() -> Path:
+    value = os.environ.get('XDG_CONFIG_HOME', '')
+    base = Path(value) if value and Path(value).is_absolute() else Path.home() / '.config'
+    return base / 'logsift'
 ```
 
 ### TTY Detection
