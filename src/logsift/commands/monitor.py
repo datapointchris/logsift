@@ -74,7 +74,7 @@ def monitor_command(
     output_format: str = AnalysisFormat.AUTO,
     stream: bool = False,
     update_interval: int = 60,
-    minimal: bool = False,
+    quiet: bool = False,
     save_log: bool = True,
     notify: bool = False,
     append: bool = False,
@@ -87,7 +87,7 @@ def monitor_command(
         output_format: An AnalysisFormat value
         stream: Whether to stream all output in real-time (default: False, show periodic updates)
         update_interval: Seconds between progress updates when not streaming (default: 60)
-        minimal: Suppress all progress output, only show final analysis result (default: False)
+        quiet: Print only the analysis, with nothing on stderr
         save_log: Whether to save the log to cache
         notify: Whether to send desktop notification on completion
         append: Whether to append to existing log instead of creating new
@@ -110,10 +110,8 @@ def monitor_command(
             log_paths = cache.create_paths(name)
             log_file = log_paths[SavedKind.RAW]
 
-    # Show progress output unless explicitly suppressed with --minimal
-    # Progress goes to stderr so it doesn't interfere with piping stdout
-    # Use --minimal for LLM workflows that need only the analysis result
-    show_progress = not minimal
+    # Progress goes to stderr so it never mixes into the analysis on stdout
+    show_progress = not quiet
 
     # Print initial banner naming the command and its log - only in interactive mode
     if show_progress:

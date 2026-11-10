@@ -32,7 +32,7 @@ def test_analyze_and_monitor_json_match_the_published_schema(tmp_path):
     runner = CliRunner()
 
     analyzed = runner.invoke(app, ['analyze', '--format', 'json', str(log)])
-    monitored = runner.invoke(app, ['monitor', '--minimal', '--format', 'json', '--', 'cat', str(log)])
+    monitored = runner.invoke(app, ['monitor', '--quiet', '--format', 'json', '--', 'cat', str(log)])
 
     validator = Draft7Validator(SCHEMA)
     for result in (analyzed, monitored):

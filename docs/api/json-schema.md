@@ -47,7 +47,7 @@ uvx check-jsonschema --schemafile schemas/analysis.schema.json analysis.json
 import json
 import subprocess
 
-run = subprocess.run(['logsift', 'monitor', '--minimal', '--format', 'json', '--', 'make', 'build'], capture_output=True, text=True)
+run = subprocess.run(['logsift', 'monitor', '--quiet', '--format', 'json', '--', 'make', 'build'], capture_output=True, text=True)
 data = json.loads(run.stdout)
 
 if data['summary']['status'] == 'failed':

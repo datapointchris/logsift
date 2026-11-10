@@ -51,7 +51,7 @@ logsift monitor [OPTIONS] -- COMMAND [ARGS]...
 - `--format FORMAT` - Output format: `auto`, `json`, `toon` or `markdown` (default: `auto`)
 - `--stream` - Stream all output to terminal in real-time (default: show periodic updates)
 - `--update-interval SECONDS` - Seconds between progress updates when not streaming (default: 60)
-- `--minimal` - Suppress all progress output, only show final analysis (ideal for LLM workflows)
+- `-q`, `--quiet` - Print only the analysis, with no banner, progress or summary on stderr
 - `--notify` - Send desktop notification on completion (requires notify-send or osascript)
 - `--append` - Append to existing log instead of creating new (useful for iterative debugging)
 
@@ -71,7 +71,7 @@ logsift monitor --format=json -- pytest tests/
 logsift monitor --stream -- npm install
 
 # Minimal output for LLM workflows
-logsift monitor --minimal -- pre-commit run --files file.py
+logsift monitor --quiet -- pre-commit run --files file.py
 
 # Desktop notification on completion
 logsift monitor --notify -- make build
@@ -98,7 +98,7 @@ logsift monitor --append -- pytest tests/test_feature.py
 logsift monitor -- make build
 
 # JSON for jq
-logsift monitor --minimal --format json -- make build | jq '.errors'
+logsift monitor --quiet --format json -- make build | jq '.errors'
 ```
 
 ### `analyze`
@@ -494,7 +494,7 @@ Use with Claude Code for automated workflows:
 
 ```python
 # An agent reads the errors, then decides the fix itself
-result = subprocess.run(['logsift', 'monitor', '--minimal', '--format=json', '--', 'npm', 'run', 'build'], capture_output=True, text=True)
+result = subprocess.run(['logsift', 'monitor', '--quiet', '--format=json', '--', 'npm', 'run', 'build'], capture_output=True, text=True)
 analysis = json.loads(result.stdout)
 
 for error in analysis['errors']:

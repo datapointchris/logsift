@@ -12,14 +12,14 @@ The agent still decides each fix. logsift tells it where to look and what the li
 ## The Agentic Loop
 
 ```text
-1. RUN    → logsift monitor --minimal --format=json -- <command>
+1. RUN    → logsift monitor --quiet --format=json -- <command>
 2. READ   → summary.status, then each error's message, pattern_name, suggestion and file_references
 3. FIX    → the agent edits the code the errors point at
 4. VERIFY → run the same command again
 5. REPEAT → until summary.status is success, or a bounded number of attempts
 ```
 
-`--minimal` keeps the progress banners off stderr. `logsift monitor` exits with the command's own
+`--quiet` keeps the progress banners off stderr. `logsift monitor` exits with the command's own
 exit code, so a shell loop can test it directly.
 
 ## Choosing a Format
@@ -55,7 +55,7 @@ import subprocess
 
 def run_with_logsift(command: list[str]) -> dict:
     """Run a command through logsift and parse its JSON analysis."""
-    result = subprocess.run(['logsift', 'monitor', '--minimal', '--format=json', '--', *command], capture_output=True, text=True)
+    result = subprocess.run(['logsift', 'monitor', '--quiet', '--format=json', '--', *command], capture_output=True, text=True)
     return json.loads(result.stdout)
 
 
@@ -106,10 +106,10 @@ The TOML files under `src/logsift/patterns/defaults/` hold every built-in patter
 
 ```bash
 # ✓ A program parses this
-logsift monitor --minimal --format=json -- make test
+logsift monitor --quiet --format=json -- make test
 
 # ✓ An agent reads this directly, as toon
-logsift monitor --minimal -- make test
+logsift monitor --quiet -- make test
 ```
 
 ### 2. Check Status First

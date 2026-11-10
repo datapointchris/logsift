@@ -101,7 +101,7 @@ With `--format=json`, logsift prints the document
 describes. [JSON Schema](api/json-schema.md) says how to read it:
 
 ```bash
-logsift monitor --minimal --format=json -- python -c "import nonexistent_module" \
+logsift monitor --quiet --format=json -- python -c "import nonexistent_module" \
   | jq -c '{status: .summary.status, errors: [.errors[] | {message, pattern_name}]}'
 # {"status":"failed","errors":[{"message":"ModuleNotFoundError: No module named 'nonexistent_module'","pattern_name":"module_not_found"}]}
 ```

@@ -59,7 +59,7 @@ app = typer.Typer(
         '  # Run a build, then print the errors it hit\n'
         '  logsift monitor -- make build\n'
         '  # Print only the analysis, as JSON\n'
-        '  logsift monitor --minimal --format json -- pytest tests/\n'
+        '  logsift monitor -q --format json -- pytest tests/\n'
         '  # Re-run the patterns over the last capture\n'
         '  logsift analyze --latest\n'
         '  # Reread the newest analysis of a run named build\n'
@@ -165,13 +165,11 @@ def monitor(
             help='Append to existing log instead of creating new (useful for iterative debugging)',
         ),
     ] = False,
-    minimal: Annotated[
+    quiet: Annotated[
         bool,
-        typer.Option(
-            '--minimal',
-            help='Suppress all progress output, only show final analysis result (ideal for LLM workflows)',
-        ),
+        typer.Option('--quiet', '-q', help='Print only the analysis: no banner, progress or summary on stderr'),
     ] = False,
+    minimal: Annotated[bool, typer.Option('--minimal', hidden=True, help='The same as --quiet')] = False,
 ) -> None:
     """Monitor a command and analyze its output for errors
 
@@ -186,7 +184,7 @@ def monitor(
     Examples:
         logsift monitor -- make build
         logsift monitor --stream -- npm install
-        logsift monitor --minimal -- pre-commit run --files file.py
+        logsift monitor -q -- pre-commit run --files file.py
         logsift monitor --format json -- docker build -t myapp .
     """
     monitor_command(
@@ -195,7 +193,7 @@ def monitor(
         output_format=format,
         stream=stream,
         update_interval=update_interval,
-        minimal=minimal,
+        quiet=quiet or minimal,
         notify=notify,
         append=append,
     )

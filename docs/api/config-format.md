@@ -14,7 +14,7 @@ mean to change.
 print_analysis_as = "auto"
 
 [monitor]
-# Seconds between monitor's progress reports. --stream and --minimal print none.
+# Seconds between monitor's progress reports. --stream and --quiet print none.
 report_progress_every_seconds = 60
 
 [logs.clean]
