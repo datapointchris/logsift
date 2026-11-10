@@ -83,7 +83,7 @@ BROWSE_PANEL = 'Browse saved runs'
 def version_callback(value: bool) -> None:
     """Display version information."""
     if value:
-        console.print(f'logsift version {__version__}')
+        console.print(f'logsift {__version__}')
         raise typer.Exit()
 
 

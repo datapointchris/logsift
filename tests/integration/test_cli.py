@@ -1,5 +1,7 @@
 """Integration tests for CLI interface."""
 
+from importlib.metadata import version
+
 import typer
 from typer.testing import CliRunner
 
@@ -9,11 +11,12 @@ from logsift.cli import app
 runner = CliRunner()
 
 
-def test_cli_version():
-    """Test --version flag."""
+def test_version_is_one_line_naming_the_tool_and_its_installed_version():
     result = runner.invoke(app, ['--version'])
+
     assert result.exit_code == 0
-    assert 'logsift version' in result.stdout
+    assert result.stdout.startswith(f'logsift {version("logsift")}')
+    assert result.stdout.count('\n') == 1
 
 
 def test_help_command_prints_what_help_flag_prints():
