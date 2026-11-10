@@ -102,7 +102,7 @@ tags = ["brew", "package_conflict", "fixable"]
 suggestion = "Remove package from install list or use 'brew upgrade' instead"
 ```
 
-Required: name, regex, severity, description, tags. Optional: suggestion.
+Required: name, regex, severity, description, tags. Optional: suggestion, context_lines_after.
 
 ## JSON Output Contract (agents parse it — change it only with a version)
 

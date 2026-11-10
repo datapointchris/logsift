@@ -37,8 +37,7 @@ severity = "error"  # error, warning, or info
 description = "Human-readable description"
 tags = ["tag1", "tag2"]
 suggestion = "How to fix this error"  # Optional
-automated_fix = "command to run"      # Optional
-confidence = "high"                    # Optional: high, medium, low
+context_lines_after = 5                # Optional
 ```
 
 ### Required Fields
@@ -51,9 +50,10 @@ confidence = "high"                    # Optional: high, medium, low
 
 ### Optional Fields
 
-- `suggestion` - Fix hint for users/agents
-- `automated_fix` - Shell command to fix
-- `confidence` - `high`, `medium`, `low`
+- `suggestion` - Fix hint for users/agents, copied into the output as written
+- `context_lines_after` - How many lines after the match to keep as context, for multi-line errors
+
+Any other key is accepted and ignored.
 
 ## Examples
 
@@ -67,7 +67,6 @@ severity = "warning"
 description = "API rate limit exceeded"
 tags = ["api", "rate-limit", "http"]
 suggestion = "Implement exponential backoff retry logic"
-confidence = "high"
 ```
 
 ### Configuration Error
@@ -80,8 +79,6 @@ severity = "error"
 description = "Configuration file not found"
 tags = ["config", "file", "fixable"]
 suggestion = "Create the missing configuration file"
-automated_fix = "touch $1"  # $1 = captured filename
-confidence = "medium"
 ```
 
 ### Custom Application Error

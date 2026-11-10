@@ -111,35 +111,7 @@ Best practices:
 
 - Actionable and specific
 - Include commands when possible
-- Reference captured groups if applicable
-
-### automated_fix
-
-Shell command to automatically fix (string):
-
-```toml
-automated_fix = "pip install $1"  # $1 = first capture group
-```
-
-Rules:
-
-- Must be safe to execute
-- Use `$1`, `$2`, etc. for capture groups
-- Test thoroughly before deploying
-
-### confidence
-
-Confidence level for suggestion (string):
-
-```toml
-confidence = "high"  # or "medium" or "low"
-```
-
-Valid values:
-
-- `"high"` - Very confident, safe for automation
-- `"medium"` - Likely correct, verify first
-- `"low"` - Suggestion only, needs human review
+- It is copied as written, so a `$1` stays `$1` rather than becoming a captured group
 
 ### context_lines_after
 
@@ -161,7 +133,6 @@ severity = "error"
 description = "Webpack cannot find the specified module - import path is incorrect or module not installed"
 tags = ["webpack", "import", "module", "fixable"]
 suggestion = "Check if the module exists or install it with: npm install <module>"
-confidence = "high"
 
 [[patterns]]
 name = "python_import_error"
@@ -169,9 +140,7 @@ regex = "ModuleNotFoundError: No module named ['\"](.+)['\"]"
 severity = "error"
 description = "Python module not found - module not installed or not in PYTHONPATH"
 tags = ["python", "import", "dependency", "fixable"]
-suggestion = "Install the missing module using: pip install $1"
-automated_fix = "pip install $1"
-confidence = "high"
+suggestion = "Install the missing module using: pip install <module>"
 
 [[patterns]]
 name = "npm_deprecated_warning"
@@ -180,8 +149,10 @@ severity = "warning"
 description = "Package is deprecated and should be replaced"
 tags = ["npm", "deprecated", "warning"]
 suggestion = "Find an alternative package or update to a maintained version"
-confidence = "medium"
 ```
+
+A pattern holds only the fields above and `context_lines_after`. Any other key is accepted and
+ignored, so it never reaches the output.
 
 ## Validation
 
@@ -194,8 +165,7 @@ Checks:
 - [ ] `severity` is valid value
 - [ ] `regex` is valid Python regex
 - [ ] `tags` is non-empty array
-- [ ] `name` is unique (no duplicates)
-- [ ] `confidence` (if present) is valid value
+- [ ] `name` is unique within the file
 
 Test validation:
 

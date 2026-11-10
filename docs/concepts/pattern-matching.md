@@ -31,8 +31,7 @@ suggestion = "Install the missing module using pip install <module>"
 ### Optional Fields
 
 - `suggestion` - Fix hint for automated workflows
-- `automated_fix` - Shell command to fix (if applicable)
-- `confidence` - `high`, `medium`, `low` (for suggestions)
+- `context_lines_after` - Lines after the match to keep as context, for multi-line errors
 
 ## Built-in Patterns
 

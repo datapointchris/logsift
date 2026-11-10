@@ -37,7 +37,7 @@ def validate_pattern(pattern: dict[str, Any]) -> None:
     if not isinstance(pattern['tags'], list) or len(pattern['tags']) == 0:
         raise ValueError('Pattern tags must be a non-empty list')
 
-    # Optional fields are allowed (like 'suggestion')
+    # The detector reads only suggestion and context_lines_after beyond these; any other key is ignored
 
 
 def validate_pattern_file(pattern_file: dict[str, Any]) -> None:
