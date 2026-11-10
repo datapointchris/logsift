@@ -98,8 +98,6 @@ extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/datapointchris/logsift
-    - icon: fontawesome/brands/python
-      link: https://pypi.org/project/logsift/
 
   version:
     provider: mike
