@@ -159,18 +159,6 @@ Line 5"""
         Path(log_path).unlink()
 
 
-def test_analyze_log_with_real_fixture(capsys):
-    """Test analyzing the build_error.log fixture."""
-    fixture_path = Path(__file__).parent.parent / 'fixtures' / 'sample_logs' / 'build_error.log'
-
-    if fixture_path.exists():
-        analyze_log(str(fixture_path), output_format='json')
-        captured = capsys.readouterr()
-
-        data = json.loads(captured.out)
-        assert data['stats']['total_errors'] >= 2
-
-
 def test_analyze_log_output_is_valid_json(capsys):
     """Test that JSON output is valid and parseable."""
     log_content = """ERROR: Test error"""

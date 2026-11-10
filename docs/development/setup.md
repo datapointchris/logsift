@@ -250,4 +250,3 @@ uv run mypy src/logsift --show-error-codes
 
 - [Testing Guide](testing.md) - Testing best practices
 - [Code Patterns](patterns.md) - Code standards
-- [Contributing Guide](https://github.com/datapointchris/logsift/blob/main/CONTRIBUTING.md)

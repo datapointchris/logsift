@@ -201,16 +201,20 @@ tags = ["general"]
 
 ### Built-in Patterns
 
-Located in `src/logsift/patterns/defaults/`:
+Located in `src/logsift/patterns/defaults/`, one file per tool or family, and
+`ls src/logsift/patterns/defaults/` lists them:
 
 ```text
 src/logsift/patterns/defaults/
-├── common.toml      # Generic errors
-├── python.toml      # Python-specific
+├── cargo.toml       # Rust/Cargo
+├── common.toml      # Catch-alls such as generic_error, tried last
 ├── npm.toml         # Node.js/npm
-├── rust.toml        # Rust/Cargo
-└── pytest.toml      # Pytest
+├── pre-commit.toml  # Pre-commit hooks and the linters they run, Python's among them
+├── pytest.toml      # Pytest
+└── ...
 ```
+
+A new pattern goes in the file for its tool, so check the listing before creating one.
 
 ### Custom Patterns
 

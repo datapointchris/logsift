@@ -10,18 +10,22 @@ Best practices for testing logsift.
 
 ```text
 tests/
-├── unit/                  # Fast, isolated unit tests
+├── unit/                        # Fast, isolated unit tests, one file per module
 │   ├── test_parser.py
-│   ├── test_extractors.py
-│   ├── test_matchers.py
+│   ├── test_analyzer.py
+│   ├── test_patterns.py
 │   └── ...
-├── integration/           # End-to-end integration tests
+├── integration/                 # End-to-end runs through the CLI
 │   ├── test_cli.py
+│   ├── test_json_contract.py    # validates --format json against schemas/analysis.schema.json
+│   ├── test_logs_cli.py
 │   └── test_workflows.py
-├── fixtures/              # Shared test data
-│   └── sample_logs/
-└── conftest.py           # Shared fixtures and config
+├── fixtures/
+│   └── pre-commit-violations/   # files that fail each linter, for the pre-commit patterns
+└── conftest.py                  # Isolates every test's cache, HOME and XDG directories
 ```
+
+Most tests write their log inline or under `tmp_path` rather than reading a fixture file.
 
 ## Running Tests
 
@@ -237,33 +241,27 @@ def test_cache_manager_creates_log_file(tmp_path):
 
 ## Testing with Real Logs
 
-Create fixtures for real-world logs:
-
-```text
-tests/fixtures/sample_logs/
-├── python_traceback.log
-├── npm_build_error.log
-├── cargo_compile_error.log
-└── pytest_failure.log
-```
-
-Use in tests:
+Keep a captured log beside the tests that read it under `tests/fixtures/`, as
+`tests/unit/test_precommit_patterns.py` does with
+`tests/fixtures/pre-commit-violations/codespell_output.txt`:
 
 ```python
 from pathlib import Path
 
+from logsift.core.analyzer import Analyzer
 
-def test_analyze_real_python_traceback():
-    """Test analyzing real Python traceback."""
-    fixture_path = Path(__file__).parent.parent / 'fixtures' / 'sample_logs' / 'python_traceback.log'
-    log_content = fixture_path.read_text()
 
-    analyzer = Analyzer()
-    result = analyzer.analyze(log_content)
+def test_codespell_output_is_matched():
+    """Real codespell output reaches a codespell pattern."""
+    log_content = Path('tests/fixtures/pre-commit-violations/codespell_output.txt').read_text()
 
-    assert result['stats']['total_errors'] > 0
-    assert any('Traceback' in e['message'] for e in result['errors'])
+    result = Analyzer().analyze(log_content)
+
+    assert [w['pattern_name'] for w in result['warnings']] == ['codespell_typo', 'codespell_typo']
 ```
+
+pre-commit excludes `tests/fixtures/pre-commit-violations/`, so its files may break the very rules
+the hooks enforce.
 
 ## Continuous Testing
 
