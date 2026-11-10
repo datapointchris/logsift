@@ -6,11 +6,11 @@ from pathlib import Path
 import typer
 from rich.console import Console
 
-from logsift.cache.manager import ANALYSIS_RENDERERS
 from logsift.cache.manager import SavedKind
 from logsift.commands.clean import clean_saved_files
 from logsift.commands.find_saved_file import choose_file
 from logsift.commands.find_saved_file import latest_file
+from logsift.output.analysis_format import ANALYSIS_KINDS
 from logsift.output.markdown_formatter import format_markdown
 from logsift.utils.display import display_with_bat
 
@@ -43,4 +43,4 @@ def show_latest_analyzed(name: str | None) -> None:
 
 def clean_analyzed(days: int, dry_run: bool) -> None:
     """Delete the saved analyses older than days, in every format, or with dry_run name each one instead."""
-    clean_saved_files(tuple(ANALYSIS_RENDERERS), days, dry_run, 'analysis file')
+    clean_saved_files(ANALYSIS_KINDS, days, dry_run, 'analysis file')

@@ -17,6 +17,7 @@ from logsift.core.analyzer import Analyzer
 from logsift.monitor.watcher import LogWatcher
 from logsift.output.analysis_format import AnalysisFormat
 from logsift.output.analysis_format import render_analysis
+from logsift.output.analysis_format import renderings_to_save
 from logsift.output.markdown_formatter import format_markdown
 
 console = Console()
@@ -46,7 +47,7 @@ def analyze_log(log_file: str, output_format: str = AnalysisFormat.AUTO, save: b
     analysis_result = analyzer.analyze(log_content)
 
     if save:
-        report_unsaved(CacheManager().save_analysis(analysis_result, log_path.stem))
+        report_unsaved(CacheManager().save_analysis(renderings_to_save(analysis_result), log_path.stem))
 
     print(render_analysis(analysis_result, output_format))
 

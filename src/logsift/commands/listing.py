@@ -10,7 +10,7 @@ from rich.table import Table
 from logsift.cache.manager import CacheManager
 from logsift.cache.manager import SavedKind
 from logsift.commands.find_saved_file import CAPTURE_HINT
-from logsift.commands.find_saved_file import NOUNS
+from logsift.commands.find_saved_file import KIND_TEXT
 from logsift.utils.display import human_size
 
 console = Console()
@@ -44,11 +44,11 @@ def print_listing(kind: SavedKind, as_json: bool, plain: bool, limit: int | None
         return
 
     if not rows:
-        stderr_console.print(f'[yellow]No {NOUNS[kind]} saved yet[/yellow]')
+        stderr_console.print(f'[yellow]No {KIND_TEXT[kind].noun} saved yet[/yellow]')
         stderr_console.print(CAPTURE_HINT)
         return
 
-    table = Table(title=f'Saved {NOUNS[kind]}')
+    table = Table(title=f'Saved {KIND_TEXT[kind].noun}')
     table.add_column('Name', style='white')
     table.add_column('Size', justify='right', style='green')
     table.add_column('Modified (UTC)', style='yellow')

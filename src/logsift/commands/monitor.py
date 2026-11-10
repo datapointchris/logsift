@@ -18,6 +18,7 @@ from logsift.commands.analyze import report_unsaved
 from logsift.core.analyzer import Analyzer
 from logsift.output.analysis_format import AnalysisFormat
 from logsift.output.analysis_format import render_analysis
+from logsift.output.analysis_format import renderings_to_save
 from logsift.utils.notifications import notify_command_complete
 
 stderr_console = Console(stderr=True)
@@ -231,7 +232,7 @@ def monitor_command(
 
     # An appended run reuses an earlier log, whose analysis files belong to that earlier run.
     if log_paths:
-        report_unsaved(cache.save_analysis(analysis_result, log_paths[SavedKind.RAW].stem))
+        report_unsaved(cache.save_analysis(renderings_to_save(analysis_result), log_paths[SavedKind.RAW].stem))
 
     if show_progress:
         stderr_console.print('[bold cyan]## Analysis Summary[/bold cyan]')

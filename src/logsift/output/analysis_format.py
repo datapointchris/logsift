@@ -4,8 +4,10 @@ import enum
 import sys
 from collections.abc import Callable
 from typing import Any
+from typing import NamedTuple
 from typing import TextIO
 
+from logsift.cache.manager import SavedKind
 from logsift.output.json_formatter import format_json
 from logsift.output.markdown_formatter import format_markdown
 from logsift.output.toon_formatter import format_toon
@@ -18,11 +20,18 @@ class AnalysisFormat(enum.StrEnum):
     MARKDOWN = 'markdown'
 
 
-RENDERERS: dict[AnalysisFormat, Callable[[dict[str, Any]], str]] = {
-    AnalysisFormat.JSON: format_json,
-    AnalysisFormat.TOON: format_toon,
-    AnalysisFormat.MARKDOWN: format_markdown,
+class Rendering(NamedTuple):
+    render: Callable[[dict[str, Any]], str]
+    saved_as: SavedKind
+
+
+# Every format an analysis prints in, and the cache directory each run saves it under.
+RENDERINGS = {
+    AnalysisFormat.JSON: Rendering(format_json, SavedKind.JSON),
+    AnalysisFormat.TOON: Rendering(format_toon, SavedKind.TOON),
+    AnalysisFormat.MARKDOWN: Rendering(format_markdown, SavedKind.MD),
 }
+ANALYSIS_KINDS = tuple(rendering.saved_as for rendering in RENDERINGS.values())
 
 
 def resolve_format(requested: str, stream: TextIO | None = None) -> AnalysisFormat:
@@ -41,4 +50,9 @@ def resolve_format(requested: str, stream: TextIO | None = None) -> AnalysisForm
 
 def render_analysis(analysis: dict[str, Any], requested: str, stream: TextIO | None = None) -> str:
     """The analysis as text in the requested format, auto resolved against stream."""
-    return RENDERERS[resolve_format(requested, stream)](analysis)
+    return RENDERINGS[resolve_format(requested, stream)].render(analysis)
+
+
+def renderings_to_save(analysis: dict[str, Any]) -> dict[SavedKind, str]:
+    """The analysis rendered in every format, keyed by the cache directory each is saved under."""
+    return {rendering.saved_as: rendering.render(analysis) for rendering in RENDERINGS.values()}

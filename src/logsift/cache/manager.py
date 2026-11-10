@@ -8,13 +8,10 @@ import datetime as dt
 import enum
 import re
 from collections.abc import Iterable
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Any
 
 from logsift import xdg_dirs
-from logsift.output.json_formatter import format_json
-from logsift.output.markdown_formatter import format_markdown
-from logsift.output.toon_formatter import format_toon
 
 # A saved file's stem is its run's UTC start time in this format, a hyphen, then the run's name.
 STAMP_FORMAT = '%Y-%m-%dT%H:%M:%S'
@@ -31,7 +28,6 @@ class SavedKind(enum.StrEnum):
 
 
 SUFFIXES = {SavedKind.RAW: '.log', SavedKind.JSON: '.json', SavedKind.TOON: '.toon', SavedKind.MD: '.md'}
-ANALYSIS_RENDERERS = {SavedKind.JSON: format_json, SavedKind.TOON: format_toon, SavedKind.MD: format_markdown}
 
 
 def sanitize_name(name: str) -> str:
@@ -69,17 +65,17 @@ class CacheManager:
         stem = f'{dt.datetime.now(tz=dt.UTC).strftime(STAMP_FORMAT)}-{sanitize_name(name)}'
         return {kind: self.directory(kind) / f'{stem}{SUFFIXES[kind]}' for kind in SavedKind}
 
-    def save_analysis(self, analysis: dict[str, Any], stem: str) -> list[str]:
-        """Write the analysis under stem as each analysis kind.
+    def save_analysis(self, renderings: Mapping[SavedKind, str], stem: str) -> list[str]:
+        """Write each rendering of an analysis under stem, in the directory of its kind.
 
         Returns:
             One line per file that could not be written, naming it and the reason
         """
         failures = []
-        for kind, render in ANALYSIS_RENDERERS.items():
+        for kind, text in renderings.items():
             path = self.directory(kind) / f'{stem}{SUFFIXES[kind]}'
             try:
-                path.write_text(render(analysis), encoding='utf-8')
+                path.write_text(text, encoding='utf-8')
             except OSError as fault:
                 failures.append(f'{path}: {fault.strerror or fault}')
         return failures

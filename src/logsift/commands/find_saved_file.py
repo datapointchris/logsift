@@ -7,6 +7,7 @@ group that reaches a saved file answers each one the same way.
 import sys
 from pathlib import Path
 from typing import Annotated
+from typing import NamedTuple
 from typing import NoReturn
 
 import typer
@@ -22,12 +23,20 @@ stderr_console = Console(stderr=True)
 # Printed under every empty-cache message: monitor is the one command that writes logs and analyses.
 CAPTURE_HINT = '[dim]Run `logsift monitor -- <command>` to capture a run and analyze it[/dim]'
 
-# What a kind's files are called in a message.
-NOUNS = {
-    SavedKind.RAW: 'logs',
-    SavedKind.JSON: 'JSON analyses',
-    SavedKind.TOON: 'toon analyses',
-    SavedKind.MD: 'Markdown analyses',
+
+class KindText(NamedTuple):
+    noun: str
+    group_help: str
+    bat_language: str
+
+
+# What a message calls each kind's files, its group's row on the root help screen, and what bat
+# highlights it as. toon is close enough to YAML to read.
+KIND_TEXT = {
+    SavedKind.RAW: KindText('logs', 'Show raw logs, exactly what each run printed, as stored', 'txt'),
+    SavedKind.JSON: KindText('JSON analyses', 'Show saved analyses as the JSON `--format json` prints, as stored', 'json'),
+    SavedKind.TOON: KindText('toon analyses', 'Show saved analyses as the toon a piped run prints, as stored', 'yaml'),
+    SavedKind.MD: KindText('Markdown analyses', 'Show saved analyses as the Markdown a terminal run prints, as stored', 'markdown'),
 }
 
 NameArgument = Annotated[
@@ -40,7 +49,7 @@ IntervalOption = Annotated[int, typer.Option('-i', '--interval', help='Seconds b
 
 def exit_empty(kind: SavedKind) -> NoReturn:
     """Say no file of kind is saved yet, and how to save one, then exit 1."""
-    stderr_console.print(f'[red]Error: no {NOUNS[kind]} saved yet[/red]')
+    stderr_console.print(f'[red]Error: no {KIND_TEXT[kind].noun} saved yet[/red]')
     stderr_console.print(CAPTURE_HINT)
     raise typer.Exit(1)
 
@@ -52,7 +61,7 @@ def latest_file(kind: SavedKind, name: str | None) -> Path:
         return found
     if not name:
         exit_empty(kind)
-    stderr_console.print(f'[red]Error: no saved {NOUNS[kind]} have a run name containing "{name}"[/red]')
+    stderr_console.print(f'[red]Error: no saved {KIND_TEXT[kind].noun} have a run name containing "{name}"[/red]')
     stderr_console.print(f'[dim]Run `logsift {kind} list` to see the saved names[/dim]')
     raise typer.Exit(1)
 
