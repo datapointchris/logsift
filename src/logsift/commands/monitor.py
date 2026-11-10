@@ -7,6 +7,7 @@ import datetime as dt
 import sys
 import time
 from pathlib import Path
+from typing import TextIO
 
 from rich.console import Console
 
@@ -62,6 +63,23 @@ def generate_log_name(command: list[str]) -> str:
         name = name[:50]
 
     return name
+
+
+def stop_logging(handle: TextIO | None, path: Path | None, fault: OSError | None = None) -> None:
+    """Close the run's log. A write that failed, or a close that does, is a warning: the run and its analysis go on."""
+    if fault is not None:
+        stderr_console.print(
+            f'[yellow]Warning: stopped writing {path}: {fault.strerror or fault}. The analysis still covers every line.[/yellow]',
+            soft_wrap=True,
+        )
+    if handle is None:
+        return
+    try:
+        handle.close()
+    except OSError as close_fault:
+        if fault is None:
+            reason = close_fault.strerror or close_fault
+            stderr_console.print(f'[yellow]Warning: the end of {path} was not written: {reason}[/yellow]', soft_wrap=True)
 
 
 def monitor_command(
@@ -125,10 +143,14 @@ def monitor_command(
 
     try:
         if log_file:
-            mode = 'a' if (append and log_file.exists()) else 'w'
-            log_handle = log_file.open(mode, encoding='utf-8', buffering=1)
-            if append and log_file.exists():
-                log_handle.write('\n')
+            try:
+                appending = append and log_file.exists()
+                log_handle = log_file.open('a' if appending else 'w', encoding='utf-8', buffering=1)
+                if appending:
+                    log_handle.write('\n')
+            except OSError as fault:
+                stop_logging(log_handle, log_file, fault)
+                log_handle = None
 
         process = process_runner.stream(command)
 
@@ -144,7 +166,11 @@ def monitor_command(
 
         for line in process.lines():
             if log_handle:
-                log_handle.write(line)
+                try:
+                    log_handle.write(line)
+                except OSError as fault:
+                    stop_logging(log_handle, log_file, fault)
+                    log_handle = None
             output_lines.append(line.rstrip('\n'))
 
             if show_progress:
@@ -162,21 +188,22 @@ def monitor_command(
 
         exit_code = process.wait()
 
-        if log_handle:
-            log_handle.close()
+        stop_logging(log_handle, log_file)
+        log_handle = None
 
     except KeyboardInterrupt:
         stderr_console.print('\n\n[yellow]Interrupted by user[/yellow]')
         if process:
             process.terminate()
-        if log_handle:
-            log_handle.close()
+        stop_logging(log_handle, log_file)
         sys.exit(130)
 
     except Exception as e:
         stderr_console.print(f'\n\n[red]Error monitoring command: {e}[/red]')
-        if log_handle:
-            log_handle.close()
+        # A monitor that exits must not leave the command running unobserved.
+        if process:
+            process.terminate()
+        stop_logging(log_handle, log_file)
         sys.exit(1)
 
     duration = time.time() - start_time
