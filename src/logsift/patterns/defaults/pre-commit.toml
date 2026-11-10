@@ -45,42 +45,6 @@ severity = "warning"
 description = "Shellcheck informational note"
 tags = ["pre-commit", "shellcheck", "shell", "note"]
 
-# Specific shellcheck codes for better detection
-[[patterns]]
-name = "shellcheck_sc2086_quoting"
-regex = "(?P<code>SC2086).*Double quote to prevent globbing"
-severity = "warning"
-description = "Variable expansion needs quoting"
-tags = ["pre-commit", "shellcheck", "quoting", "SC2086"]
-
-[[patterns]]
-name = "shellcheck_sc2155_declare_assign"
-regex = "(?P<code>SC2155).*Declare and assign separately"
-severity = "warning"
-description = "Declaration and assignment should be separate"
-tags = ["pre-commit", "shellcheck", "variables", "SC2155"]
-
-[[patterns]]
-name = "shellcheck_sc2034_unused_var"
-regex = "(?P<code>SC2034).*appears unused"
-severity = "warning"
-description = "Variable defined but not used"
-tags = ["pre-commit", "shellcheck", "unused", "SC2034"]
-
-[[patterns]]
-name = "shellcheck_sc2154_undefined_var"
-regex = "(?P<code>SC2154).*is referenced but not assigned"
-severity = "warning"
-description = "Variable used but not defined"
-tags = ["pre-commit", "shellcheck", "undefined", "SC2154"]
-
-[[patterns]]
-name = "shellcheck_sc2164_cd_fail"
-regex = "(?P<code>SC2164).*Use.*\\|\\| exit.*in case cd fails"
-severity = "warning"
-description = "cd command should handle failure"
-tags = ["pre-commit", "shellcheck", "cd", "SC2164"]
-
 # ============================================================================
 # Python Refactoring Suggestions - refurb
 # ============================================================================
@@ -142,35 +106,6 @@ severity = "error"
 description = "Ruff linting error (code only)"
 tags = ["pre-commit", "ruff", "python", "linting", "error"]
 
-# Specific ruff codes for better detection
-[[patterns]]
-name = "ruff_f401_unused_import"
-regex = "(?P<code>F401).*imported but unused"
-severity = "error"
-description = "Module imported but never used"
-tags = ["pre-commit", "ruff", "import", "F401"]
-
-[[patterns]]
-name = "ruff_e501_line_too_long"
-regex = "(?P<code>E501).*line too long"
-severity = "error"
-description = "Line exceeds maximum length"
-tags = ["pre-commit", "ruff", "formatting", "E501"]
-
-[[patterns]]
-name = "ruff_f841_unused_variable"
-regex = "(?P<code>F841).*local variable.*is assigned to but never used"
-severity = "error"
-description = "Variable assigned but never used"
-tags = ["pre-commit", "ruff", "unused", "F841"]
-
-[[patterns]]
-name = "ruff_f821_undefined_name"
-regex = "(?P<code>F821).*Undefined name"
-severity = "error"
-description = "Name used but not defined"
-tags = ["pre-commit", "ruff", "undefined", "F821"]
-
 # ============================================================================
 # Spell Checking - codespell
 # ============================================================================
@@ -188,7 +123,7 @@ tags = ["pre-commit", "codespell", "spelling", "typo"]
 
 [[patterns]]
 name = "check_yaml_error"
-regex = "^  in \"(.+?)\", line (\\d+), column (\\d+)"
+regex = "^in \"(.+?)\", line (\\d+), column (\\d+)"
 severity = "error"
 description = "YAML syntax error location"
 tags = ["pre-commit", "yaml", "syntax", "validation"]
@@ -233,29 +168,10 @@ tags = ["pre-commit", "security", "private-key", "secrets"]
 name = "bandit_issue_header"
 regex = "^>> Issue: \\[(?P<code>[A-Z]\\d+):[^\\]]+\\] (.+)"
 severity = "warning"
-description = "Bandit security issue header"
+description = "Bandit security issue"
 tags = ["pre-commit", "bandit", "security", "python"]
-
-[[patterns]]
-name = "bandit_severity_high"
-regex = "^   Severity: High"
-severity = "error"
-description = "Bandit high severity security issue"
-tags = ["pre-commit", "bandit", "security", "python", "high-severity"]
-
-[[patterns]]
-name = "bandit_severity_medium"
-regex = "^   Severity: Medium"
-severity = "warning"
-description = "Bandit medium severity security issue"
-tags = ["pre-commit", "bandit", "security", "python", "medium-severity"]
-
-[[patterns]]
-name = "bandit_location"
-regex = "^   Location: (.+?):(\\d+):(\\d+)"
-severity = "warning"
-description = "Bandit issue location"
-tags = ["pre-commit", "bandit", "security", "location"]
+# Its Severity, CWE, More Info and Location lines follow it, so they ride in its context.
+context_lines_after = 4
 
 # ============================================================================
 # Markdown Linting - markdownlint
