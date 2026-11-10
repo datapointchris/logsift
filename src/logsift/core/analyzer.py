@@ -93,7 +93,7 @@ class Analyzer:
                     if entry.get('line_number') == line_number:
                         with suppress(IndexError, ValueError):
                             pattern_context_after = issue.get('pattern_context_lines_after')
-                            context = self.extract_context(log_entries, idx, context_lines_after=pattern_context_after)
+                            context = self._extract_context(log_entries, idx, context_lines_after=pattern_context_after)
                             issue['context_before'] = context['context_before']
                             issue['context_after'] = context['context_after']
                         break
@@ -102,7 +102,7 @@ class Analyzer:
 
         return enhanced
 
-    def extract_context(
+    def _extract_context(
         self,
         log_entries: list[dict[str, Any]],
         error_index: int,

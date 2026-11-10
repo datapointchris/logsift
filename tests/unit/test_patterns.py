@@ -6,14 +6,6 @@ import pytest
 
 from logsift.patterns.loader import PatternLoader
 
-
-def test_pattern_loader_initialization():
-    """Test that pattern loader can be initialized."""
-    loader = PatternLoader()
-    assert loader is not None
-    assert loader.patterns == {}
-
-
 # Built-in Pattern Loading Tests
 
 
@@ -216,8 +208,8 @@ def test_a_pattern_file_with_no_patterns_list_is_refused(tmp_path: Path):
     pattern_file = tmp_path / 'typo.toml'
     pattern_file.write_text('[[pattern]]\nname = "x"\n')
 
-    with pytest.raises(ValueError, match="'patterns' key"):
-        PatternLoader().load_pattern_file(pattern_file)
+    with pytest.raises(ValueError, match=r'typo\.toml'):
+        PatternLoader().load_custom_patterns(tmp_path)
 
 
 # Pattern Access and Retrieval Tests

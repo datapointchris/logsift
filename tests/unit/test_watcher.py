@@ -8,18 +8,6 @@ import pytest
 from logsift.monitor.watcher import LogWatcher
 
 
-def test_log_watcher_initialization(tmp_path):
-    """Test LogWatcher initialization."""
-    log_file = tmp_path / 'test.log'
-    log_file.write_text('initial content\n')
-
-    watcher = LogWatcher(log_file, interval=1)
-
-    assert watcher.log_file == log_file
-    assert watcher.interval == 1
-    assert watcher.stop_requested is False
-
-
 def test_log_watcher_file_not_found(tmp_path):
     """Test that watcher raises error if file doesn't exist."""
     log_file = tmp_path / 'nonexistent.log'
@@ -92,7 +80,7 @@ def test_log_watcher_stop(tmp_path):
     # Wait for thread to finish
     thread.join(timeout=1)
 
-    assert watcher.stop_requested is True
+    assert not thread.is_alive()
 
 
 def test_log_watcher_strips_newlines(tmp_path):
