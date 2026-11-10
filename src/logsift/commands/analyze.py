@@ -11,12 +11,12 @@ from rich.console import Console
 
 from logsift.cache.manager import CacheManager
 from logsift.cache.manager import SavedKind
+from logsift.commands.choose import require_picker
 from logsift.core.analyzer import Analyzer
 from logsift.monitor.watcher import LogWatcher
 from logsift.output.analysis_format import AnalysisFormat
 from logsift.output.analysis_format import render_analysis
 from logsift.output.markdown_formatter import format_markdown
-from logsift.utils.fzf import is_fzf_available
 from logsift.utils.fzf import select_log_file
 
 console = Console()
@@ -57,32 +57,42 @@ def analyze_log(log_file: str, output_format: str = AnalysisFormat.AUTO, save: b
     print(render_analysis(analysis_result, output_format))
 
 
-def log_file_for(argument: str, stream: bool) -> str:
-    """The log file analyze's argument names: a path, `latest` for the newest raw log, or `browse` to pick one."""
-    if argument == 'latest':
+# Words analyze once took in place of a path; a file by one of these names is still analyzed.
+FORMER_SENTINELS = {'latest': '--latest', 'browse': '--choose'}
+
+
+def log_file_for(path: str | None, latest: bool, choose: bool, stream: bool) -> str:
+    """The log file analyze reads: the path given, the newest raw log with latest, or one picked with choose."""
+    if (path is not None) + latest + choose != 1:
+        stderr_console.print('[red]Error: give analyze one of a log file, --latest or --choose[/red]')
+        raise typer.Exit(2)
+
+    if path is not None:
+        if path in FORMER_SENTINELS and not Path(path).exists():
+            stderr_console.print(f'[red]Error: Log file not found: {path}[/red]')
+            stderr_console.print(f'To analyze a captured log, pass {FORMER_SENTINELS[path]}')
+            raise typer.Exit(1)
+        return path
+
+    if latest:
         latest_log = CacheManager().latest(SavedKind.RAW)
         if not latest_log:
             stderr_console.print('[red]Error: No cached logs found[/red]')
             stderr_console.print(CAPTURE_HINT)
             raise typer.Exit(1)
         log_file = str(latest_log)
-    elif argument == 'browse':
-        if not is_fzf_available():
-            stderr_console.print('[red]Error: fzf is not available[/red]')
-            stderr_console.print('[dim]Install fzf to use browse mode[/dim]')
-            raise typer.Exit(1)
+    else:
+        require_picker('`logsift analyze --latest`, or `logsift analyze <path>`')
         logs = CacheManager().listing(SavedKind.RAW)
         if not logs:
             stderr_console.print('[yellow]No cached logs found[/yellow]')
             stderr_console.print(CAPTURE_HINT)
             raise typer.Exit(1)
-        selected = select_log_file(logs, 'Select log file to analyze')
+        selected = select_log_file(logs, 'Choose a log to analyze')
         if not selected:
-            stderr_console.print('[dim]No file selected[/dim]')
+            stderr_console.print('[dim]No file chosen[/dim]')
             raise typer.Exit(0)
         log_file = selected
-    else:
-        return argument
 
     action = 'Stream analyzing' if stream else 'Analyzing'
     stderr_console.print(f'[cyan]{action}: {log_file}[/cyan]\n')

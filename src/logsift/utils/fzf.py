@@ -1,7 +1,4 @@
-"""FZF integration for interactive log browsing.
-
-Provides utilities for using fzf to select log files and browse logs interactively.
-"""
+"""fzf: picking a saved file, and searching a log's lines."""
 
 import shutil
 from pathlib import Path
@@ -93,18 +90,18 @@ def select_log_file(log_files: list[dict[str, str | int]], prompt: str = 'Select
         return None
 
 
-def browse_log_with_preview(log_path: Path) -> bool:
+def search_log_lines(log_path: Path) -> bool:
     """Open a log file in fzf for interactive browsing with preview.
 
     Args:
-        log_path: Path to log file to browse
+        log_path: Path to the log to search
 
     Returns:
         True if browsing was successful, False otherwise
 
     Example:
         log_path = Path("/path/to/log.log")
-        browse_log_with_preview(log_path)
+        search_log_lines(log_path)
     """
     if not is_fzf_available():
         return False

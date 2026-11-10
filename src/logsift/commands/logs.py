@@ -1,9 +1,5 @@
-"""Logs subcommand implementation.
+"""The `logs` group: each run's raw log, as the command printed it."""
 
-Lists and manages cached log files.
-"""
-
-import sys
 from pathlib import Path
 
 import typer
@@ -13,11 +9,11 @@ from logsift.cache.manager import CacheManager
 from logsift.cache.manager import SavedKind
 from logsift.commands.analyze import CAPTURE_HINT
 from logsift.commands.analyze import analyze_log
+from logsift.commands.choose import require_picker
 from logsift.commands.clean import clean_saved_files
 from logsift.utils.display import display_file_with_bat
 from logsift.utils.display import tail_file
-from logsift.utils.fzf import browse_log_with_preview
-from logsift.utils.fzf import is_fzf_available
+from logsift.utils.fzf import search_log_lines
 from logsift.utils.fzf import select_log_file
 
 console = Console()
@@ -29,17 +25,14 @@ def clean_logs(days: int = 90, dry_run: bool = False) -> None:
     clean_saved_files((SavedKind.RAW,), days, dry_run, 'log file')
 
 
-def browse_logs(action: str = 'select', interval: int = 1) -> None:
-    """Pick a raw log with fzf, then analyze it, page it ('view'), or tail it.
+def choose_log(action: str = 'select', interval: int = 1) -> None:
+    """Pick a raw log with fzf, then analyze it, search it ('view'), or tail it.
 
     Args:
-        action: 'select' to analyze the pick, 'view' to page it, or 'tail' to follow it
+        action: 'select' to analyze the pick, 'view' to search its lines, or 'tail' to follow it
         interval: Seconds between checks when tailing
     """
-    if not is_fzf_available():
-        stderr_console.print('[red]Error: fzf is not installed or not in PATH[/red]')
-        stderr_console.print('[dim]Install fzf: https://github.com/junegunn/fzf#installation[/dim]')
-        sys.exit(1)
+    require_picker('`logsift logs latest <name>`, or `logsift analyze <path>`')
 
     logs = CacheManager().listing(SavedKind.RAW)
     if not logs:
@@ -57,10 +50,10 @@ def browse_logs(action: str = 'select', interval: int = 1) -> None:
         stderr_console.print(f'[cyan]Analyzing: {selected_path}[/cyan]')
         analyze_log(selected_path, output_format='markdown')
     elif action == 'view':
-        if browse_log_with_preview(Path(selected_path)):
-            stderr_console.print(f'[dim]Browsed: {selected_path}[/dim]')
+        if search_log_lines(Path(selected_path)):
+            stderr_console.print(f'[dim]Searched: {selected_path}[/dim]')
         else:
-            stderr_console.print('[red]Error browsing log file[/red]')
+            stderr_console.print('[red]Error searching the log[/red]')
     else:
         tail_file(Path(selected_path), interval=interval)
 

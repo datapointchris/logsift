@@ -177,7 +177,7 @@ files share a stem, its UTC start time and a name made from the command:
   └── md/     2025-11-28T14:30:22-make-build.md
 ```
 
-`logsift logs list` lists the raw logs, and `logsift analyze latest` re-runs the patterns over the
+`logsift logs list` lists the raw logs, and `logsift analyze --latest` re-runs the patterns over the
 newest one.
 
 Clean old raw logs (older than 90 days by default) and old analyses (older than 30 days):
@@ -238,8 +238,8 @@ uv tool uninstall logsift
 
 logsift starts four programs when they are on `PATH`, and works without each:
 
-- `fzf`: the `browse` commands pick a file with it. Without it they exit 1 and say to install it.
-- `bat`: `latest` and `browse` page a file through it. Without it the file prints as plain text.
+- `fzf`: the `choose` commands pick a file with it. Without it they exit 1 and say to install it.
+- `bat`: `latest` and `choose` page a file through it. Without it the file prints as plain text.
 - `notify-send` on Linux, `osascript` on macOS: `monitor --notify` posts through it. Without it
   monitor says on stderr that no notification was sent.
 

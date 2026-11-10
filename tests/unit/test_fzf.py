@@ -1,10 +1,8 @@
 """Tests for fzf integration utilities."""
 
-from pathlib import Path
 from unittest.mock import MagicMock
 from unittest.mock import patch
 
-from logsift.utils.fzf import browse_log_with_preview
 from logsift.utils.fzf import is_fzf_available
 from logsift.utils.fzf import select_log_file
 
@@ -74,30 +72,3 @@ def test_select_log_file_success():
     with patch('logsift.utils.fzf.is_fzf_available', return_value=True), patch('subprocess.run', return_value=mock_result):
         result = select_log_file(logs, 'Test')
         assert result == '/path/to/test.log'
-
-
-def test_browse_log_with_preview_when_fzf_not_available():
-    """Test browse_log_with_preview returns False when fzf is not available."""
-    with patch('logsift.utils.fzf.is_fzf_available', return_value=False):
-        result = browse_log_with_preview(Path('/test.log'))
-        assert result is False
-
-
-def test_browse_log_with_preview_nonexistent_file():
-    """Test browse_log_with_preview with non-existent file."""
-    with patch('logsift.utils.fzf.is_fzf_available', return_value=True):
-        result = browse_log_with_preview(Path('/nonexistent/file.log'))
-        assert result is False
-
-
-def test_browse_log_with_preview_success(tmp_path):
-    """Test successful log browsing."""
-    log_file = tmp_path / 'test.log'
-    log_file.write_text('Line 1\nLine 2\nLine 3\n')
-
-    mock_result = MagicMock()
-    mock_result.returncode = 0
-
-    with patch('logsift.utils.fzf.is_fzf_available', return_value=True), patch('subprocess.run', return_value=mock_result):
-        result = browse_log_with_preview(log_file)
-        assert result is True

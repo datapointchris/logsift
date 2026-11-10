@@ -18,7 +18,7 @@ from logsift.cache.manager import SavedKind
 from logsift.commands.analyze import analyze_log
 from logsift.commands.analyze import log_file_for
 from logsift.commands.analyze import stream_analyze_log
-from logsift.commands.analyzed import browse_analyzed
+from logsift.commands.analyzed import choose_analysis
 from logsift.commands.analyzed import clean_analyzed
 from logsift.commands.analyzed import show_latest_analyzed
 from logsift.commands.config import show_config
@@ -27,7 +27,7 @@ from logsift.commands.listing import LimitOption
 from logsift.commands.listing import ListFormat
 from logsift.commands.listing import ListFormatOption
 from logsift.commands.listing import print_listing
-from logsift.commands.logs import browse_logs
+from logsift.commands.logs import choose_log
 from logsift.commands.logs import clean_logs
 from logsift.commands.logs import show_latest_log
 from logsift.commands.monitor import monitor_command
@@ -42,7 +42,7 @@ app = typer.Typer(
         'LLM-optimized log analysis for automated error diagnosis.\n\n'
         'Start with `logsift monitor -- <command>`. It runs the command, saves its output '
         'and prints the errors it found. Reach for `logsift analyze` only when the log '
-        'already exists: a file another tool wrote, or `latest` to re-run the patterns '
+        'already exists: a file another tool wrote, or `--latest` to re-run the patterns '
         'over the last capture.\n\n'
         '`logs` holds what a run printed, and `analyzed` holds what logsift found in it, '
         'rendered as Markdown. Open `logs` to read the raw output, and `analyzed` to reread the '
@@ -61,7 +61,7 @@ app = typer.Typer(
         '  # Print only the analysis, as JSON\n'
         '  logsift monitor --minimal --format json -- pytest tests/\n'
         '  # Re-run the patterns over the last capture\n'
-        '  logsift analyze latest\n'
+        '  logsift analyze --latest\n'
         '  # Reread the newest analysis of a run named build\n'
         '  logsift analyzed latest build\n\n'
         '`logsift <command> --help` describes one command.'
@@ -204,10 +204,9 @@ def monitor(
 @app.command(rich_help_panel=ANALYZE_PANEL, no_args_is_help=True)
 def analyze(
     ctx: typer.Context,
-    log_file: Annotated[
-        str,
-        typer.Argument(help='Path to log file, "latest" for most recent, or "browse" to select with fzf'),
-    ],
+    log_file: Annotated[str | None, typer.Argument(help='The log file to analyze')] = None,
+    latest: Annotated[bool, typer.Option('--latest', help='Analyze the newest log monitor captured')] = False,
+    choose: Annotated[bool, typer.Option('--choose', help='Pick a log monitor captured with fzf. Needs a terminal')] = False,
     format: Annotated[
         AnalysisFormat,
         typer.Option(
@@ -252,12 +251,12 @@ def analyze(
     Examples:
         logsift analyze /var/log/app.log
         logsift analyze --format json build.log
-        logsift analyze latest
-        logsift analyze latest --no-save
-        logsift analyze latest --stream
-        logsift analyze browse
+        logsift analyze --latest
+        logsift analyze --latest --no-save
+        logsift analyze --latest --stream
+        logsift analyze --choose
     """
-    log_file = log_file_for(log_file, stream)
+    log_file = log_file_for(log_file, latest, choose, stream)
     if stream:
         stream_analyze_log(log_file, interval=interval)
     else:
@@ -341,49 +340,27 @@ def logs_clean(
     clean_logs(days=days, dry_run=dry_run)
 
 
-@logs_app.command('browse')
-def logs_browse(
-    view: Annotated[
-        bool,
-        typer.Option(
-            '--view',
-            help='Browse raw file content instead of analyzing (useful for inspection)',
-        ),
-    ] = False,
-    tail: Annotated[
-        bool,
-        typer.Option(
-            '--tail',
-            help='Tail the selected log file in real-time',
-        ),
-    ] = False,
-    interval: Annotated[
-        int,
-        typer.Option(
-            '-i',
-            '--interval',
-            help='Update interval in seconds when tailing',
-        ),
-    ] = 1,
+@logs_app.command('choose')
+def logs_choose(
+    view: Annotated[bool, typer.Option('--view', help="Search the chosen log's lines in fzf instead of analyzing it")] = False,
+    tail: Annotated[bool, typer.Option('--tail', help='Tail the chosen log in real-time instead of analyzing it')] = False,
+    interval: Annotated[int, typer.Option('-i', '--interval', help='Update interval in seconds when tailing')] = 1,
 ) -> None:
-    """Browse and search cached log files interactively using fzf.
+    """Pick a cached log with fzf, then analyze it, search it or tail it.
 
-    Opens an interactive fuzzy-finder interface to search and select from
-    cached logs. By default, analyzes the selected file. Use --view to browse
-    raw content, or --tail to tail it in real-time.
-
-    Requires fzf to be installed (see https://github.com/junegunn/fzf#installation).
+    Needs a terminal and fzf. Without a terminal it exits 2 and names the
+    command that takes the log by name instead.
 
     \b
     Examples:
-        # Browse and analyze a cached log
-        logsift logs browse
+        # Pick a log and analyze it
+        logsift logs choose
 
-        # Browse raw file content (no analysis)
-        logsift logs browse --view
+        # Pick a log and search its lines
+        logsift logs choose --view
 
-        # Browse and tail a log file
-        logsift logs browse --tail
+        # Pick a log and tail it
+        logsift logs choose --tail
     """
     if tail:
         action = 'tail'
@@ -392,7 +369,7 @@ def logs_browse(
     else:
         action = 'select'
 
-    browse_logs(action=action, interval=interval)
+    choose_log(action=action, interval=interval)
 
 
 @logs_app.command('latest')
@@ -452,20 +429,18 @@ def analyzed_list(format: ListFormatOption = ListFormat.TABLE, limit: LimitOptio
     print_listing(SavedKind.JSON, format, limit, 'Saved Analysis Results', 'No saved analyses found')
 
 
-@analyzed_app.command('browse')
-def analyzed_browse() -> None:
-    """Browse saved analyses interactively with fzf.
+@analyzed_app.command('choose')
+def analyzed_choose() -> None:
+    """Pick a saved analysis with fzf and page it as Markdown.
 
-    Opens an interactive fuzzy-finder to search and select from saved analyses,
-    then displays the selected analysis result.
-
-    Requires fzf to be installed (see https://github.com/junegunn/fzf#installation).
+    Needs a terminal and fzf. Without a terminal it exits 2 and names the
+    command that takes the analysis by name instead.
 
     \b
     Examples:
-        logsift analyzed browse
+        logsift analyzed choose
     """
-    browse_analyzed()
+    choose_analysis()
 
 
 @analyzed_app.command('latest')

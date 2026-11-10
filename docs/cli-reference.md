@@ -166,7 +166,7 @@ logsift logs [SUBCOMMAND]
 
 - `list` - List all cached log files
 - `clean` - Delete cached logs older than `--days`, else `LOGSIFT_RETENTION_DAYS`, else `logs.clean.delete_older_than_days` in `config.toml`, else 90. `--dry-run` previews
-- `browse` - Pick a cached log with fzf
+- `choose` - Pick a cached log with fzf
 - `latest [NAME]` - Show the newest log, or the newest whose name contains NAME
 
 **Examples:**
@@ -191,7 +191,7 @@ logsift analyzed [SUBCOMMAND]
 **Subcommands:**
 
 - `list` - List the saved analyses in `json/`
-- `browse` - Pick a saved analysis with fzf
+- `choose` - Pick a saved analysis with fzf
 - `latest` - Show the newest saved analysis
 - `clean` - Delete the `json/`, `toon/` and `md/` analyses older than `--days`, else `analyzed.clean.delete_older_than_days` in `config.toml`, else 30. `--dry-run` previews
 
@@ -321,7 +321,7 @@ four files that share a stem, its UTC start time and a name made from the comman
 ```
 
 `logsift analyze <file>` writes only the `json/`, `toon/` and `md/` files, named after the log
-file. `logsift logs list`, `logs latest` and `logs browse` read `raw/`, and `logsift analyzed`
+file. `logsift logs list`, `logs latest` and `logs choose` read `raw/`, and `logsift analyzed`
 reads `json/`.
 
 ### Cache Cleanup
@@ -478,7 +478,7 @@ logsift analyze app.log --format=json | jq -r '.errors[].file_references[]? | "\
 
 ### fzf (Fuzzy Finding)
 
-`logsift logs browse` and `logsift analyze browse` pick a cached log with fzf.
+`logsift logs choose` and `logsift analyze --choose` pick a cached log with fzf.
 
 ```bash
 # Interactively select a cached log

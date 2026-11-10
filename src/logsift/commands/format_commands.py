@@ -8,13 +8,13 @@ from rich.console import Console
 
 from logsift.cache.manager import CacheManager
 from logsift.cache.manager import SavedKind
+from logsift.commands.choose import require_picker
 from logsift.commands.listing import LimitOption
 from logsift.commands.listing import ListFormat
 from logsift.commands.listing import ListFormatOption
 from logsift.commands.listing import print_listing
 from logsift.utils.display import display_file_with_bat
 from logsift.utils.display import tail_file
-from logsift.utils.fzf import is_fzf_available
 from logsift.utils.fzf import select_log_file
 
 console = Console()
@@ -33,10 +33,10 @@ BAT_LANGUAGES = {SavedKind.RAW: 'txt', SavedKind.JSON: 'json', SavedKind.TOON: '
 
 
 def create_format_commands(kind: SavedKind) -> typer.Typer:
-    """The `list`, `latest` and `browse` commands over one kind of saved file."""
+    """The `list`, `latest` and `choose` commands over one kind of saved file."""
     examples = '\n'.join(
         f'  logsift {kind} {invocation}'
-        for invocation in ('list -n 10', 'list --format json', 'latest', 'latest pytest', 'latest build --tail', 'browse')
+        for invocation in ('list -n 10', 'list --format json', 'latest', 'latest pytest', 'latest build --tail', 'choose')
     )
     app = typer.Typer(
         name=kind,
@@ -89,8 +89,8 @@ def create_format_commands(kind: SavedKind) -> typer.Typer:
         stderr_console.print(f'[cyan]Latest {kind}: {file_path}[/cyan]\n')
         show(file_path, tail, interval)
 
-    @app.command('browse')
-    def format_browse(
+    @app.command('choose')
+    def format_choose(
         tail: Annotated[
             bool,
             typer.Option(
@@ -107,14 +107,8 @@ def create_format_commands(kind: SavedKind) -> typer.Typer:
             ),
         ] = 1,
     ) -> None:
-        """Pick a file with fzf, then show or tail it.
-
-        Requires fzf to be installed (see https://github.com/junegunn/fzf#installation).
-        """
-        if not is_fzf_available():
-            stderr_console.print('[red]Error: fzf is not installed or not in PATH[/red]')
-            stderr_console.print('[dim]Install fzf: https://github.com/junegunn/fzf#installation[/dim]')
-            raise typer.Exit(1)
+        """Pick a file with fzf, then show or tail it. Needs a terminal and fzf."""
+        require_picker(f'`logsift {kind} latest <name>`')
 
         files = CacheManager().listing(kind)
         if not files:

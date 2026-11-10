@@ -154,7 +154,7 @@ Every `monitor` run saves the raw log under `$XDG_CACHE_HOME/logsift/raw/` and i
 `json/`, `toon/` and `md/`, with `~/.cache/logsift` as the default:
 
 ```bash
-logsift analyze latest --format=json   # re-run the patterns over the last capture
+logsift analyze --latest --format=json # re-run the patterns over the last capture
 logsift analyzed latest                # reread the last saved analysis
 ```
 

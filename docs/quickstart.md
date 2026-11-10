@@ -53,7 +53,7 @@ logsift monitor --format=json -- npm run build
 ```
 
 The raw log is saved under `~/.cache/logsift/raw/`, or `$XDG_CACHE_HOME/logsift/raw/`, and
-`logsift analyze latest` analyzes it again.
+`logsift analyze --latest` analyzes it again.
 
 ## Analyze an Existing Log
 

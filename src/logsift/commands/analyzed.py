@@ -10,10 +10,10 @@ from logsift.cache.manager import ANALYSIS_RENDERERS
 from logsift.cache.manager import CacheManager
 from logsift.cache.manager import SavedKind
 from logsift.commands.analyze import CAPTURE_HINT
+from logsift.commands.choose import require_picker
 from logsift.commands.clean import clean_saved_files
 from logsift.output.markdown_formatter import format_markdown
 from logsift.utils.display import display_with_bat
-from logsift.utils.fzf import is_fzf_available
 from logsift.utils.fzf import select_log_file
 
 console = Console()
@@ -30,12 +30,9 @@ def show_analysis(json_path: Path) -> None:
     display_with_bat(format_markdown(analysis), language='markdown', filename=json_path.name)
 
 
-def browse_analyzed() -> None:
+def choose_analysis() -> None:
     """Pick a saved analysis with fzf and page it as Markdown."""
-    if not is_fzf_available():
-        stderr_console.print('[red]Error: fzf is not installed or not in PATH[/red]')
-        stderr_console.print('[dim]Install fzf: https://github.com/junegunn/fzf#installation[/dim]')
-        raise typer.Exit(1)
+    require_picker('`logsift analyzed latest <name>`')
 
     analyses = CacheManager().listing(SavedKind.JSON)
     if not analyses:

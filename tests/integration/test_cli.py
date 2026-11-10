@@ -1,7 +1,9 @@
 """Integration tests for CLI interface."""
 
+import typer
 from typer.testing import CliRunner
 
+from logsift.cli import BROWSE_PANEL
 from logsift.cli import app
 
 runner = CliRunner()
@@ -41,3 +43,20 @@ def test_analyze_command():
     result = runner.invoke(app, ['analyze', '/nonexistent/file.log'])
     # Should handle error gracefully
     assert result.exit_code == 1
+
+
+def test_every_saved_file_group_offers_list_latest_and_choose():
+    root = typer.main.get_command(app)
+    groups = [command for command in getattr(root, 'commands', {}).values() if getattr(command, 'rich_help_panel', None) == BROWSE_PANEL]
+
+    assert groups
+    for group in groups:
+        assert {'list', 'latest', 'choose'} <= set(group.commands), group.name
+
+
+def test_choose_without_a_terminal_exits_at_once_naming_the_command_that_needs_none():
+    for args, instead in ((['logs', 'choose'], 'logsift logs latest'), (['analyze', '--choose'], 'logsift analyze --latest')):
+        result = runner.invoke(app, args)
+
+        assert result.exit_code == 2
+        assert instead in ' '.join(result.stderr.split())
