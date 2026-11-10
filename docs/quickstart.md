@@ -52,7 +52,8 @@ logsift monitor -n my-app-build -- npm run build
 logsift monitor --format=json -- npm run build
 ```
 
-The log is automatically saved to `~/.cache/logsift/monitor/` for later analysis.
+The raw log is saved under `~/.cache/logsift/raw/`, or `$XDG_CACHE_HOME/logsift/raw/`, and
+`logsift analyze latest` analyzes it again.
 
 ## Analyze an Existing Log
 
@@ -203,7 +204,8 @@ See [Config Format](api/config-format.md) for all options.
 
 ## Cache Management
 
-Logs are automatically saved to `~/.cache/logsift/monitor/`. Clean old logs:
+Raw logs are saved to `~/.cache/logsift/raw/`, and their analyses beside them under `json/`,
+`toon/` and `md/`. Clean old logs:
 
 ```python
 from logsift.cache.rotation import clean_old_logs

@@ -180,16 +180,18 @@ Memory therefore grows with the log, because the whole file is read before analy
 ## Caching Strategy
 
 ```text
-~/.cache/logsift/
-├── monitor/               # Monitored command logs
-│   └── <name>-<timestamp>.log
-└── default/              # Other logs
+$XDG_CACHE_HOME/logsift/      # else ~/.cache/logsift/
+├── raw/<stem>.log            # what a monitored command printed
+├── json/<stem>.json          # its analysis, in each output format
+├── toon/<stem>.toon
+└── md/<stem>.md
 ```
 
-Cache hit: Re-analyze existing log file
-Cache miss: Save new log for future analysis
+`CacheManager.create_paths(name)` builds the stem as `<UTC timestamp>-<name>`. `monitor` writes all
+four files. `analyze <file>` writes only the three analyses, named after the log file.
 
-Rotation: Automatic cleanup after `retention_days`
+Nothing is cleaned automatically. `logsift logs clean` deletes raw logs older than `--days`, 90 by
+default.
 
 ## See Also
 

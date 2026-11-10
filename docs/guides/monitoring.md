@@ -17,11 +17,11 @@ Organize logs with custom names:
 ```bash
 # Default: uses command name
 logsift monitor -- npm run build
-# Saved as: ~/.cache/logsift/monitor/npm-TIMESTAMP.log
+# Saved as: ~/.cache/logsift/raw/<UTC timestamp>-npm-run-build.log
 
 # Custom name
 logsift monitor -n my-app-build -- npm run build
-# Saved as: ~/.cache/logsift/monitor/my-app-build-TIMESTAMP.log
+# Saved as: ~/.cache/logsift/raw/<UTC timestamp>-my-app-build.log
 ```
 
 ## Output Formats
@@ -123,14 +123,16 @@ logsift monitor -- make build | tee build-analysis.txt
 
 ## Cache Management
 
-Monitored logs are saved to `~/.cache/logsift/monitor/`:
+Monitored logs are saved to `~/.cache/logsift/raw/`, or `$XDG_CACHE_HOME/logsift/raw/`, and each
+run's analysis beside them under `json/`, `toon/` and `md/`:
 
 ```bash
 # List recent logs
-ls -lt ~/.cache/logsift/monitor/ | head
+logsift logs list
 
-# Re-analyze old log
-logsift analyze ~/.cache/logsift/monitor/npm-20240115_103000.log
+# Re-analyze the newest log, or one by its path
+logsift analyze latest
+logsift analyze ~/.cache/logsift/raw/2024-01-15T10:30:00-npm-run-build.log
 ```
 
 Clean old logs:

@@ -267,7 +267,7 @@ After installation, verify everything works:
 - [ ] `logsift --version` prints a version rather than `unknown`
 - [ ] `logsift --help` displays help message
 - [ ] `logsift monitor -- echo test` executes successfully
-- [ ] `~/.cache/logsift/monitor/` directory created
+- [ ] `logsift logs list` shows the log that run saved under `~/.cache/logsift/raw/`
 - [ ] JSON output works: `logsift monitor --format=json -- echo test`
 - [ ] Markdown output works: `logsift monitor --format=markdown -- echo test`
 

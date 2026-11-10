@@ -82,8 +82,9 @@ logsift monitor -- uv run python -m pytest --cov=myapp
 
 1. Runs the command and captures all output
 2. Analyzes output for errors, warnings, and patterns
-3. Saves log to `~/.cache/logsift/monitor/`
-4. Outputs structured analysis (JSON or Markdown)
+3. Saves the raw log to `$XDG_CACHE_HOME/logsift/raw/<timestamp>-<name>.log` (default
+   `~/.cache/logsift`), and the analysis under `json/`, `toon/` and `md/` with the same stem
+4. Prints the analysis in the chosen format
 
 ### Watching a Growing Log
 
@@ -156,14 +157,19 @@ default_format = "auto"  # auto, json, markdown
 
 ### Cache Management
 
-Logs are automatically saved to `~/.cache/logsift/`:
+Every `monitor` run saves to `$XDG_CACHE_HOME/logsift/`, else `~/.cache/logsift/`. One run's
+files share a stem, its UTC start time and a name made from the command:
 
 ```text
 ~/.cache/logsift/
-  ├── monitor/          # Logs from monitored commands
-  │   └── make-20231128_143022.log
-  └── default/          # Other logs
+  ├── raw/    2025-11-28T14:30:22-make-build.log    # what the command printed
+  ├── json/   2025-11-28T14:30:22-make-build.json   # the analysis, as --format json prints it
+  ├── toon/   2025-11-28T14:30:22-make-build.toon
+  └── md/     2025-11-28T14:30:22-make-build.md
 ```
+
+`logsift logs list` lists the raw logs, and `logsift analyze latest` re-runs the patterns over the
+newest one.
 
 Clean old logs (older than 90 days by default):
 

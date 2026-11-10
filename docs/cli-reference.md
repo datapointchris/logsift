@@ -83,7 +83,7 @@ logsift monitor --append -- pytest tests/test_feature.py
 **Behavior:**
 
 1. Runs the command and captures all output (stdout + stderr)
-2. Saves log to `~/.cache/logsift/monitor/<name>-<timestamp>.log`
+2. Saves the raw log to `$XDG_CACHE_HOME/logsift/raw/<timestamp>-<name>.log` (default `~/.cache/logsift`)
 3. Analyzes output for errors, warnings, and patterns
 4. Prints the analysis in the chosen format
 5. Exits with command's exit code (0 for success, non-zero for failure)
@@ -290,16 +290,20 @@ Create the missing file or fix the import path
 
 ### Cache Location
 
-Logs are saved to `~/.cache/logsift/`:
+Logs are saved to `$XDG_CACHE_HOME/logsift/`, else `~/.cache/logsift/`. One `monitor` run writes
+four files that share a stem, its UTC start time and a name made from the command or `-n`:
 
 ```text
 ~/.cache/logsift/
-├── monitor/                    # Monitored command logs
-│   ├── npm-20240115_103000.log
-│   ├── pytest-20240115_110000.log
-│   └── cargo-20240115_120000.log
-└── default/                    # Other logs
+├── raw/2024-01-15T10:30:00-npm-run-build.log    # what the command printed
+├── json/2024-01-15T10:30:00-npm-run-build.json  # the analysis in each format
+├── toon/2024-01-15T10:30:00-npm-run-build.toon
+└── md/2024-01-15T10:30:00-npm-run-build.md
 ```
+
+`logsift analyze <file>` writes only the `json/`, `toon/` and `md/` files, named after the log
+file. `logsift logs list`, `logs latest` and `logs browse` read `raw/`, and `logsift analyzed`
+reads `json/`.
 
 ### Cache Cleanup
 
