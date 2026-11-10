@@ -3,6 +3,9 @@
 This module defines the primary logsift command-line interface with subcommands for monitoring, analyzing, and managing logs.
 """
 
+import json
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import distribution
 from typing import Annotated
 from typing import cast
 
@@ -80,10 +83,23 @@ ANALYZE_PANEL = 'Analyze'
 BROWSE_PANEL = 'Browse saved runs'
 
 
+def installed_commit() -> str | None:
+    """The commit uv records in direct_url.json for a git install, or None for any other install.
+
+    A branch install reports one version for many commits, so the commit is what names the build.
+    """
+    try:
+        recorded = json.loads(distribution('logsift').read_text('direct_url.json') or '{}')
+        return recorded.get('vcs_info', {}).get('commit_id')
+    except (PackageNotFoundError, ValueError, AttributeError):
+        return None
+
+
 def version_callback(value: bool) -> None:
-    """Display version information."""
+    """Print `logsift <version>`, then ` @ <sha8>` for a git install."""
     if value:
-        console.print(f'logsift {__version__}')
+        commit = installed_commit()
+        console.print(f'logsift {__version__} @ {commit[:8]}' if commit else f'logsift {__version__}')
         raise typer.Exit()
 
 
