@@ -1,222 +1,39 @@
-"""Logs subcommand implementation.
-
-Lists and manages cached log files.
-"""
-
-import datetime as dt
-import json
-import sys
-import time
-from pathlib import Path
+"""What only the `logs` group does with a raw log: analyze, search or tail the one chosen, and clean."""
 
 from rich.console import Console
-from rich.table import Table
 
-from logsift.cache.manager import CacheManager
-from logsift.cache.rotation import clean_old_logs
+from logsift.cache.manager import SavedKind
 from logsift.commands.analyze import analyze_log
-from logsift.utils.fzf import browse_log_with_preview
-from logsift.utils.fzf import is_fzf_available
-from logsift.utils.fzf import select_log_file
+from logsift.commands.clean import clean_saved_files
+from logsift.commands.find_saved_file import choose_file
+from logsift.utils.display import tail_file
+from logsift.utils.fzf import search_log_lines
 
-console = Console()
 stderr_console = Console(stderr=True)
-
-# Printed under every empty-cache message: monitor is the one command that writes logs and analyses.
-CAPTURE_HINT = '[dim]Run `logsift monitor -- <command>` to capture a run and analyze it[/dim]'
-
-
-def list_logs(output_format: str = 'table') -> None:
-    """List cached log files.
-
-    Args:
-        output_format: Output format (table, json, plain)
-    """
-    cache = CacheManager()
-    logs = cache.list_all_logs()
-
-    if not logs:
-        stderr_console.print('[yellow]No cached logs found[/yellow]')
-        stderr_console.print(CAPTURE_HINT)
-        return
-
-    if output_format == 'json':
-        print(json.dumps(logs, indent=2))
-    elif output_format == 'plain':
-        for log in logs:
-            print(f'{log["path"]}\t{log["size_bytes"]}\t{log["modified_iso"]}')
-    else:
-        # Table format (default)
-        table = Table(title='Cached Log Files')
-        table.add_column('Name', style='white')
-        table.add_column('Size', justify='right', style='green')
-        table.add_column('Modified', style='yellow')
-
-        for log in logs:
-            # Format size in human-readable format
-            size_bytes = int(log['size_bytes'])  # Always int from CacheManager
-            if size_bytes < 1024:
-                size_str = f'{size_bytes} B'
-            elif size_bytes < 1024 * 1024:
-                size_str = f'{size_bytes / 1024:.1f} KB'
-            else:
-                size_str = f'{size_bytes / (1024 * 1024):.1f} MB'
-
-            # Truncate name if too long
-            name = str(log['name'])  # Always str from CacheManager
-            if len(name) > 60:
-                name = name[:57] + '...'
-
-            # Format timestamp
-            modified = str(log['modified_iso']).split('T')[0]  # Just the date
-
-            table.add_row(name, size_str, modified)
-
-        console.print(table)
-        console.print(f'\n[dim]Total: {len(logs)} log file(s)[/dim]')
 
 
 def clean_logs(days: int = 90, dry_run: bool = False) -> None:
-    """Clean old log files from cache.
+    """Delete raw logs older than days, or with dry_run name each one instead."""
+    clean_saved_files((SavedKind.RAW,), days, dry_run, 'log file')
+
+
+def choose_log(action: str = 'select', interval: int = 1) -> None:
+    """Pick a raw log with fzf, then analyze it, search it ('view'), or tail it.
 
     Args:
-        days: Number of days to retain (delete older files)
-        dry_run: If True, show what would be deleted without deleting
+        action: 'select' to analyze the pick, 'view' to search its lines, or 'tail' to follow it
+        interval: Seconds between checks when tailing
     """
-    cache = CacheManager()
+    prompts = {'select': 'Choose a log to analyze', 'view': 'Choose a log to search', 'tail': 'Choose a log to tail'}
+    chosen = choose_file(SavedKind.RAW, prompts[action], '`logsift logs latest <name>`, or `logsift analyze <path>`')
 
-    if not cache.cache_dir.exists():
-        stderr_console.print('[yellow]No cache directory found[/yellow]')
-        return
-
-    if dry_run:
-        # Show what would be deleted
-        cutoff_time = dt.datetime.now(tz=dt.UTC) - dt.timedelta(days=days)
-        cutoff_timestamp = cutoff_time.timestamp()
-
-        to_delete = []
-        for log_file in cache.cache_dir.rglob('*.log'):
-            if log_file.is_file():
-                mtime = log_file.stat().st_mtime
-                if mtime < cutoff_timestamp:
-                    to_delete.append(log_file)
-
-        if not to_delete:
-            console.print(f'[green]No log files older than {days} days[/green]')
-            return
-
-        console.print(f'[yellow]Would delete {len(to_delete)} log file(s) older than {days} days:[/yellow]')
-        for log_file in to_delete[:10]:  # Show first 10
-            # soft_wrap prevents Rich from wrapping long paths mid-filename on narrow/non-TTY output
-            console.print(f'  - {log_file}', soft_wrap=True)
-        if len(to_delete) > 10:
-            console.print(f'  ... and {len(to_delete) - 10} more')
-
-        console.print('\n[dim]Run without --dry-run to actually delete[/dim]')
-    else:
-        # Actually delete
-        deleted_count = clean_old_logs(cache.cache_dir, retention_days=days)
-
-        if deleted_count == 0:
-            console.print(f'[green]No log files older than {days} days[/green]')
-        else:
-            console.print(f'[green]Deleted {deleted_count} log file(s) older than {days} days[/green]')
-
-
-def browse_logs(action: str = 'select', interval: int = 1) -> None:
-    """Browse cached log files interactively using fzf.
-
-    Args:
-        action: Action to perform - 'select' (choose and analyze), 'view' (preview only), or 'tail' (tail in real-time)
-        interval: Update interval in seconds when tailing (default: 1)
-    """
-    # Check if fzf is available
-    if not is_fzf_available():
-        stderr_console.print('[red]Error: fzf is not installed or not in PATH[/red]')
-        stderr_console.print('[dim]Install fzf: https://github.com/junegunn/fzf#installation[/dim]')
-        sys.exit(1)
-
-    # Get log files
-    cache = CacheManager()
-    logs = cache.list_all_logs()
-
-    if not logs:
-        stderr_console.print('[yellow]No cached logs found[/yellow]')
-        stderr_console.print(CAPTURE_HINT)
-        return
-
-    # Select log file with fzf
     if action == 'select':
-        selected_path = select_log_file(logs, 'Select log file to analyze')
-
-        if not selected_path:
-            stderr_console.print('[dim]No file selected[/dim]')
-            return
-
-        # Analyze the selected log
-        stderr_console.print(f'[cyan]Analyzing: {selected_path}[/cyan]')
-
-        analyze_log(selected_path, output_format='markdown')
-
+        stderr_console.print(f'[cyan]Analyzing: {chosen}[/cyan]')
+        analyze_log(str(chosen), output_format='markdown')
     elif action == 'view':
-        selected_path = select_log_file(logs, 'Select log file to view')
-
-        if not selected_path:
-            stderr_console.print('[dim]No file selected[/dim]')
-            return
-
-        # Browse the selected log
-        log_path = Path(selected_path)
-        if browse_log_with_preview(log_path):
-            stderr_console.print(f'[dim]Browsed: {log_path}[/dim]')
+        if search_log_lines(chosen):
+            stderr_console.print(f'[dim]Searched: {chosen}[/dim]')
         else:
-            stderr_console.print('[red]Error browsing log file[/red]')
-
-    elif action == 'tail':
-        selected_path = select_log_file(logs, 'Select log file to tail')
-
-        if not selected_path:
-            stderr_console.print('[dim]No file selected[/dim]')
-            return
-
-        # Tail the selected log
-        tail_log(selected_path, interval=interval)
-
-
-def tail_log(log_file: str, interval: int = 1) -> None:
-    """Tail a log file in real-time (like tail -f).
-
-    Just shows raw log lines as they appear, without analysis.
-
-    Args:
-        log_file: Path to the log file to tail
-        interval: Update interval in seconds
-    """
-    file_path = Path(log_file).expanduser().resolve()
-
-    if not file_path.exists():
-        stderr_console.print(f'[red]Error: Log file not found: {file_path}[/red]')
-        sys.exit(1)
-
-    stderr_console.print(f'[blue]Tailing:[/blue] {file_path}')
-    stderr_console.print('[dim]Press Ctrl+C to stop[/dim]\n')
-
-    # Open file and seek to end
-    try:
-        with file_path.open('r', encoding='utf-8') as f:
-            # Go to end of file
-            f.seek(0, 2)
-
-            while True:
-                line = f.readline()
-
-                if line:
-                    # New line available - print it
-                    print(line, end='')
-                else:
-                    # No new data - wait before checking again
-                    time.sleep(interval)
-
-    except KeyboardInterrupt:
-        stderr_console.print('\n[yellow]Stopped tailing log file[/yellow]')
-        sys.exit(0)
+            stderr_console.print('[red]Error searching the log[/red]')
+    else:
+        tail_file(chosen, interval=interval)

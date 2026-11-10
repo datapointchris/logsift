@@ -1,17 +1,28 @@
 """Display utilities for showing content with bat or fallback."""
 
-import subprocess  # nosec B404
 import sys
+import time
 from pathlib import Path
 from typing import TextIO
 
+from logsift import process_runner
 
-def _write_plain(text: str, stream: TextIO | None) -> None:
+
+def write_plain(text: str, stream: TextIO | None) -> None:
     """Write text and a trailing newline to stream, or sys.stdout at call time."""
     out = stream if stream is not None else sys.stdout
     out.write(text)
     out.write('\n')
     out.flush()
+
+
+def human_size(size_bytes: int) -> str:
+    """A file size in B, KB or MB, one decimal past bytes."""
+    if size_bytes < 1024:
+        return f'{size_bytes} B'
+    if size_bytes < 1024 * 1024:
+        return f'{size_bytes / 1024:.1f} KB'
+    return f'{size_bytes / (1024 * 1024):.1f} MB'
 
 
 def display_with_bat(content: str, language: str = 'txt', filename: str | None = None, stream: TextIO | None = None) -> None:
@@ -30,10 +41,10 @@ def display_with_bat(content: str, language: str = 'txt', filename: str | None =
         if filename:
             cmd.extend(['--file-name', filename])
 
-        subprocess.run(cmd, input=content, text=True, check=False)  # nosec B603
+        process_runner.run(cmd, input_text=content)
     except FileNotFoundError:
         # bat not installed, fall back to plain output
-        _write_plain(content, stream)
+        write_plain(content, stream)
 
 
 def display_file_with_bat(file_path: Path, language: str | None = None, stream: TextIO | None = None) -> None:
@@ -51,7 +62,28 @@ def display_file_with_bat(file_path: Path, language: str | None = None, stream: 
         if language:
             cmd.append(f'--language={language}')
 
-        subprocess.run(cmd, check=False)  # nosec B603
+        process_runner.run(cmd)
     except FileNotFoundError:
         # bat not installed, fall back to plain output
-        _write_plain(file_path.read_text(), stream)
+        write_plain(file_path.read_text(), stream)
+
+
+def tail_file(file_path: Path, interval: int = 1) -> None:
+    """Print each line appended to file_path until Ctrl+C, checking every interval seconds."""
+    if not file_path.exists():
+        print(f'Error: File not found: {file_path}', file=sys.stderr)
+        sys.exit(1)
+
+    print(f'Tailing: {file_path}\nPress Ctrl+C to stop\n', file=sys.stderr)
+    try:
+        with file_path.open('r', encoding='utf-8') as f:
+            f.seek(0, 2)
+            while True:
+                line = f.readline()
+                if line:
+                    print(line, end='', flush=True)
+                else:
+                    time.sleep(interval)
+    except KeyboardInterrupt:
+        print('\nStopped tailing', file=sys.stderr)
+        sys.exit(0)

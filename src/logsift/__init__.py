@@ -6,22 +6,13 @@ and retry failed operations with minimal context overhead.
 """
 
 from importlib.metadata import PackageNotFoundError
-from importlib.metadata import version as installed_version
+from importlib.metadata import version
 
-
-def tool_version() -> str:
-    """This build's version, or 'unknown' from a source checkout.
-
-    Read from the installed distribution, whose version the release tag sets
-    through uv-dynamic-versioning. A constant here would be bumped by nothing.
-    """
-    try:
-        return installed_version('logsift')
-    except PackageNotFoundError:
-        return 'unknown'
-
-
-__version__ = tool_version()
+# The installed distribution's version, which the release tag sets through uv-dynamic-versioning.
+try:
+    __version__ = version('logsift')
+except PackageNotFoundError:
+    __version__ = 'unknown'
 __author__ = 'Chris Birch'
 __email__ = 'datapointchris@gmail.com'
 

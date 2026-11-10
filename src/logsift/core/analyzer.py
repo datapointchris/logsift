@@ -8,8 +8,8 @@ from contextlib import suppress
 from typing import Any
 
 from logsift import xdg_dirs
-from logsift.core.detectors import FileReferenceDetector
 from logsift.core.detectors import IssueDetector
+from logsift.core.file_references import FileReferenceDetector
 from logsift.core.parser import LogParser
 from logsift.patterns.loader import PatternLoader
 
@@ -23,7 +23,6 @@ class Analyzer:
         Args:
             context_lines: Number of lines to extract before/after errors (default: 2)
         """
-        # Initialize all components
         self.parser = LogParser()
         self.pattern_loader = PatternLoader()
         self.issue_detector = IssueDetector()
@@ -44,22 +43,16 @@ class Analyzer:
         Returns:
             Dictionary of errors, warnings, hooks and stats, the body of schemas/analysis.schema.json
         """
-        # Parse log content
         log_entries = self.parser.parse(log_content)
 
-        # Detect errors and warnings using TOML patterns (single pass)
         errors, warnings = self.issue_detector.detect_issues(log_entries, self.patterns)
 
-        # Enhance errors with file references and context
         enhanced_errors = self._enhance_issues(errors, log_entries)
 
-        # Enhance warnings with file references and context
         enhanced_warnings = self._enhance_issues(warnings, log_entries)
 
-        # Detect pre-commit hooks from log entries
         hooks = self._detect_hooks(log_entries)
 
-        # Build statistics
         stats = {
             'total_errors': len(errors),
             'total_warnings': len(warnings),
@@ -89,20 +82,16 @@ class Analyzer:
         enhanced = []
 
         for issue in issues:
-            # Extract file references from the message
             message = issue.get('message', '')
             file_refs = self.file_reference_detector.detect_references(message)
             if file_refs:
                 issue['file_references'] = file_refs
 
-            # Extract context around this issue
             line_number = issue.get('line_in_log')
             if line_number is not None:
-                # Find index in log_entries
                 for idx, entry in enumerate(log_entries):
                     if entry.get('line_number') == line_number:
                         with suppress(IndexError, ValueError):
-                            # Use pattern's context_lines_after if specified
                             pattern_context_after = issue.get('pattern_context_lines_after')
                             context = self._extract_context(log_entries, idx, context_lines_after=pattern_context_after)
                             issue['context_before'] = context['context_before']
@@ -132,18 +121,14 @@ class Analyzer:
         Raises:
             IndexError: If error_index is out of bounds
         """
-        # Validate error_index
         if error_index < 0 or error_index >= len(log_entries):
             raise IndexError(f'Error index {error_index} out of bounds for log entries of length {len(log_entries)}')
 
-        # Calculate start and end indices for context
         start_index = max(0, error_index - self.context_lines)
 
-        # Use pattern's context_lines_after if specified, otherwise use default
         effective_context_after = context_lines_after if context_lines_after is not None else self.context_lines
         end_index = min(len(log_entries), error_index + effective_context_after + 1)
 
-        # Extract context before and after the error
         context_before = log_entries[start_index:error_index]
         context_after = log_entries[error_index + 1 : end_index]
 

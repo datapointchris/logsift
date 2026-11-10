@@ -1,6 +1,6 @@
 """What `logsift config` prints: each resolved value beside the layer that set it.
 
-Each option row is read from a Click context built the way the command itself would build it, so
+Each option row is resolved by Click on a context built the way the command itself would build it, so
 the value and its source are the ones the command would get, not a second walk of the layers.
 Typer from 0.26 runs its own copy of Click, so nothing here names a class from the `click` package.
 """
@@ -46,10 +46,11 @@ def resolve_option(command_ctx: typer.Context, option: tuple[str, ...]) -> Resol
         command = get_command(ctx, name) if get_command else None
         if command is None:
             raise LookupError(f'{ctx.command.name} has no subcommand {name}')
-        ctx = command.make_context(name, [], parent=ctx)
+        # A context, not make_context: parsing an empty command line would print the help of a no_args_is_help command.
+        ctx = command.context_class(command, info_name=name, parent=ctx)
     param = next(param for param in ctx.command.params if param.name == parameter_name)
+    value, _ = param.handle_parse_result(ctx, {}, [])
     source = ctx.get_parameter_source(parameter_name)
-    value = ctx.params[parameter_name]
     # Keyed by ParameterSource's member names, which Click and Typer's copy of it share.
     labels = {
         'COMMANDLINE': max(param.opts, key=len),

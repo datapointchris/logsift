@@ -125,18 +125,36 @@ Create custom pattern files in `~/.config/logsift/patterns/`:
 
 ```toml
 # ~/.config/logsift/patterns/myapp.toml
+# A benign line that a catch-all such as "error" would otherwise report. info reports nothing.
+[[patterns]]
+name = "myapp_retry_error_logged"
+regex = "retrying after transient error"
+severity = "info"
+description = "A retry the client recovers from"
+tags = ["myapp"]
+
 [[patterns]]
 name = "myapp_database_error"
-regex = "DATABASE ERROR: (.+)"
+regex = "DATABASE ERROR (?P<code>DB\\d+): (.+)"
 severity = "error"
 description = "Database connection or query error"
 tags = ["database", "myapp"]
 suggestion = "Check database connection string and credentials"
+
+[[patterns]]
+name = "myapp_slow_query"
+regex = "slow query \\((\\d+) ms\\)"
+severity = "warning"
+description = "A query slower than the configured threshold"
+tags = ["database", "myapp", "performance"]
 ```
 
 Every run reads each `.toml` file in `$XDG_CONFIG_HOME/logsift/patterns/`, which defaults to
-`~/.config/logsift/patterns/`. Your patterns are tried before the built-in ones, so yours wins a
-line both match. A file that fails validation stops the run, and the error names the file.
+`~/.config/logsift/patterns/`. A file holds as many `[[patterns]]` entries as it needs, and a tag
+may repeat across them. The first pattern to match a line decides it: entries in file order,
+your files before the built-in ones. So put a specific pattern above a general one. A group named
+`code` becomes the issue's `code`, here `DB1042` from `DATABASE ERROR DB1042: ...`. A file that
+fails validation stops the run, and the error names the file.
 
 ### Configuration
 
@@ -144,7 +162,7 @@ logsift runs on its defaults, and reads `$XDG_CONFIG_HOME/logsift/config.toml`, 
 `~/.config/logsift/config.toml`, when it exists. Each key below is set to logsift's default:
 
 ```toml
-# How monitor and analyze print the analysis: auto, json, toon, markdown or plain.
+# How monitor and analyze print the analysis: auto, json, toon or markdown.
 print_analysis_as = "auto"
 
 [monitor]
@@ -177,8 +195,8 @@ files share a stem, its UTC start time and a name made from the command:
   └── md/     2025-11-28T14:30:22-make-build.md
 ```
 
-`logsift logs list` lists the raw logs, and `logsift analyze latest` re-runs the patterns over the
-newest one.
+`logsift logs list` lists the raw logs, and `logsift analyze --latest` re-runs the patterns over the
+one written most recently. After `monitor --append`, that is the log the run appended to.
 
 Clean old raw logs (older than 90 days by default) and old analyses (older than 30 days):
 
@@ -223,7 +241,7 @@ uv tool install --editable .
 **Verify installation:**
 
 ```bash
-which logsift          # Should show ~/.local/bin/logsift
+which logsift          # Inside the directory `uv tool dir --bin` prints
 logsift --version      # Prints the installed version
 logsift --help         # Show all commands
 ```
@@ -234,25 +252,26 @@ logsift --help         # Show all commands
 uv tool uninstall logsift
 ```
 
+### Optional Programs
+
+logsift starts four programs when they are on `PATH`, and works without each:
+
+- `fzf`: the `choose` commands pick a file with it. Without it they exit 1 and say to install it.
+- `bat`: `latest` and `choose` page a file through it. Without it the file prints as plain text.
+- `notify-send` on Linux, `osascript` on macOS: `monitor --notify` posts through it. Without it
+  monitor says on stderr that no notification was sent.
+
 ### Troubleshooting Installation
 
-**Command not found after install:**
-
-Ensure `~/.local/bin` is in your PATH:
+**Command not found after install:** uv's tool bin directory is not on `PATH`.
 
 ```bash
-echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
-source ~/.zshrc
+uv tool dir --bin       # the directory uv installed logsift into
+uv tool update-shell    # add it to your shell's PATH, then open a new shell
 ```
 
-**Permission errors:**
-
-Check cache directory permissions:
-
-```bash
-mkdir -p ~/.cache/logsift
-chmod 755 ~/.cache/logsift
-```
+**Permission errors:** logsift writes every run under the directory `logsift config` names on its
+`cache` row. Make sure you own it and can write to it.
 
 ## Features
 
@@ -270,11 +289,11 @@ chmod 755 ~/.cache/logsift
 ## Project Status
 
 **Status**: Alpha. `logsift --version` prints the installed version, and
-`uv run pytest --cov=logsift` prints the current coverage.
+`task test:coverage` prints the current coverage.
 
 ## Documentation
 
-- [Development Guide](CLAUDE.md) - For Claude Code and contributors
+- [Development Setup](docs/development/setup.md) - For contributors
 - CLI Reference - See `logsift --help` and `logsift COMMAND --help`
 - Pattern Format - See custom patterns section above
 
@@ -294,19 +313,11 @@ Areas where contributions would be especially valuable:
 ```bash
 git clone https://github.com/datapointchris/logsift.git
 cd logsift
-
-# Install dependencies
-uv sync --group dev --group test
-
-# Install pre-commit hooks
-uv run pre-commit install --install-hooks
-
-# Run tests
-uv run pytest -v
-
-# Run with coverage
-uv run pytest --cov=logsift --cov-report=term
+task setup   # the dev and test groups, and the commit and commit-msg hooks
+task test
 ```
+
+[Development Setup](docs/development/setup.md) has the workflow through to a pull request.
 
 ## Architecture
 
@@ -314,15 +325,15 @@ logsift is built with a modular architecture:
 
 - **Core Engine**: Log parsing, pattern matching, context extraction
 - **Pattern System**: Extensible TOML-based pattern libraries with validation
-- **Output Formatters**: JSON (LLM-optimized) and Markdown (human-readable)
-- **Process Monitor**: Command execution and output capture via subprocess
-- **Cache System**: Organized log storage with automatic rotation
+- **Output Formatters**: toon for an agent reading piped output, JSON for a program, Markdown for a person
+- **Process Monitor**: Runs the command, saves what it prints, and analyzes it
+- **Cache System**: One directory per kind of saved file, trimmed by `logs clean` and `analyzed clean`
 
 **Data Flow:**
 
 ```bash
 Input → Parser (auto-detect format) → Pattern Matching (TOML rules) →
-Context Extraction (±2 lines) → Dual Output (JSON for LLMs, Markdown for humans)
+Context Extraction (±2 lines) → Output (toon when piped, JSON on request, Markdown on a terminal)
 ```
 
 ## License

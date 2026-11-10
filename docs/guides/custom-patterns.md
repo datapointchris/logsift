@@ -43,7 +43,7 @@ context_lines_after = 5                # Optional
 ### Required Fields
 
 - `name` - Unique identifier (no duplicates)
-- `regex` - Python regex pattern
+- `regex` - Python regex pattern. A group named `code`, as in `(?P<code>E\d+)`, becomes the issue's `code`
 - `severity` - `error`, `warning`, or `info`
 - `description` - What this error means
 - `tags` - Array of categorization tags

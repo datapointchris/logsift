@@ -6,263 +6,87 @@ import time
 
 from typer.testing import CliRunner
 
+from logsift.cache.manager import SUFFIXES
 from logsift.cache.manager import CacheManager
+from logsift.cache.manager import SavedKind
 from logsift.cli import app
 
 runner = CliRunner()
 
 
 class TestLogsListCommand:
-    """Test the logs list command."""
+    """Test the list commands every group shares."""
 
-    def test_logs_list_empty_cache(self, tmp_path, monkeypatch):
-        """Test listing logs with empty cache."""
-        # Set cache directory to temp
-        monkeypatch.setenv('HOME', str(tmp_path))
+    def test_list_prints_newest_first_and_limit_keeps_the_newest(self):
+        runner.invoke(app, ['monitor', '-n', 'older', '--format=json', '--', 'echo', 'one'])
+        runner.invoke(app, ['monitor', '-n', 'newer', '--format=json', '--', 'echo', 'two'])
 
-        result = runner.invoke(app, ['logs', 'list'])
+        listed = json.loads(runner.invoke(app, ['logs', 'list', '--json']).stdout)
+        limited = json.loads(runner.invoke(app, ['raw', 'list', '-n', '1', '--json']).stdout)
 
-        assert result.exit_code == 0
-        assert 'No cached logs found' in result.stderr
+        assert [row['name'][20:] for row in listed] == ['newer.log', 'older.log']
+        assert limited == listed[:1]
 
-    def test_logs_list_with_logs(self):
-        """Test listing logs with cached log files."""
-        # First create some logs by running monitor
-        runner.invoke(app, ['monitor', '-n', 'list-test-1', '--format=json', '--', 'echo', 'test1'])
-        runner.invoke(app, ['monitor', '-n', 'list-test-2', '--format=json', '--', 'echo', 'test2'])
+    def test_an_empty_listing_prints_nothing_a_program_must_special_case(self):
+        as_json = runner.invoke(app, ['analyzed', 'list', '--json'])
+        as_plain = runner.invoke(app, ['logs', 'list', '--plain'])
+        as_table = runner.invoke(app, ['logs', 'list'])
 
-        # Now list them
-        result = runner.invoke(app, ['logs', 'list'])
-
-        assert result.exit_code == 0
-        assert 'list-test-1' in result.stdout or 'list-test-2' in result.stdout
-
-    def test_logs_list_json_format(self):
-        """Test listing logs with JSON format."""
-        # Create a log
-        runner.invoke(app, ['monitor', '-n', 'json-test', '--format=json', '--', 'echo', 'test'])
-
-        # List with JSON format
-        result = runner.invoke(app, ['logs', 'list', '--format', 'json'])
-
-        assert result.exit_code == 0
-
-        # Should be valid JSON
-        data = json.loads(result.stdout)
-        assert isinstance(data, list)
-
-    def test_logs_list_plain_format(self):
-        """Test listing logs with plain format."""
-        # Create a log
-        runner.invoke(app, ['monitor', '-n', 'plain-test', '--format=json', '--', 'echo', 'test'])
-
-        # List with plain format
-        result = runner.invoke(app, ['logs', 'list', '--format', 'plain'])
-
-        assert result.exit_code == 0
-        # Plain format should have tab-separated values
-        assert '\t' in result.stdout or 'plain-test' in result.stdout
+        assert json.loads(as_json.stdout) == []
+        assert as_plain.stdout == ''
+        assert as_table.stdout == ''
 
 
-class TestLogsCleanCommand:
-    """Test the logs clean command."""
+def make_saved_file(kind: SavedKind, stem: str, days_old: int):
+    path = CacheManager().directory(kind) / f'{stem}{SUFFIXES[kind]}'
+    path.write_text(stem)
+    modified = time.time() - days_old * 24 * 60 * 60
+    os.utime(path, (modified, modified))
+    return path
 
-    def test_logs_clean_empty_cache(self):
-        """Test cleaning with empty cache."""
-        # Cache directory exists but is empty (thanks to autouse fixture)
-        result = runner.invoke(app, ['logs', 'clean'])
 
-        assert result.exit_code == 0
-        # Should report no old files, not that directory doesn't exist
-        assert 'No log files older than' in result.stdout or 'Deleted 0 log file(s)' in result.stdout
+class TestCleanCommands:
+    """Test logs clean and analyzed clean."""
 
-    def test_logs_clean_no_old_files(self):
-        """Test cleaning when no files are old enough."""
-        # Create a recent log
-        runner.invoke(app, ['monitor', '-n', 'clean-test-recent-new', '--format=json', '--', 'echo', 'test'])
+    def test_clean_deletes_only_its_own_kind_past_the_retention(self):
+        old_log = make_saved_file(SavedKind.RAW, '2024-01-01T12:00:00-old', 60)
+        recent_log = make_saved_file(SavedKind.RAW, '2024-01-01T12:00:00-recent', 20)
+        old_analysis = make_saved_file(SavedKind.JSON, '2024-01-01T12:00:00-old', 60)
 
-        # Try to clean files older than 0.0001 days (a few seconds ago) - won't match just-created log
-        result = runner.invoke(app, ['logs', 'clean', '--days', '0'])
+        logs_clean = runner.invoke(app, ['logs', 'clean', '--days', '30'])
+        assert logs_clean.exit_code == 0
+        assert [old_log.exists(), recent_log.exists(), old_analysis.exists()] == [False, True, True]
 
-        # Should succeed - the just-created log is too recent to be deleted even with 0 days retention
-        # (there's a small time window)
-        assert result.exit_code == 0
-        # Either no files deleted, or very few (not the one we just created)
-        assert 'Deleted' in result.stdout or 'No log files older than' in result.stdout
+        analyzed_clean = runner.invoke(app, ['analyzed', 'clean', '--days', '30'])
+        assert analyzed_clean.exit_code == 0
+        assert not old_analysis.exists()
 
-    def test_logs_clean_dry_run(self, tmp_path):
-        """Test cleaning with dry-run mode."""
-        # Create an old log file in raw/ subdirectory
-        cache = CacheManager()
-        raw_dir = cache.raw_dir
-        raw_dir.mkdir(parents=True, exist_ok=True)
+    def test_a_dry_run_names_each_file_it_would_delete_and_deletes_none(self):
+        old_log = make_saved_file(SavedKind.RAW, '2024-01-01T12:00:00-old', 60)
 
-        old_log = raw_dir / '2024-01-01T12:00:00-old-test.log'
-        old_log.write_text('old log content')
-
-        # Set modification time to 100 days ago
-        old_time = time.time() - (100 * 24 * 60 * 60)
-
-        os.utime(old_log, (old_time, old_time))
-
-        # Run dry-run clean
         result = runner.invoke(app, ['logs', 'clean', '--days', '30', '--dry-run'])
 
         assert result.exit_code == 0
-        assert 'Would delete' in result.stdout
-        assert 'Run without --dry-run to actually delete' in result.stdout
-
-        # File should still exist
+        assert str(old_log) in result.stdout
         assert old_log.exists()
 
-    def test_logs_clean_actual_deletion(self, tmp_path):
-        """Test actual deletion of old log files."""
-        # Create an old log file in raw/ subdirectory
-        cache = CacheManager()
-        raw_dir = cache.raw_dir
-        raw_dir.mkdir(parents=True, exist_ok=True)
 
-        old_log = raw_dir / '2024-01-01T12:00:00-delete-test.log'
-        old_log.write_text('old log to delete')
+def test_latest_for_a_name_no_run_has_is_an_error():
+    result = runner.invoke(app, ['logs', 'latest', 'nonexistent-command-xyz'])
 
-        # Set modification time to 100 days ago
-        old_time = time.time() - (100 * 24 * 60 * 60)
-
-        os.utime(old_log, (old_time, old_time))
-
-        # Run actual clean
-        result = runner.invoke(app, ['logs', 'clean', '--days', '30'])
-
-        assert result.exit_code == 0
-        assert 'Deleted' in result.stdout
-
-        # File should be gone
-        assert not old_log.exists()
-
-    def test_logs_clean_custom_retention_days(self, tmp_path):
-        """Test cleaning with custom retention period."""
-        cache = CacheManager()
-        raw_dir = cache.raw_dir
-        raw_dir.mkdir(parents=True, exist_ok=True)
-
-        # Create log files with different ages in raw/ subdirectory
-        log_60_days = raw_dir / '2024-01-01T12:00:00-log-60days.log'
-        log_60_days.write_text('60 days old')
-        time_60_days = time.time() - (60 * 24 * 60 * 60)
-
-        log_20_days = raw_dir / '2024-01-01T12:00:00-log-20days.log'
-        log_20_days.write_text('20 days old')
-        time_20_days = time.time() - (20 * 24 * 60 * 60)
-
-        os.utime(log_60_days, (time_60_days, time_60_days))
-        os.utime(log_20_days, (time_20_days, time_20_days))
-
-        # Clean files older than 30 days
-        result = runner.invoke(app, ['logs', 'clean', '--days', '30'])
-
-        assert result.exit_code == 0
-
-        # 60 day old file should be deleted
-        assert not log_60_days.exists()
-
-        # 20 day old file should be preserved
-        assert log_20_days.exists()
+    assert result.exit_code == 1
+    assert result.stdout == ''
 
 
-class TestLogsEndToEnd:
-    """Test complete workflows involving logs commands."""
+def test_analyzed_latest_finds_by_name_an_analysis_of_a_file_outside_the_cache(tmp_path):
+    """`logsift analyze scratch/deploy.log`, then `logsift json latest deploy`, as analyze's help suggests."""
+    log_file = tmp_path / 'deploy.log'
+    log_file.write_text('ERROR: boom\n')
+    runner.invoke(app, ['analyze', str(log_file)])
 
-    def test_monitor_list_clean_workflow(self):
-        """Test complete workflow: monitor -> list -> clean."""
-        # Step 1: Monitor a command to create logs
-        result1 = runner.invoke(app, ['monitor', '-n', 'workflow-test', '--format=json', '--', 'echo', 'test data'])
+    result = runner.invoke(app, ['json', 'latest', 'deploy'])
 
-        assert result1.exit_code == 0
-
-        # Step 2: List logs to verify it was created
-        result2 = runner.invoke(app, ['logs', 'list', '--format', 'json'])
-
-        assert result2.exit_code == 0
-        data = json.loads(result2.stdout)
-        assert len(data) > 0
-
-        # Find our log
-        our_logs = [log for log in data if 'workflow-test' in log['name']]
-        assert len(our_logs) > 0
-
-        # Step 3: Dry-run clean to see what would be deleted
-        result3 = runner.invoke(app, ['logs', 'clean', '--days', '0', '--dry-run'])
-
-        assert result3.exit_code == 0
-        # Should show our log would be deleted (since retention is 0 days)
-        assert 'Would delete' in result3.stdout or 'workflow-test' in result3.stdout
-
-    def test_multiple_monitors_then_list(self):
-        """Test creating multiple logs and listing them."""
-        # Create multiple logs
-        for i in range(3):
-            runner.invoke(app, ['monitor', '-n', f'multi-test-{i}', '--format=json', '--', 'echo', f'test {i}'])
-
-        # List all logs
-        result = runner.invoke(app, ['logs', 'list', '--format', 'json'])
-
-        assert result.exit_code == 0
-        data = json.loads(result.stdout)
-
-        # Should have at least our 3 logs
-        our_logs = [log for log in data if 'multi-test' in log['name']]
-        assert len(our_logs) >= 3
-
-
-class TestLogsLatestCommand:
-    """Test the logs latest command."""
-
-    def test_logs_latest_by_name(self):
-        """Test getting the latest log by name."""
-        # Create multiple logs for the same command
-        runner.invoke(app, ['monitor', '-n', 'latest-test', '--format=json', '--', 'echo', 'test1'])
-        runner.invoke(app, ['monitor', '-n', 'latest-test', '--format=json', '--', 'echo', 'test2'])
-
-        # Get latest for that name
-        result = runner.invoke(app, ['logs', 'latest', 'latest-test'])
-
-        assert result.exit_code == 0
-        assert 'Latest log:' in result.stderr
-        # The name might be split across lines due to path wrapping, so check for it without newlines
-        stderr_no_newlines = result.stderr.replace('\n', '')
-        assert 'latest-test' in stderr_no_newlines
-
-    def test_logs_latest_absolute(self):
-        """Test getting the absolute latest log (no name filter)."""
-        # Create logs for different commands
-        runner.invoke(app, ['monitor', '-n', 'latest-abs-1', '--format=json', '--', 'echo', 'test1'])
-        runner.invoke(app, ['monitor', '-n', 'latest-abs-2', '--format=json', '--', 'echo', 'test2'])
-
-        # Get absolute latest
-        result = runner.invoke(app, ['logs', 'latest'])
-
-        assert result.exit_code == 0
-        assert 'Latest log:' in result.stderr
-
-    def test_logs_latest_nonexistent_name(self):
-        """Test getting latest log for nonexistent name."""
-        result = runner.invoke(app, ['logs', 'latest', 'nonexistent-command-xyz'])
-
-        assert result.exit_code == 1
-        assert 'No logs found' in result.stderr
-        assert result.stdout == ''
-
-    def test_logs_latest_with_tail_flag(self):
-        """Test that --tail flag is accepted (full tail testing in watch tests)."""
-        # Create a log
-        runner.invoke(app, ['monitor', '-n', 'tail-test', '--format=json', '--', 'echo', 'test'])
-
-        # This should not error with --tail flag (though we'll ctrl-c it quickly)
-        # Just verify the command accepts the flag
-        result = runner.invoke(app, ['logs', 'latest', 'tail-test', '--help'])
-
-        assert result.exit_code == 0
-        assert '--tail' in result.stdout
+    assert result.exit_code == 0
 
 
 class TestMonitorStreamFlags:

@@ -31,9 +31,8 @@ uv tool install --editable .
 ### Verify Installation
 
 ```bash
-# Check installation location
+# Check installation location: inside the directory `uv tool dir --bin` prints
 which logsift
-# Should show: ~/.local/bin/logsift
 
 # Check version
 logsift --version
@@ -63,38 +62,26 @@ Remove logsift completely:
 # Uninstall the tool
 uv tool uninstall logsift
 
-# Remove cache and config (optional)
-rm -rf ~/.cache/logsift
-rm -rf ~/.config/logsift
+# Name the cache and config directories, to delete them by hand if you want them gone
+logsift config
 ```
 
 ## Troubleshooting
 
 ### Command Not Found
 
-If `logsift` is not found after installation, ensure `~/.local/bin` is in your PATH:
+uv puts `logsift` in its tool bin directory. If your shell cannot find it, that directory is not
+on `PATH`:
 
 ```bash
-# For Zsh (macOS default)
-echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
-source ~/.zshrc
-
-# For Bash
-echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
-source ~/.bashrc
-
-# Verify PATH
-echo $PATH | grep -o ~/.local/bin
+uv tool dir --bin       # the directory uv installed logsift into
+uv tool update-shell    # add it to your shell's PATH, then open a new shell
 ```
 
 ### Permission Errors
 
-Ensure cache directory has correct permissions:
-
-```bash
-mkdir -p ~/.cache/logsift
-chmod 755 ~/.cache/logsift
-```
+logsift writes every run under its cache directory, which `logsift config` names on its `cache`
+row. Make sure you own that directory and can write to it.
 
 ### Python Version Issues
 
@@ -139,28 +126,8 @@ brew install uv
 
 ## Development Setup
 
-For contributing to logsift, follow the full development setup:
-
-```bash
-# Clone the repository
-git clone https://github.com/datapointchris/logsift.git
-cd logsift
-
-# Install all dependencies including dev and test groups
-uv sync --group dev --group test
-
-# Install pre-commit hooks
-uv run pre-commit install --install-hooks
-uv run pre-commit install --hook-type commit-msg
-
-# Run tests to verify setup
-uv run pytest -v
-
-# Install as editable tool
-uv tool install --editable .
-```
-
-See [Development Setup](development/setup.md) for complete details.
+To contribute, clone the repository and run `task setup`, which installs the dev and test groups
+and the git hooks. [Development Setup](development/setup.md) has the rest.
 
 ## Configuration
 
@@ -263,7 +230,7 @@ After installation, verify everything works:
 After successful installation:
 
 1. **[5-Minute Quickstart](quickstart.md)** - Get started immediately
-2. **[CLI Reference](cli-reference.md)** - Explore all commands
+2. **[CLI Reference](cli-reference.md)** - Where each command's help lives, and the exit codes
 3. **[Agentic Integration](concepts/agentic-integration.md)** - Use with Claude Code
 
 ## Getting Help

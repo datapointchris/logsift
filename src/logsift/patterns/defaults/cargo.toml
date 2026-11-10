@@ -3,7 +3,7 @@
 
 [[patterns]]
 name = "cargo_compilation_error"
-regex = "error\\[E\\d+\\]: (.+)"
+regex = "error\\[(?P<code>E\\d+)\\]: (.+)"
 severity = "error"
 description = "Rust compilation error"
 tags = ["cargo", "rust", "compilation"]
@@ -103,7 +103,7 @@ suggestion = "Check available features in crate documentation"
 
 [[patterns]]
 name = "cargo_mismatched_types"
-regex = "error\\[E0308\\]: mismatched types"
+regex = "error\\[(?P<code>E0308)\\]: mismatched types"
 severity = "error"
 description = "Type mismatch error"
 tags = ["cargo", "rust", "types"]

@@ -130,8 +130,8 @@ run's analysis beside them under `json/`, `toon/` and `md/`:
 # List recent logs
 logsift logs list
 
-# Re-analyze the newest log, or one by its path
-logsift analyze latest
+# Re-analyze the log written most recently, or one by its path
+logsift analyze --latest
 logsift analyze ~/.cache/logsift/raw/2024-01-15T10:30:00-npm-run-build.log
 ```
 
@@ -151,5 +151,5 @@ logsift logs clean --days 30
 
 ## See Also
 
-- [CLI Reference](../cli-reference.md) - Complete command docs
+- [CLI Reference](../cli-reference.md) - Where the help lives, what each stream carries, and the exit codes
 - [Agentic Integration](../concepts/agentic-integration.md) - Automated workflows

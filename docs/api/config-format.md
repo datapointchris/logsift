@@ -9,12 +9,12 @@ This file sets each key to the value logsift uses when the key is absent. Copy o
 mean to change.
 
 ```toml
-# How monitor and analyze print the analysis: auto, json, toon, markdown or plain.
-# auto prints Markdown on a terminal and toon when piped. plain prints the same Markdown.
+# How monitor and analyze print the analysis: auto, json, toon or markdown.
+# auto prints Markdown on a terminal and toon when piped.
 print_analysis_as = "auto"
 
 [monitor]
-# Seconds between monitor's progress reports. --stream and --minimal print none.
+# Seconds between monitor's progress reports. --stream and --quiet print none.
 report_progress_every_seconds = 60
 
 [logs.clean]
@@ -89,5 +89,5 @@ set it:
 
 ## See Also
 
-- [CLI Reference](../cli-reference.md) - Every flag and variable
+- [CLI Reference](../cli-reference.md) - Where the help lives, what each stream carries, and the exit codes
 - [Custom Patterns](../guides/custom-patterns.md) - Pattern files under the patterns directory

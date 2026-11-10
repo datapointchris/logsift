@@ -53,7 +53,7 @@ logsift monitor --format=json -- npm run build
 ```
 
 The raw log is saved under `~/.cache/logsift/raw/`, or `$XDG_CACHE_HOME/logsift/raw/`, and
-`logsift analyze latest` analyzes it again.
+`logsift analyze --latest` analyzes it again.
 
 ## Analyze an Existing Log
 
@@ -101,7 +101,7 @@ With `--format=json`, logsift prints the document
 describes. [JSON Schema](api/json-schema.md) says how to read it:
 
 ```bash
-logsift monitor --minimal --format=json -- python -c "import nonexistent_module" \
+logsift monitor --quiet --format=json -- python -c "import nonexistent_module" \
   | jq -c '{status: .summary.status, errors: [.errors[] | {message, pattern_name}]}'
 # {"status":"failed","errors":[{"message":"ModuleNotFoundError: No module named 'nonexistent_module'","pattern_name":"module_not_found"}]}
 ```
@@ -204,13 +204,13 @@ logsift logs clean --days 30
 
 Now that you have logsift running:
 
-1. **[CLI Reference](cli-reference.md)** - Explore all commands and options
+1. **[CLI Reference](cli-reference.md)** - Where each command's help lives, and the exit codes
 2. **[Agentic Integration](concepts/agentic-integration.md)** - Use with Claude Code
 3. **[Structured Logging](guides/structured-logging.md)** - Write better logs
 4. **[Custom Patterns](guides/custom-patterns.md)** - Create domain patterns
 
 ## Getting Help
 
-- Run `logsift --help` for quick reference
-- Check [CLI Reference](cli-reference.md) for detailed docs
+- Run `logsift --help`, or `logsift <command> --help` for one command
+- Check [CLI Reference](cli-reference.md) for the exit codes and what each stream carries
 - Report issues on [GitHub](https://github.com/datapointchris/logsift/issues)

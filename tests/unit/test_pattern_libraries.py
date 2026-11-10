@@ -1,102 +1,47 @@
-"""Tests for pattern library files."""
+"""Which shipped pattern `logsift analyze` reports a tool's output line under, with its severity and code."""
 
-import re
-import tomllib
 from pathlib import Path
 
+import pytest
 
-def test_all_pattern_files_exist():
-    """Test that all expected pattern files exist."""
-    pattern_dir = Path('src/logsift/patterns/defaults')
-    assert pattern_dir.exists()
+from logsift.core.analyzer import Analyzer
 
-    expected_files = [
-        'common.toml',
-        'brew.toml',
-        'apt.toml',
-        'docker.toml',
-        'npm.toml',
-        'cargo.toml',
-        'make.toml',
-        'pytest.toml',
-        'http.toml',
-        'shell.toml',
-        'pre-commit.toml',
-    ]
-
-    for filename in expected_files:
-        pattern_file = pattern_dir / filename
-        assert pattern_file.exists(), f'Missing pattern file: {filename}'
-
-
-def test_pattern_file_structure():
-    """Test that all pattern files have correct TOML structure."""
-    pattern_dir = Path('src/logsift/patterns/defaults')
-
-    for pattern_file in pattern_dir.glob('*.toml'):
-        with pattern_file.open('rb') as f:
-            data = tomllib.load(f)
-
-        assert 'patterns' in data, f'{pattern_file.name} missing patterns key'
-        patterns = data['patterns']
-        assert len(patterns) > 0, f'{pattern_file.name} has no patterns'
-
-        # Check first pattern has required fields
-        first_pattern = patterns[0]
-        required_fields = ['name', 'regex', 'severity', 'description', 'tags']
-        for field in required_fields:
-            assert field in first_pattern, f'{pattern_file.name} pattern missing {field}'
+TOOL_LINES = [
+    ('    ^---^ SC2086 (info): Double quote to prevent globbing and word splitting.', 'shellcheck_info', 'warning', 'SC2086'),
+    ('^--------^ SC2034 (warning): UNUSED_VAR appears unused.', 'shellcheck_warning', 'warning', 'SC2034'),
+    ('In script.sh line 5:', 'shellcheck_file_location', 'error', None),
+    ("src/main.py:10:1: F401 'sys' imported but unused", 'ruff_error', 'error', 'F401'),
+    ('src/refurb_pathlib.py:6:1 [FURB101]: Replace `with open(x) as f: y = f.read()`', 'refurb_suggestion', 'warning', 'FURB101'),
+    ('src/mypy_types.py:10: error: Argument 1 to', 'mypy_error_no_code', 'error', None),
+    ('  in "bad.yaml", line 7, column 10', 'check_yaml_error', 'error', None),
+    ("bad.toml: Expected '=' after a key in a key/value pair (at line 3, column 9)", 'check_toml_error', 'error', None),
+    ('bad.json: Failed to json decode (Expecting value: line 4 column 14 (char 53))', 'check_json_error', 'error', None),
+    ('>> Issue: [B307:blacklist] Use of possibly insecure function.', 'bandit_issue_header', 'warning', 'B307'),
+    (
+        'docs/x.md:1 MD041/first-line-heading/first-line-h1 First line in a file should be a top-level heading',
+        'markdownlint_error',
+        'error',
+        'MD041',
+    ),
+    ("ModuleNotFoundError: No module named 'requests'", 'module_not_found', 'error', None),
+    ('SyntaxError: invalid syntax', 'syntax_error_python', 'error', None),
+    ('bash: unzip: command not found', 'shell_command_not_found', 'error', None),
+    ('An unexpected error has occurred: CalledProcessError', 'pre_commit_called_process_error', 'error', None),
+    ('failed to connect to the docker API at unix:///x/docker.sock', 'docker_socket_connection_failure', 'error', None),
+]
 
 
-def test_pattern_uniqueness():
-    """Test that pattern names are unique within each file."""
-    pattern_dir = Path('src/logsift/patterns/defaults')
+@pytest.mark.parametrize(('line', 'pattern_name', 'severity', 'code'), TOOL_LINES)
+def test_analyze_reports_a_tool_line_under_its_own_pattern(line, pattern_name, severity, code):
+    result = Analyzer().analyze(line)
 
-    for pattern_file in pattern_dir.glob('*.toml'):
-        with pattern_file.open('rb') as f:
-            data = tomllib.load(f)
-
-        if 'patterns' not in data:
-            continue
-
-        pattern_names = [p['name'] for p in data['patterns']]
-        unique_names = set(pattern_names)
-
-        assert len(pattern_names) == len(unique_names), f'Duplicate pattern names in {pattern_file.name}'
+    [issue] = result['errors'] + result['warnings']
+    assert (issue['pattern_name'], issue['severity'], issue.get('code')) == (pattern_name, severity, code)
 
 
-def test_pattern_severity_valid():
-    """Test that all patterns have valid severity levels."""
-    pattern_dir = Path('src/logsift/patterns/defaults')
-    valid_severities = {'error', 'warning', 'info'}
+def test_analyze_reports_each_line_of_captured_codespell_output():
+    captured = (Path(__file__).parents[1] / 'fixtures/pre-commit-violations/codespell_output.txt').read_text()
 
-    for pattern_file in pattern_dir.glob('*.toml'):
-        with pattern_file.open('rb') as f:
-            data = tomllib.load(f)
+    result = Analyzer().analyze(captured)
 
-        if 'patterns' not in data:
-            continue
-
-        for pattern in data['patterns']:
-            severity = pattern['severity']
-            assert severity in valid_severities, f"Invalid severity '{severity}' in {pattern['name']}"
-
-
-def test_pattern_regex_example():
-    """Test that pattern regexes are valid and can match expected text.
-
-    This is a sanity check, not comprehensive testing of every pattern.
-    The real test is whether IssueDetector can use them correctly.
-    """
-    pattern_file = Path('src/logsift/patterns/defaults/shell.toml')
-    with pattern_file.open('rb') as f:
-        data = tomllib.load(f)
-
-    # Find bash command not found pattern as example
-    pattern = next((p for p in data['patterns'] if p['name'] == 'bash_command_not_found'), None)
-    assert pattern is not None
-
-    # Test the regex works
-    test_line = 'bash: unzip: command not found'
-    match = re.search(pattern['regex'], test_line)
-    assert match is not None
+    assert [warning['pattern_name'] for warning in result['warnings']] == ['codespell_typo', 'codespell_typo']

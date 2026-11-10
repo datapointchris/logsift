@@ -4,90 +4,85 @@ Analyzes an existing log file and outputs results.
 """
 
 import sys
-from contextlib import suppress
 from pathlib import Path
 
+import typer
 from rich.console import Console
 
 from logsift.cache.manager import CacheManager
+from logsift.cache.manager import SavedKind
+from logsift.commands.find_saved_file import choose_file
+from logsift.commands.find_saved_file import latest_file
 from logsift.core.analyzer import Analyzer
 from logsift.monitor.watcher import LogWatcher
-from logsift.output.json_formatter import format_json
+from logsift.output.analysis_format import AnalysisFormat
+from logsift.output.analysis_format import render_analysis
+from logsift.output.analysis_format import renderings_to_save
 from logsift.output.markdown_formatter import format_markdown
-from logsift.output.toon_formatter import format_toon
-from logsift.utils.tty import detect_output_format
 
 console = Console()
 stderr_console = Console(stderr=True)
 
 
-def analyze_log(log_file: str, output_format: str = 'auto', save: bool = True) -> None:
+def analyze_log(log_file: str, output_format: str = AnalysisFormat.AUTO, save: bool = True) -> None:
     """Analyze an existing log file.
 
     Args:
         log_file: Path to the log file to analyze
-        output_format: Desired output format (auto, json, markdown, plain)
+        output_format: An AnalysisFormat value
         save: Whether to auto-save the analysis result (default: True)
     """
-    # Check if file exists
     log_path = Path(log_file)
     if not log_path.exists():
         print(f'Error: Log file not found: {log_file}', file=sys.stderr)
         sys.exit(1)
 
-    # Read log content
     try:
         log_content = log_path.read_text()
     except OSError as e:
         print(f'Error reading log file: {e}', file=sys.stderr)
         sys.exit(1)
 
-    # Run analysis
     analyzer = Analyzer()
     analysis_result = analyzer.analyze(log_content)
 
-    # Auto-save analysis result in all formats
     if save:
-        cache = CacheManager()
+        report_unsaved(CacheManager().save_analysis(renderings_to_save(analysis_result), log_path.stem))
 
-        # Get stem from log file name (without extension)
-        stem = log_path.stem
+    print(render_analysis(analysis_result, output_format))
 
-        # Create paths for all analysis formats
-        json_path = cache.json_dir / f'{stem}.json'
-        toon_path = cache.toon_dir / f'{stem}.toon'
-        md_path = cache.md_dir / f'{stem}.md'
 
-        # Silently fail if we can't save - don't interrupt the analysis
-        with suppress(OSError), json_path.open('w', encoding='utf-8') as f:
-            f.write(format_json(analysis_result))
+# Paths a caller may have meant as a flag. When no file by that name exists, the usage error names the flag.
+FORMER_SENTINELS = {'latest': '--latest', 'browse': '--choose'}
 
-        # Save TOON (compact for LLMs)
-        with suppress(OSError), toon_path.open('w', encoding='utf-8') as f:
-            f.write(format_toon(analysis_result))
 
-        # Save Markdown (curated for humans)
-        with suppress(OSError), md_path.open('w', encoding='utf-8') as f:
-            f.write(format_markdown(analysis_result))
+def log_file_for(path: str | None, latest: bool, choose: bool, stream: bool) -> str:
+    """The log file analyze reads: the path given, the most recently written raw log with latest, or one picked with choose."""
+    if (path is not None) + latest + choose != 1:
+        stderr_console.print('[red]Error: give analyze one of a log file, --latest or --choose[/red]')
+        raise typer.Exit(2)
 
-    # Determine output format
-    if output_format == 'auto':
-        output_format = detect_output_format()
+    if path is not None:
+        if path in FORMER_SENTINELS and not Path(path).exists():
+            stderr_console.print(f'[red]Error: Log file not found: {path}[/red]')
+            stderr_console.print(f'To analyze a captured log, pass {FORMER_SENTINELS[path]}')
+            raise typer.Exit(2)
+        return path
 
-    # Format and output results
-    if output_format == 'json':
-        output = format_json(analysis_result)
-        print(output)
-    elif output_format == 'toon':
-        output = format_toon(analysis_result)
-        print(output)
-    elif output_format == 'markdown':
-        output = format_markdown(analysis_result)
-        print(output)
+    if latest:
+        log_file = str(latest_file(SavedKind.RAW, None))
     else:
-        # Plain format fallback - just use markdown
-        output = format_markdown(analysis_result)
-        print(output)
+        log_file = str(choose_file(SavedKind.RAW, 'Choose a log to analyze', '`logsift analyze --latest`, or `logsift analyze <path>`'))
+
+    action = 'Stream analyzing' if stream else 'Analyzing'
+    stderr_console.print(f'[cyan]{action}: {log_file}[/cyan]\n')
+    return log_file
+
+
+def report_unsaved(failures: list[str]) -> None:
+    """Name on stderr each analysis file a run could not save, so a later `latest` finding none is explained."""
+    for failure in failures:
+        stderr_console.print(f'[yellow]Warning: analysis not saved to {failure}[/yellow]', soft_wrap=True)
 
 
 def stream_analyze_log(log_file: str, interval: int = 1) -> None:
@@ -109,10 +104,8 @@ def stream_analyze_log(log_file: str, interval: int = 1) -> None:
     stderr_console.print(f'[blue]Stream analyzing:[/blue] {file_path}')
     stderr_console.print(f'[dim]Update interval: {interval}s (Press Ctrl+C to stop)[/dim]\n')
 
-    # Initialize analyzer
     analyzer = Analyzer()
 
-    # Read and analyze existing content first
     try:
         with file_path.open('r', encoding='utf-8') as f:
             existing_content = f.read()
@@ -120,7 +113,6 @@ def stream_analyze_log(log_file: str, interval: int = 1) -> None:
         stderr_console.print(f'[red]Error reading file: {e}[/red]')
         sys.exit(1)
 
-    # Initial analysis of existing content
     if existing_content:
         result = analyzer.analyze(existing_content)
         console.clear()
@@ -128,7 +120,7 @@ def stream_analyze_log(log_file: str, interval: int = 1) -> None:
         lines_count = len(existing_content.splitlines())
         errors = result['stats']['total_errors']
         warnings = result['stats']['total_warnings']
-        console.print(f'[dim]Lines: {lines_count} | Errors: {errors} | Warnings: {warnings}[/dim]\n')
+        console.print(f'Lines: {lines_count} | Errors: {errors} | Warnings: {warnings}\n')
 
         if errors > 0 or warnings > 0:
             markdown = format_markdown(result)
@@ -136,7 +128,6 @@ def stream_analyze_log(log_file: str, interval: int = 1) -> None:
         else:
             console.print('[green]✓[/green] No errors or warnings detected yet')
 
-    # Track accumulated content
     accumulated_content = existing_content
 
     def process_new_line(line: str) -> None:
@@ -144,16 +135,14 @@ def stream_analyze_log(log_file: str, interval: int = 1) -> None:
         nonlocal accumulated_content
         accumulated_content += line + '\n'
 
-        # Re-analyze with new content
         result = analyzer.analyze(accumulated_content)
 
-        # Display live update
         console.clear()
         console.print(f'[blue]Stream analyzing:[/blue] {file_path}')
         lines_count = len(accumulated_content.splitlines())
         errors = result['stats']['total_errors']
         warnings = result['stats']['total_warnings']
-        console.print(f'[dim]Lines: {lines_count} | Errors: {errors} | Warnings: {warnings}[/dim]\n')
+        console.print(f'Lines: {lines_count} | Errors: {errors} | Warnings: {warnings}\n')
 
         if errors > 0 or warnings > 0:
             markdown = format_markdown(result)
@@ -161,7 +150,6 @@ def stream_analyze_log(log_file: str, interval: int = 1) -> None:
         else:
             console.print('[green]✓[/green] No errors or warnings detected')
 
-    # Start watching for new lines
     watcher = LogWatcher(file_path, interval)
 
     try:

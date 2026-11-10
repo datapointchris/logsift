@@ -1,7 +1,4 @@
-"""Detect errors, warnings, and file references from logs.
-
-Provides detection strategies for identifying important information in log files.
-"""
+"""Decide which log lines are errors and warnings: a structured log's level field, else the first TOML pattern to match."""
 
 import re
 from typing import Any
@@ -39,12 +36,10 @@ class IssueDetector:
         error_id = 1
         warning_id = 1
 
-        # Flatten patterns for easier iteration
         all_patterns = []
         for category_patterns in patterns.values():
             all_patterns.extend(category_patterns)
 
-        # Single pass through all log entries
         for entry in log_entries:
             format_type = entry.get('format', 'plain')
             level = entry.get('level', '').upper()
@@ -67,44 +62,27 @@ class IssueDetector:
                     warning_id += 1
                     continue  # Don't try pattern matching
 
-            # Method 2: Pattern-based detection (for plain text or additional detection)
+            # Method 2: the first TOML pattern to match the line decides it
             message = entry.get('message', '')
             for pattern in all_patterns:
-                regex = pattern.get('regex', '')
-                if not regex:
+                found = re.search(pattern['regex'], message)
+                if not found:
                     continue
-
-                try:
-                    match = re.search(regex, message)
-                    if match:
-                        severity = pattern.get('severity', 'error')
-
-                        # Build issue with pattern metadata and match groups
-                        if severity == 'error':
-                            issue = self._build_issue(entry, 'error', error_id, pattern, match)
-                            errors.append(issue)
-                            error_id += 1
-                        elif severity == 'warning':
-                            issue = self._build_issue(entry, 'warning', warning_id, pattern, match)
-                            warnings.append(issue)
-                            warning_id += 1
-
-                        break  # Only match first pattern per line
-                except re.error:
-                    # Skip invalid regex patterns
-                    continue
+                match pattern['severity']:
+                    case 'error':
+                        errors.append(self._build_issue(entry, 'error', error_id, pattern, found))
+                        error_id += 1
+                    case 'warning':
+                        warnings.append(self._build_issue(entry, 'warning', warning_id, pattern, found))
+                        warning_id += 1
+                    case 'info':
+                        # An info pattern claims a line it knows is benign, so no later catch-all reports it.
+                        pass
+                    case other:
+                        raise ValueError(f'pattern {pattern["name"]} has severity {other!r}, which validate_pattern refuses')
+                break
 
         return errors, warnings
-
-    # Common error code patterns for extraction
-    ERROR_CODE_PATTERNS = [
-        re.compile(r'\b([A-Z]\d{3,4})\b'),  # Ruff/Flake8: F401, E501, W503
-        re.compile(r'\b(SC\d{4})\b'),  # Shellcheck: SC2086, SC2155
-        re.compile(r'\[(FURB\d+)\]'),  # Refurb: [FURB101]
-        re.compile(r'\[([a-z][-a-z]+)\]$'),  # Mypy: [arg-type], [return-value]
-        re.compile(r'\b(MD\d{3})\b'),  # Markdownlint: MD001, MD033
-        re.compile(r'\b(B\d{3})\b'),  # Bandit: B101, B307
-    ]
 
     def _build_issue(
         self,
@@ -121,7 +99,7 @@ class IssueDetector:
             severity: 'error' or 'warning'
             issue_id: ID for this issue
             pattern: Optional pattern metadata if matched via TOML pattern
-            match: Optional regex match object with captured groups
+            match: The pattern's match, whose `code` group, where the regex names one, is the issue's code
 
         Returns:
             Issue dictionary with all metadata
@@ -134,124 +112,21 @@ class IssueDetector:
             'line_in_log': entry.get('line_number'),
         }
 
-        # Add pattern metadata if available
         if pattern:
-            issue['pattern_name'] = pattern.get('name', 'unknown')
-            issue['description'] = pattern.get('description', '')
-            issue['tags'] = pattern.get('tags', [])
-
-            # Add suggestion if available
+            issue['pattern_name'] = pattern['name']
+            issue['description'] = pattern['description']
+            issue['tags'] = pattern['tags']
             if 'suggestion' in pattern:
                 issue['suggestion'] = pattern['suggestion']
-
-            # Add context_lines_after if specified (for multi-line error extraction)
             if 'context_lines_after' in pattern:
                 issue['pattern_context_lines_after'] = pattern['context_lines_after']
 
-        # Extract error code from message using common patterns
-        error_code = self._extract_error_code(message)
-        if error_code:
-            issue['code'] = error_code
+        code = match.groupdict().get('code') if match else None
+        if code:
+            issue['code'] = code
 
-        # Preserve additional fields from original entry
         for key in ('timestamp', 'format', 'file', 'file_line'):
             if key in entry:
                 issue[key] = entry[key]
 
         return issue
-
-    def _extract_error_code(self, message: str) -> str | None:
-        """Extract error code from a message using common patterns.
-
-        Args:
-            message: Log message to extract code from
-
-        Returns:
-            Error code string or None if not found
-        """
-        for pattern in self.ERROR_CODE_PATTERNS:
-            match = pattern.search(message)
-            if match:
-                return match.group(1)
-        return None
-
-
-class FileReferenceDetector:
-    """Detect file:line references from log entries."""
-
-    # Regex pattern to match file:line references (standard format)
-    # Matches: file.py:42, /path/to/file.js:123, ./relative/path.py:67
-    FILE_LINE_PATTERN = re.compile(
-        r'(?:'  # Start non-capturing group for path prefix
-        r'(?:[./]|/)?'  # Optional path separator or relative marker
-        r'[\w/.-]*?'  # Path components (non-greedy)
-        r')'  # End path prefix group
-        r'([\w/.-]+\.\w+)'  # Filename with extension (capturing group 1)
-        r':'  # Colon separator
-        r'(\d+)'  # Line number (capturing group 2)
-        r'(?::\d+)?'  # Optional column number (non-capturing)
-    )
-
-    # Regex pattern for Python stack trace format
-    # Matches: File "/app/main.py", line 42, in function_name
-    STACK_TRACE_PATTERN = re.compile(r'File\s+"([^"]+)",\s+line\s+(\d+)', re.IGNORECASE)
-
-    # Regex pattern for Windows paths
-    # Matches: C:\Users\dev\project\src\main.py:100
-    WINDOWS_PATH_PATTERN = re.compile(r'([A-Za-z]:[\\/][\w\\/.-]+\.\w+):(\d+)(?::\d+)?')
-
-    def detect_references(self, text: str) -> list[tuple[str, int]]:
-        """Detect file:line references from text.
-
-        Args:
-            text: Text to search for file references
-
-        Returns:
-            List of (filename, line_number) tuples
-        """
-        if not text:
-            return []
-
-        references = []
-        matched_ranges: list[tuple[int, int]] = []  # Track (start, end) positions of matched text
-
-        # Helper function to check if a match overlaps with already matched ranges
-        def is_overlapping(start: int, end: int) -> bool:
-            return any(not (end <= matched_start or start >= matched_end) for matched_start, matched_end in matched_ranges)
-
-        # Try Windows path pattern first (most specific)
-        for match in self.WINDOWS_PATH_PATTERN.finditer(text):
-            start, end = match.span()
-            if not is_overlapping(start, end):
-                file_path = match.group(1)
-                line_number = int(match.group(2))
-                references.append((file_path, line_number))
-                matched_ranges.append((start, end))
-
-        # Try stack trace pattern (Python format)
-        for match in self.STACK_TRACE_PATTERN.finditer(text):
-            start, end = match.span()
-            if not is_overlapping(start, end):
-                file_path = match.group(1)
-                line_number = int(match.group(2))
-                references.append((file_path, line_number))
-                matched_ranges.append((start, end))
-
-        # Try standard file:line pattern (Unix/Linux format)
-        for match in self.FILE_LINE_PATTERN.finditer(text):
-            start, end = match.span()
-            if not is_overlapping(start, end):
-                full_match = match.group(0)
-                # Split on the last colon to separate file path from line number
-                parts = full_match.rsplit(':', 2)  # Split on last 2 colons (handles column numbers)
-                if len(parts) >= 2:
-                    file_path = parts[0]
-                    try:
-                        line_number = int(parts[1])
-                        references.append((file_path, line_number))
-                        matched_ranges.append((start, end))
-                    except ValueError:
-                        # Skip if line number is not a valid integer
-                        continue
-
-        return references

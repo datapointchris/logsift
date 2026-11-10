@@ -6,19 +6,6 @@ import time
 import pytest
 
 from logsift.monitor.watcher import LogWatcher
-from logsift.monitor.watcher import tail_file
-
-
-def test_log_watcher_initialization(tmp_path):
-    """Test LogWatcher initialization."""
-    log_file = tmp_path / 'test.log'
-    log_file.write_text('initial content\n')
-
-    watcher = LogWatcher(log_file, interval=1)
-
-    assert watcher.log_file == log_file
-    assert watcher.interval == 1
-    assert watcher._stop is False
 
 
 def test_log_watcher_file_not_found(tmp_path):
@@ -93,7 +80,7 @@ def test_log_watcher_stop(tmp_path):
     # Wait for thread to finish
     thread.join(timeout=1)
 
-    assert watcher._stop is True
+    assert not thread.is_alive()
 
 
 def test_log_watcher_strips_newlines(tmp_path):
@@ -126,55 +113,3 @@ def test_log_watcher_strips_newlines(tmp_path):
 
     # Line should not have trailing newline
     assert lines_received == ['test line']
-
-
-def test_tail_file(tmp_path):
-    """Test tail_file function."""
-    log_file = tmp_path / 'test.log'
-    log_file.write_text('line 1\nline 2\nline 3\nline 4\nline 5\n')
-
-    # Get last 3 lines
-    lines = tail_file(log_file, num_lines=3)
-
-    assert lines == ['line 3', 'line 4', 'line 5']
-
-
-def test_tail_file_fewer_lines_than_requested(tmp_path):
-    """Test tail_file when file has fewer lines than requested."""
-    log_file = tmp_path / 'test.log'
-    log_file.write_text('line 1\nline 2\n')
-
-    # Request more lines than available
-    lines = tail_file(log_file, num_lines=10)
-
-    assert lines == ['line 1', 'line 2']
-
-
-def test_tail_file_not_found(tmp_path):
-    """Test tail_file with nonexistent file."""
-    log_file = tmp_path / 'nonexistent.log'
-
-    with pytest.raises(FileNotFoundError, match='File not found'):
-        tail_file(log_file)
-
-
-def test_tail_file_empty(tmp_path):
-    """Test tail_file with empty file."""
-    log_file = tmp_path / 'empty.log'
-    log_file.write_text('')
-
-    lines = tail_file(log_file, num_lines=10)
-
-    assert lines == []
-
-
-def test_watch_file_helper_function(tmp_path):
-    """Test watch_file convenience function (note: blocks, so we just test initialization)."""
-    log_file = tmp_path / 'test.log'
-    log_file.write_text('initial\n')
-
-    # We can't easily test the blocking watch_file function,
-    # but we can test that it creates a LogWatcher properly
-    # This would block, so we test the components separately
-    # The actual watch_file function is tested implicitly through LogWatcher tests
-    pass

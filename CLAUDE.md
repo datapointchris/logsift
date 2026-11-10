@@ -15,7 +15,7 @@ task setup                                # Install deps and the git hooks
 task test                                 # All tests
 task test -- tests/unit/test_parser.py -v # Specific file
 task test:coverage                        # With coverage
-task lint                                 # ruff, mypy and bandit, read-only
+task lint                                 # ruff, mypy, bandit and deptry, read-only
 task format                               # ruff format and autofixes
 uv run logsift monitor -- echo "test"     # CLI
 ```
@@ -33,8 +33,13 @@ uv run logsift monitor -- echo "test"     # CLI
 
 **NEVER duplicate pattern matching logic between Python code and TOML files**:
 
-- ❌ WRONG: Hardcode regex patterns in `parser.py`, `detectors.py`, or any Python module
-- ✅ RIGHT: ALL pattern matching must be defined exclusively in TOML files under `src/logsift/patterns/defaults/`
+- ❌ WRONG: A regex in any Python module that decides a line's severity, names its error type, or
+  pulls out a tool's code
+- ✅ RIGHT: Each of those lives in a TOML pattern under `src/logsift/patterns/defaults/`. A
+  pattern's regex names its tool's code with a `(?P<code>...)` group.
+
+Two kinds of regex stay in Python, because they read a shape no tool owns and no user customizes:
+the parser's log formats and timestamps, and the `path:line` shapes in `core/file_references.py`.
 
 **Parser Responsibilities** (`core/parser.py`):
 
@@ -86,8 +91,11 @@ Analyzer (file references + context) →
 Output (toon for LLMs when piped, JSON for programs, Markdown on a terminal)
 ```
 
-- TTY detection (`utils/tty.py`): `detect_output_format()` returns Markdown on a TTY, else toon
-- Commands in `commands/` orchestrate but don't implement logic
+- `--format auto` resolves in `output/analysis_format.py`: Markdown on a TTY, else toon
+- Commands in `commands/` orchestrate but don't implement logic, and `cli.py` only parses and calls them
+- `cache/manager.py` is the one door to the cache directory. Naming a run's files, what `latest`
+  finds, what `clean` counts as stale, and deleting all live in `CacheManager`, so no command globs
+  or unlinks under the cache itself
 - Module layout: `cli.py` (Typer entry), `commands/`, `core/`, `patterns/`, `output/`, `monitor/`, `config/`, `cache/`, `utils/`
 
 ### TOML Pattern Format
@@ -104,6 +112,10 @@ suggestion = "Remove package from install list or use 'brew upgrade' instead"
 
 Required: name, regex, severity, description, tags. Optional: suggestion, context_lines_after.
 
+The first pattern to match a line decides it. `error` and `warning` report it, and `info` claims a
+line known to be benign so no later catch-all reports it. A `(?P<code>...)` group in the regex,
+such as `(?P<code>SC\\d+)`, becomes the issue's `code`.
+
 ## JSON Output Contract (agents parse it — change it only with a version)
 
 `schemas/analysis.schema.json` is the shape `--format json` prints, for `analyze`, for `monitor` and
@@ -116,28 +128,36 @@ edits the schema in the same commit, and raises both `SCHEMA_VERSION` in
 
 ## Conventions specific to logsift
 
-- **Process monitoring**: `commands/monitor.py` runs the command with `subprocess.Popen` and streams its output line by line. It is the one place logsift runs a monitored command.
+- **Every external process starts in `process_runner.py`**: `run()` for fzf, bat, notify-send and
+  osascript, and `stream()` for the command `monitor` watches, with the interactive-shell fallback
+  for an alias or function. Nothing else imports `subprocess`. A missing program raises
+  `FileNotFoundError`, and each caller falls back without it, as the README's Optional Programs
+  section lists.
+- **Runtime dependencies** are the ones `pyproject.toml` declares. Typer and rich build the CLI, tomllib
+  reads config and patterns, python-dateutil parses timestamps and toon-format writes toon. Only
+  pyselfupdate reaches the network: `logsift update`, and a daily check for a newer release.
 - **`config.toml` is Click's `default_map`.** The root callback in `cli.py` reads and validates
   it once, through `config/loader.py`, and no later code re-checks it. Click then resolves each
   option from its flag, its variable, the file, then its default, and `logsift config` reports
   Click's own parameter source. A new file key goes in `FILE_KEYS`. A new option with an `envvar`
   goes in `RESOLVED_OPTIONS` in `config/resolved_values.py`, or
   `tests/integration/test_config_cli.py` fails.
-- **Coverage**: `fail_under` in `pyproject.toml` is the enforced floor; run
-  `task test:coverage` for the current figure rather than trusting a number written here.
+- **Coverage** has no floor. `task test:coverage` reports the current figure.
+- **deptry** checks every import in `src` against the declared dependencies, in `task lint` and
+  CI. A module imported directly is declared directly, even when another dependency brings it.
 
 The pre-commit hook set is `.pre-commit-config.yaml`, and it is generated. Read it there rather
 than restating it here, where it drifts.
 
-## Implementation Status
+## Scope
 
-The core analyzer, pattern loading, streaming, and fzf integration are all implemented. What
-remains stubbed raises `NotImplementedError`, so `rg -l NotImplementedError src/` is the current
-list. Nothing imports those modules.
+Every module under `src/` is reached from a command. A feature is added when it is built, not as
+a stub that waits for one.
 
 **There is no MCP server and no remote monitor, by design.** The CLI is the integration surface
 for an agent: `--format json` for a program that parses the result, or the default toon when an
-agent reads piped output itself. No command takes `--json`. A remote command is monitored like any other:
-`logsift monitor -- ssh user@host ./deploy.sh`.
+agent reads piped output itself. `--format` belongs to the commands whose job is printing an
+analysis. Every `list` is a read, and takes `--json` instead. A remote command is monitored like
+any other: `logsift monitor -- ssh user@host ./deploy.sh`.
 
 When implementing: tests first (TDD), implement in `core/`/`patterns/`/`output/`, wire up in `commands/`.

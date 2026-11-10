@@ -51,7 +51,8 @@ regex = "ModuleNotFoundError: No module named ['\"](.+)['\"]"
 Rules:
 
 - Valid Python regex syntax
-- Use capture groups `()` for important values
+- A group named `code`, as in `error\[(?P<code>E\d+)\]`, becomes the issue's `code`, such as
+  `E0308`. logsift reads no other group
 - Escape special characters: `\(`, `\)`, `\.`, etc.
 - Use raw strings in code to avoid double-escaping
 

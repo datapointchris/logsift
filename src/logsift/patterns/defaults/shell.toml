@@ -19,14 +19,6 @@ description = "Command or file not found"
 tags = ["shell", "error"]
 
 [[patterns]]
-name = "bash_command_not_found"
-regex = "bash: .+: command not found"
-severity = "error"
-description = "Bash command not found"
-tags = ["shell", "bash", "command", "error"]
-suggestion = "Verify command exists and is executable"
-
-[[patterns]]
 name = "sh_command_not_found"
 regex = "sh: .+: command not found"
 severity = "error"

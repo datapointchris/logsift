@@ -5,15 +5,13 @@ Tests end-to-end functionality with real commands and log files.
 
 import json
 import sys
-import time
-from contextlib import suppress
 from pathlib import Path
 
 from typer.testing import CliRunner
 
 from logsift.cache.manager import CacheManager
+from logsift.cache.manager import SavedKind
 from logsift.cli import app
-from logsift.commands.watch import watch_log
 
 runner = CliRunner()
 
@@ -176,39 +174,6 @@ error: Syntax error in config.yaml:15
         assert data['stats']['total_warnings'] >= 1
 
 
-class TestWatchWorkflow:
-    """Test the complete watch command workflow."""
-
-    def test_watch_existing_file(self, tmp_path, monkeypatch):
-        """Test watching an existing log file."""
-        log_file = tmp_path / 'watch.log'
-        log_file.write_text('Initial line\n')
-
-        # Mock the infinite loop to exit after one iteration
-        original_sleep = time.sleep
-        call_count = {'count': 0}
-
-        def mock_sleep(seconds):
-            call_count['count'] += 1
-            if call_count['count'] >= 2:  # Exit after first watch iteration
-                raise KeyboardInterrupt()
-            original_sleep(0.01)  # Very short sleep for test
-
-        monkeypatch.setattr(time, 'sleep', mock_sleep)
-
-        # Should handle KeyboardInterrupt gracefully
-        with suppress(KeyboardInterrupt, SystemExit):
-            watch_log(str(log_file), interval=1)
-
-    def test_watch_nonexistent_file(self):
-        """Test watching a file that doesn't exist."""
-        result = runner.invoke(app, ['watch', '/nonexistent/file.log'], catch_exceptions=False)
-
-        # Should exit with error (may be 0 or 1 depending on how CliRunner handles sys.exit)
-        # Check that error message is shown
-        assert 'Error' in result.stdout or result.exit_code != 0
-
-
 class TestEndToEndWorkflows:
     """Test complete end-to-end workflows combining multiple commands."""
 
@@ -364,16 +329,6 @@ class TestErrorHandling:
         # Should handle error gracefully
         assert result.exit_code != 0
 
-    def test_command_timeout(self):
-        """Test handling of long-running commands."""
-        # This is a basic test - actual timeout handling would need more sophisticated testing
-        result = runner.invoke(
-            app,
-            ['monitor', '--format=json', '--', 'echo', 'test'],
-        )
-
-        assert result.exit_code == 0
-
     def test_empty_log_file(self, tmp_path):
         """Test analyzing an empty log file."""
         log_file = tmp_path / 'empty.log'
@@ -402,15 +357,19 @@ class TestMultiFormatCreation:
         assert result.exit_code == 0
 
         # Get the latest log for this name
-        latest_raw = cache.get_latest_log('multi-format-test')
+        latest_raw = cache.latest(SavedKind.RAW, 'multi-format-test')
         assert latest_raw is not None
         assert latest_raw.exists()
 
         # Get stem from raw log
         stem = latest_raw.stem
 
-        # Verify all formats exist
-        formats = cache.get_all_formats(stem)
+        formats = {
+            'raw': latest_raw,
+            'json': cache.directory(SavedKind.JSON) / f'{stem}.json',
+            'toon': cache.directory(SavedKind.TOON) / f'{stem}.toon',
+            'md': cache.directory(SavedKind.MD) / f'{stem}.md',
+        }
 
         assert formats['raw'] is not None
         assert formats['raw'].exists()
@@ -444,7 +403,7 @@ class TestMultiFormatCreation:
         cache = CacheManager()
 
         # Create a test log file in raw/
-        log_file = cache.raw_dir / '2025-01-15T10:00:00-analyze-test.log'
+        log_file = cache.directory(SavedKind.RAW) / '2025-01-15T10:00:00-analyze-test.log'
         log_file.write_text('Error: test error\nWarning: test warning\n')
 
         # Run analyze command
@@ -455,9 +414,9 @@ class TestMultiFormatCreation:
         # Check that all analysis formats were created
         stem = log_file.stem
 
-        json_path = cache.json_dir / f'{stem}.json'
-        toon_path = cache.toon_dir / f'{stem}.toon'
-        md_path = cache.md_dir / f'{stem}.md'
+        json_path = cache.directory(SavedKind.JSON) / f'{stem}.json'
+        toon_path = cache.directory(SavedKind.TOON) / f'{stem}.toon'
+        md_path = cache.directory(SavedKind.MD) / f'{stem}.md'
 
         assert json_path.exists()
         assert toon_path.exists()
@@ -480,15 +439,13 @@ class TestMultiFormatCreation:
         runner.invoke(app, ['monitor', '-n', 'compact-test', '--format=json', '--', 'bash', '-c', 'echo "Error: test error"; exit 1'])
 
         # Get the latest log
-        latest_raw = cache.get_latest_log('compact-test')
+        latest_raw = cache.latest(SavedKind.RAW, 'compact-test')
         assert latest_raw is not None
 
         stem = latest_raw.stem
-        formats = cache.get_all_formats(stem)
 
-        # Compare sizes
-        json_size = formats['json'].stat().st_size
-        toon_size = formats['toon'].stat().st_size
+        json_size = (cache.directory(SavedKind.JSON) / f'{stem}.json').stat().st_size
+        toon_size = (cache.directory(SavedKind.TOON) / f'{stem}.toon').stat().st_size
 
         # TOON should be smaller than JSON
         assert toon_size < json_size

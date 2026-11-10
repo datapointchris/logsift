@@ -62,11 +62,9 @@ def write_dual_output(
         # Write both to stdout (with separator)
         write_dual_output(result, json_stream=sys.stdout, markdown_stream=sys.stdout)
     """
-    # Format the outputs
     json_output = format_json(analysis_result)
     markdown_output = format_markdown(analysis_result)
 
-    # Write JSON output
     if json_path:
         json_path.parent.mkdir(parents=True, exist_ok=True)
         json_path.write_text(json_output, encoding='utf-8')
@@ -76,7 +74,6 @@ def write_dual_output(
         json_stream.write('\n')
         json_stream.flush()
 
-    # Write Markdown output
     if markdown_path:
         markdown_path.parent.mkdir(parents=True, exist_ok=True)
         markdown_path.write_text(markdown_output, encoding='utf-8')
@@ -119,12 +116,10 @@ def write_both_to_stdout(analysis_result: dict[str, Any], stream: TextIO | None 
     """
     out = stream if stream is not None else sys.stdout
 
-    # Write JSON first
     out.write('=== JSON OUTPUT ===\n')
     out.write(format_json(analysis_result))
     out.write('\n\n')
 
-    # Then Markdown
     out.write('=== MARKDOWN OUTPUT ===\n')
     out.write(format_markdown(analysis_result))
     out.write('\n')

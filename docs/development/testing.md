@@ -236,23 +236,10 @@ def test_cache_manager_puts_raw_logs_under_raw(tmp_path):
 ## Testing with Real Logs
 
 Keep a captured log beside the tests that read it under `tests/fixtures/`, as
-`tests/unit/test_precommit_patterns.py` does with
-`tests/fixtures/pre-commit-violations/codespell_output.txt`:
-
-```python
-from pathlib import Path
-
-from logsift.core.analyzer import Analyzer
-
-
-def test_codespell_output_is_matched():
-    """Real codespell output reaches a codespell pattern."""
-    log_content = Path('tests/fixtures/pre-commit-violations/codespell_output.txt').read_text()
-
-    result = Analyzer().analyze(log_content)
-
-    assert [w['pattern_name'] for w in result['warnings']] == ['codespell_typo', 'codespell_typo']
-```
+`tests/unit/test_pattern_libraries.py` does with
+`tests/fixtures/pre-commit-violations/codespell_output.txt`. Find it from `Path(__file__)` rather
+than the working directory, so the test passes wherever pytest starts, and assert what
+`Analyzer().analyze` reports for it rather than what one pattern's regex matches.
 
 pre-commit excludes `tests/fixtures/pre-commit-violations/`, so its files may break the very rules
 the hooks enforce.

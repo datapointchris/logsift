@@ -57,7 +57,12 @@ jobs:
       # nothing: bandit reads the AST, and a build failure is a packaging
       # failure, neither of which varies by platform.
       - name: Run bandit
-        run: uv run bandit -c pyproject.toml .
+        run: uv run bandit -c pyproject.toml -r src
+
+      # Every import in src against the dependencies pyproject.toml declares, so a module that
+      # arrives only through another dependency, or a dependency nothing imports, fails here.
+      - name: Run deptry
+        run: uv run deptry src
 
       # release.yml's publish job builds the package only on the tag, once the
       # release is cut. This step catches a broken [project] table on the pull

@@ -5,7 +5,11 @@ import sys
 from contextlib import suppress
 from unittest.mock import patch
 
+from typer.testing import CliRunner
+
 from logsift.cache.manager import CacheManager
+from logsift.cache.manager import SavedKind
+from logsift.cli import app
 from logsift.commands.monitor import monitor_command
 
 
@@ -114,12 +118,12 @@ def test_monitor_command_with_stderr(capsys):
     assert 'stats' in data
 
 
-def test_monitor_command_empty_command():
-    """Test monitoring with empty command list."""
-    # Empty command should raise SystemExit or Exception
-    with suppress(SystemExit, Exception):
-        monitor_command([], output_format='json', save_log=False)
-        # If it doesn't raise, that's also acceptable
+def test_monitor_given_options_but_no_command_is_a_usage_error_that_saves_nothing():
+    """`logsift monitor --stream`, with the command forgotten, exits 2 before it creates a log."""
+    result = CliRunner().invoke(app, ['monitor', '--stream'])
+
+    assert result.exit_code == 2
+    assert not list(CacheManager().directory(SavedKind.RAW).iterdir())
 
 
 def test_monitor_command_with_notify(capsys):
@@ -159,9 +163,8 @@ def test_monitor_command_with_append_mode(tmp_path, capsys):
         append=False,
     )
 
-    # Get the created log file
     cache = CacheManager()
-    log_file = cache.get_latest_log('test-append')
+    log_file = cache.latest(SavedKind.RAW, 'test-append')
 
     assert log_file is not None
     assert log_file.exists()
@@ -170,7 +173,10 @@ def test_monitor_command_with_append_mode(tmp_path, capsys):
     initial_content = log_file.read_text()
     assert 'first run' in initial_content
 
-    # Second run - append to existing log
+    # A newer run whose name starts with this one's must not take the appended output.
+    other = cache.create_paths('test-append-docs')[SavedKind.RAW]
+    other.write_text('other run\n')
+
     monitor_command(
         ['echo', 'second run'],
         name='test-append',
@@ -182,9 +188,9 @@ def test_monitor_command_with_append_mode(tmp_path, capsys):
     # Read updated content
     updated_content = log_file.read_text()
 
-    # Should contain both runs
     assert 'first run' in updated_content
     assert 'second run' in updated_content
+    assert other.read_text() == 'other run\n'
 
 
 def test_monitor_command_append_without_existing_log(capsys):

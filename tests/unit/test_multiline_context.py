@@ -4,49 +4,8 @@ These tests verify that patterns with context_lines_after correctly
 extract extended context for multi-line errors like CalledProcessError.
 """
 
-import re
-import tomllib
-from pathlib import Path
-
 from logsift.core.analyzer import Analyzer
 from logsift.output.toon_formatter import format_toon
-
-
-class TestMultiLinePatterns:
-    """Test patterns that require extended context."""
-
-    def test_called_process_error_pattern_matches(self):
-        """Test that CalledProcessError pattern exists and matches."""
-        pattern_file = Path('src/logsift/patterns/defaults/pre-commit.toml')
-        with pattern_file.open('rb') as f:
-            data = tomllib.load(f)
-
-        pattern = next(
-            (p for p in data['patterns'] if p['name'] == 'pre_commit_called_process_error'),
-            None,
-        )
-        assert pattern is not None, 'pre_commit_called_process_error pattern not found'
-
-        test_line = 'An unexpected error has occurred: CalledProcessError'
-        match = re.search(pattern['regex'], test_line)
-        assert match is not None, f"Pattern didn't match: {test_line}"
-        assert pattern.get('context_lines_after', 0) >= 5
-
-    def test_stderr_section_pattern_matches(self):
-        """Test that stderr section marker pattern exists and matches."""
-        pattern_file = Path('src/logsift/patterns/defaults/pre-commit.toml')
-        with pattern_file.open('rb') as f:
-            data = tomllib.load(f)
-
-        pattern = next(
-            (p for p in data['patterns'] if p['name'] == 'stderr_section_error'),
-            None,
-        )
-        assert pattern is not None, 'stderr_section_error pattern not found'
-
-        test_line = 'stderr:'
-        match = re.search(pattern['regex'], test_line)
-        assert match is not None, f"Pattern didn't match: {test_line}"
 
 
 class TestAnalyzerExtendedContext:
@@ -144,25 +103,3 @@ class TestToonFormatterContext:
         assert 'CalledProcessError' in result
         # Either context_after is included, or the message is extended
         assert 'docker' in result.lower() or 'context_after' in result
-
-
-class TestDockerConnectionPattern:
-    """Test docker connection failure pattern."""
-
-    def test_docker_socket_pattern_matches(self):
-        """Test that docker socket connection pattern matches."""
-        pattern_file = Path('src/logsift/patterns/defaults/pre-commit.toml')
-        with pattern_file.open('rb') as f:
-            data = tomllib.load(f)
-
-        pattern = next(
-            (p for p in data['patterns'] if p['name'] == 'docker_socket_connection_failure'),
-            None,
-        )
-        assert pattern is not None, 'docker_socket_connection_failure pattern not found'
-
-        test_line = 'failed to connect to the docker API at unix:///Users/chris/.config/colima/max/docker.sock'
-        match = re.search(pattern['regex'], test_line)
-        assert match is not None, f"Pattern didn't match: {test_line}"
-        assert pattern['severity'] == 'error'
-        assert 'suggestion' in pattern

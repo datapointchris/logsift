@@ -3,41 +3,41 @@
 This module defines the primary logsift command-line interface with subcommands for monitoring, analyzing, and managing logs.
 """
 
-import datetime as dt
 import json
-from pathlib import Path
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import distribution
 from typing import Annotated
+from typing import cast
 
 import typer
 from pyselfupdate import Config
 from pyselfupdate import notify
 from pyselfupdate.typercmd import add_update_command
 from rich.console import Console
-from rich.table import Table
 
 from logsift import __version__
 from logsift import xdg_dirs
-from logsift.cache.manager import CacheManager
-from logsift.cli_formatter import ColoredTyperGroup
-from logsift.cli_formatter import format_help_with_colors
+from logsift.cache.manager import SavedKind
 from logsift.commands.analyze import analyze_log
+from logsift.commands.analyze import log_file_for
 from logsift.commands.analyze import stream_analyze_log
+from logsift.commands.analyzed import choose_analysis
+from logsift.commands.analyzed import clean_analyzed
+from logsift.commands.analyzed import show_latest_analyzed
 from logsift.commands.config import show_config
-from logsift.commands.format_commands import create_format_commands
-from logsift.commands.logs import CAPTURE_HINT
-from logsift.commands.logs import browse_logs
+from logsift.commands.find_saved_file import IntervalOption
+from logsift.commands.find_saved_file import NameArgument
+from logsift.commands.find_saved_file import TailOption
+from logsift.commands.logs import choose_log
 from logsift.commands.logs import clean_logs
-from logsift.commands.logs import list_logs
-from logsift.commands.logs import tail_log
 from logsift.commands.monitor import monitor_command
+from logsift.commands.saved_file_commands import add_latest_command
+from logsift.commands.saved_file_commands import add_list_command
+from logsift.commands.saved_file_commands import create_kind_group
 from logsift.config.loader import ConfigError
 from logsift.config.loader import default_map
 from logsift.config.loader import load_user_config
-from logsift.output.markdown_formatter import format_markdown
-from logsift.utils.display import display_file_with_bat
-from logsift.utils.display import display_with_bat
-from logsift.utils.fzf import is_fzf_available
-from logsift.utils.fzf import select_log_file
+from logsift.output.analysis_format import AnalysisFormat
 
 app = typer.Typer(
     name='logsift',
@@ -45,48 +45,65 @@ app = typer.Typer(
         'LLM-optimized log analysis for automated error diagnosis.\n\n'
         'Start with `logsift monitor -- <command>`. It runs the command, saves its output '
         'and prints the errors it found. Reach for `logsift analyze` only when the log '
-        'already exists: a file another tool wrote, or `latest` to re-run the patterns '
+        'already exists: a file another tool wrote, or `--latest` to re-run the patterns '
         'over the last capture.\n\n'
-        '`logs` holds what a run printed, and `analyzed` holds what logsift found in it. '
-        'Open `logs` to read the raw output, and `analyzed` to reread the errors '
-        'without running the command again.'
+        '`logs` holds what a run printed, and `analyzed` holds what logsift found in it, '
+        'rendered as Markdown. Open `logs` to read the raw output, and `analyzed` to reread the '
+        'errors without running the command again. `raw`, `json`, `toon` and `md` each show one '
+        'kind of saved file exactly as it is stored: the raw log, or the analysis as '
+        '`--format json`, `toon` or `markdown` printed it.'
     ),
     add_completion=False,
-    rich_markup_mode=None,  # Disable Rich markup
-    pretty_exceptions_enable=False,  # Disable Rich exceptions
+    no_args_is_help=True,
+    pretty_exceptions_enable=False,
     epilog=(
         '\b\n'
         'Examples:\n'
-        '  logsift monitor -- make build                             run it, show errors\n'
-        '  logsift monitor --minimal --format json -- pytest tests/  JSON only, for LLMs\n'
-        '  logsift analyze latest                                    re-scan last capture\n'
-        '  logsift analyzed latest build                             reread build errors\n\n'
-        'Use `logsift help <command>` for more details on a specific command.'
+        '  # Run a build, then print the errors it hit\n'
+        '  logsift monitor -- make build\n'
+        '  # Print only the analysis, as JSON\n'
+        '  logsift monitor -q --format json -- pytest tests/\n'
+        '  # Re-run the patterns over the last capture\n'
+        '  logsift analyze --latest\n'
+        '  # Reread the latest analysis of a run named build\n'
+        '  logsift analyzed latest build\n\n'
+        '`logsift <command> --help` describes one command.'
     ),
-    cls=ColoredTyperGroup,  # Use our custom colored formatter
 )
 console = Console()
-stderr_console = Console(stderr=True)
 
 # Shared by the `update` command and the daily check in the callback below, so
 # the notice cannot name a release the update command would not install.
 UPDATE_CONFIG = Config(tool='logsift', owner='datapointchris')
 add_update_command(app, UPDATE_CONFIG)
 
-# Help sections, named for what their commands are for. A command with no panel, such as
-# `help` and `update`, is listed after them under "Additional commands".
+# Help sections, named for what their commands are for. Typer lists a command with no panel,
+# such as `help` and `update`, first, under "Commands".
 ANALYZE_PANEL = 'Analyze'
 BROWSE_PANEL = 'Browse saved runs'
 
 
+def installed_commit() -> str | None:
+    """The commit uv records in direct_url.json for a git install, or None for any other install.
+
+    A branch install reports one version for many commits, so the commit is what names the build.
+    """
+    try:
+        recorded = json.loads(distribution('logsift').read_text('direct_url.json') or '{}')
+        return recorded.get('vcs_info', {}).get('commit_id')
+    except (PackageNotFoundError, ValueError, AttributeError):
+        return None
+
+
 def version_callback(value: bool) -> None:
-    """Display version information."""
+    """Print `logsift <version>`, then ` @ <sha8>` for a git install."""
     if value:
-        console.print(f'logsift version {__version__}')
+        commit = installed_commit()
+        console.print(f'logsift {__version__} @ {commit[:8]}' if commit else f'logsift {__version__}')
         raise typer.Exit()
 
 
-@app.callback(invoke_without_command=True)
+@app.callback()
 def main(
     ctx: typer.Context,
     version: bool = typer.Option(
@@ -98,23 +115,13 @@ def main(
         help='Display the logsift version',
     ),
 ) -> None:
-    """logsift - Intelligent log analysis for agentic workflows.
-
-    An LLM-optimized log analysis and command monitoring tool designed for
-    Claude Code and other AI agents. Extracts actionable insights from verbose
-    logs and provides structured output optimized for LLMs.
-    """
+    """Load config.toml for every command, and queue the daily update notice."""
     # Never raises and never prints an error; the notice is deferred to exit so
     # it lands after the command's own output. `logsift update` is the only
     # place an update failure is reported, and is skipped here because it is
     # about to do the thing the notice would suggest.
     if ctx.invoked_subcommand != 'update':
         notify(UPDATE_CONFIG)
-
-    # If no subcommand is provided, show help (like uv does)
-    if ctx.invoked_subcommand is None:
-        console.print(ctx.get_help())
-        raise typer.Exit()
 
     # Click builds the subcommand's context after this callback, so it inherits this default_map.
     try:
@@ -124,7 +131,7 @@ def main(
         raise typer.Exit(1) from None
 
 
-@app.command(rich_help_panel=ANALYZE_PANEL)
+@app.command(rich_help_panel=ANALYZE_PANEL, no_args_is_help=True)
 def monitor(
     ctx: typer.Context,
     command: Annotated[list[str] | None, typer.Argument(help='Command to monitor')] = None,
@@ -133,30 +140,30 @@ def monitor(
         typer.Option(
             '-n',
             '--name',
-            help='Name for this monitoring session (default: auto-generated timestamp)',
+            help='Name for this run, used in its saved file names. Taken from the command when omitted',
             envvar='LOGSIFT_SESSION_NAME',
         ),
     ] = None,
     format: Annotated[
-        str,
+        AnalysisFormat,
         typer.Option(
             '--format',
-            help='Output format: auto (markdown on a terminal, toon when piped), json, toon, markdown, plain (same as markdown)',
+            help='How to print the analysis. auto is markdown on a terminal and toon when piped',
             envvar='LOGSIFT_OUTPUT_FORMAT',
         ),
-    ] = 'auto',
+    ] = AnalysisFormat.AUTO,
     stream: Annotated[
         bool,
         typer.Option(
             '--stream',
-            help='Stream all output to terminal in real-time (default: show periodic updates)',
+            help='Print every line of output as it arrives, instead of a progress report every --update-interval',
         ),
     ] = False,
     update_interval: Annotated[
         int,
         typer.Option(
             '--update-interval',
-            help='Seconds between progress updates when not streaming (default: 60)',
+            help='Seconds between progress updates when not streaming',
             envvar='LOGSIFT_UPDATE_INTERVAL',
         ),
     ] = 60,
@@ -174,12 +181,9 @@ def monitor(
             help='Append to existing log instead of creating new (useful for iterative debugging)',
         ),
     ] = False,
-    minimal: Annotated[
+    quiet: Annotated[
         bool,
-        typer.Option(
-            '--minimal',
-            help='Suppress all progress output, only show final analysis result (ideal for LLM workflows)',
-        ),
+        typer.Option('--quiet', '-q', help='Print only the analysis: no banner, progress or summary on stderr'),
     ] = False,
 ) -> None:
     """Monitor a command and analyze its output for errors
@@ -191,54 +195,42 @@ def monitor(
     By default, shows periodic progress updates every 60 seconds. Use --stream
     to see all output in real-time.
 
-    Common Options:
-        -n, --name          Name for this monitoring session
-        --format            Output format: auto, json, toon, markdown, plain
-        --stream            Stream all output in real-time
-        --update-interval   Seconds between updates (default: 60)
-        --minimal           Suppress progress output (for LLM workflows)
-        --notify            Send desktop notification on completion
-        --append           Append to existing log
-
+    \b
     Examples:
         logsift monitor -- make build
         logsift monitor --stream -- npm install
-        logsift monitor --minimal -- pre-commit run --files file.py
+        logsift monitor -q -- pre-commit run --files file.py
         logsift monitor --format json -- docker build -t myapp .
     """
-    # Show help if no command provided
-    if command is None or len(command) == 0:
-        help_text = format_help_with_colors(ctx)
-        typer.echo(help_text, color=True)
-        raise typer.Exit()
-
+    if not command:
+        typer.echo('Error: name the command to monitor after --, as in `logsift monitor -- make build`', err=True)
+        raise typer.Exit(2)
     monitor_command(
         command,
         name=name,
         output_format=format,
         stream=stream,
         update_interval=update_interval,
-        minimal=minimal,
+        quiet=quiet,
         notify=notify,
         append=append,
     )
 
 
-@app.command(rich_help_panel=ANALYZE_PANEL)
+@app.command(rich_help_panel=ANALYZE_PANEL, no_args_is_help=True)
 def analyze(
     ctx: typer.Context,
-    log_file: Annotated[
-        str | None,
-        typer.Argument(help='Path to log file, "latest" for most recent, or "browse" to select with fzf'),
-    ] = None,
+    log_file: Annotated[str | None, typer.Argument(help='The log file to analyze')] = None,
+    latest: Annotated[bool, typer.Option('--latest', help='Analyze the log monitor wrote most recently')] = False,
+    choose: Annotated[bool, typer.Option('--choose', help='Pick a log monitor captured with fzf. Needs a terminal')] = False,
     format: Annotated[
-        str,
+        AnalysisFormat,
         typer.Option(
             '--format',
-            help='Output format: auto (markdown on a terminal, toon when piped), json, toon, markdown, plain (same as markdown)',
+            help='How to print the analysis. auto is markdown on a terminal and toon when piped',
             envvar='LOGSIFT_OUTPUT_FORMAT',
         ),
-    ] = 'auto',
+    ] = AnalysisFormat.AUTO,
     stream: Annotated[
         bool,
         typer.Option(
@@ -251,7 +243,7 @@ def analyze(
         typer.Option(
             '-i',
             '--interval',
-            help='Update interval in seconds when streaming (default: 1)',
+            help='Update interval in seconds when streaming',
         ),
     ] = 1,
     no_save: Annotated[
@@ -271,135 +263,39 @@ def analyze(
     By default, analysis results are saved in all formats (JSON, TOON, Markdown).
     Use --no-save to skip saving (useful when testing pattern changes).
 
+    \b
     Examples:
         logsift analyze /var/log/app.log
         logsift analyze --format json build.log
-        logsift analyze latest
-        logsift analyze latest --no-save
-        logsift analyze latest --stream
-        logsift analyze browse
+        logsift analyze --latest
+        logsift analyze --latest --no-save
+        logsift analyze --latest --stream
+        logsift analyze --choose
     """
-    # Show help if no arguments provided
-    if not log_file:
-        help_text = format_help_with_colors(ctx)
-        typer.echo(help_text, color=True)
-        raise typer.Exit()
-
-    # Handle "latest" shortcut
-    if log_file == 'latest':
-        cache = CacheManager()
-        latest_log = cache.get_absolute_latest_log()
-
-        if not latest_log:
-            stderr_console.print('[red]Error: No cached logs found[/red]')
-            stderr_console.print(CAPTURE_HINT)
-            raise typer.Exit(1)
-
-        log_file = str(latest_log)
-        action = 'Stream analyzing' if stream else 'Analyzing'
-        stderr_console.print(f'[cyan]{action} latest log: {log_file}[/cyan]\n')
-
-    # Handle "browse" shortcut
-    elif log_file == 'browse':
-        if not is_fzf_available():
-            stderr_console.print('[red]Error: fzf is not available[/red]')
-            stderr_console.print('[dim]Install fzf to use browse mode[/dim]')
-            raise typer.Exit(1)
-
-        # Use fzf to select a log file
-        cache = CacheManager()
-        logs = cache.list_all_logs()
-
-        if not logs:
-            stderr_console.print('[yellow]No cached logs found[/yellow]')
-            stderr_console.print(CAPTURE_HINT)
-            raise typer.Exit(1)
-
-        selected = select_log_file(logs, 'Select log file to analyze')
-
-        if not selected:
-            stderr_console.print('[dim]No file selected[/dim]')
-            raise typer.Exit(0)
-
-        log_file = selected
-        action = 'Stream analyzing' if stream else 'Analyzing'
-        stderr_console.print(f'[cyan]{action}: {log_file}[/cyan]\n')
-
-    # Call appropriate function based on stream flag
+    log_file = log_file_for(log_file, latest, choose, stream)
     if stream:
         stream_analyze_log(log_file, interval=interval)
     else:
         analyze_log(log_file, output_format=format, save=not no_save)
 
 
-# Create logs command group
 logs_app = typer.Typer(
     help='Manage cached log files',
-    rich_markup_mode=None,
+    no_args_is_help=True,
     pretty_exceptions_enable=False,
-    cls=ColoredTyperGroup,  # Use our custom colored formatter
-    invoke_without_command=True,
 )
 app.add_typer(logs_app, name='logs', rich_help_panel=BROWSE_PANEL)
+add_list_command(logs_app, SavedKind.RAW, 'logs')
+add_latest_command(logs_app, SavedKind.RAW, 'logs')
 
 
-@logs_app.callback()
-def logs_callback(ctx: typer.Context) -> None:
-    """Manage cached log files."""
-    # Show help if no subcommand provided
-    if ctx.invoked_subcommand is None:
-        help_text = format_help_with_colors(ctx)
-        typer.echo(help_text, color=True)
-        raise typer.Exit()
-
-
-# Create analyzed command group
 analyzed_app = typer.Typer(
     help='Manage saved analysis results',
-    rich_markup_mode=None,
+    no_args_is_help=True,
     pretty_exceptions_enable=False,
-    cls=ColoredTyperGroup,  # Use our custom colored formatter
-    invoke_without_command=True,
 )
 app.add_typer(analyzed_app, name='analyzed', rich_help_panel=BROWSE_PANEL)
-
-
-@analyzed_app.callback()
-def analyzed_callback(ctx: typer.Context) -> None:
-    """Manage saved analysis results."""
-    # Show help if no subcommand provided
-    if ctx.invoked_subcommand is None:
-        help_text = format_help_with_colors(ctx)
-        typer.echo(help_text, color=True)
-        raise typer.Exit()
-
-
-@logs_app.command('list')
-def logs_list(
-    format: Annotated[
-        str,
-        typer.Option(
-            '--format',
-            help='Output format: table (default), json (for scripts), plain (simple list)',
-        ),
-    ] = 'table',
-) -> None:
-    """List all cached log files with metadata.
-
-    Shows all logs stored in the cache directory with their size and modification
-    time. Useful for finding previously monitored sessions.
-
-    Examples:
-        # List all cached logs
-        logsift logs list
-
-        # Get JSON output for scripting
-        logsift logs list --format json
-
-        # Simple list of paths
-        logsift logs list --format plain
-    """
-    list_logs(output_format=format)
+add_list_command(analyzed_app, SavedKind.JSON, 'analyzed')
 
 
 @logs_app.command('clean')
@@ -409,7 +305,7 @@ def logs_clean(
         typer.Option(
             '-d',
             '--days',
-            help='Delete logs older than N days (default: 90)',
+            help='Delete logs older than N days',
             envvar='LOGSIFT_RETENTION_DAYS',
         ),
     ] = 90,
@@ -426,6 +322,7 @@ def logs_clean(
     Deletes cached logs older than the specified number of days. Use --dry-run
     to preview what would be deleted before actually removing files.
 
+    \b
     Examples:
         # Preview what would be deleted (safe)
         logsift logs clean --dry-run
@@ -442,48 +339,27 @@ def logs_clean(
     clean_logs(days=days, dry_run=dry_run)
 
 
-@logs_app.command('browse')
-def logs_browse(
-    view: Annotated[
-        bool,
-        typer.Option(
-            '--view',
-            help='Browse raw file content instead of analyzing (useful for inspection)',
-        ),
-    ] = False,
-    tail: Annotated[
-        bool,
-        typer.Option(
-            '--tail',
-            help='Tail the selected log file in real-time',
-        ),
-    ] = False,
-    interval: Annotated[
-        int,
-        typer.Option(
-            '-i',
-            '--interval',
-            help='Update interval in seconds when tailing (default: 1)',
-        ),
-    ] = 1,
+@logs_app.command('choose')
+def logs_choose(
+    view: Annotated[bool, typer.Option('--view', help="Search the chosen log's lines in fzf instead of analyzing it")] = False,
+    tail: TailOption = False,
+    interval: IntervalOption = 1,
 ) -> None:
-    """Browse and search cached log files interactively using fzf.
+    """Pick a cached log with fzf, then analyze it, search it or tail it.
 
-    Opens an interactive fuzzy-finder interface to search and select from
-    cached logs. By default, analyzes the selected file. Use --view to browse
-    raw content, or --tail to tail it in real-time.
+    Needs a terminal and fzf. Without a terminal it exits 2 and names the
+    command that takes the log by name instead.
 
-    Requires fzf to be installed (see https://github.com/junegunn/fzf#installation).
-
+    \b
     Examples:
-        # Browse and analyze a cached log
-        logsift logs browse
+        # Pick a log and analyze it
+        logsift logs choose
 
-        # Browse raw file content (no analysis)
-        logsift logs browse --view
+        # Pick a log and search its lines
+        logsift logs choose --view
 
-        # Browse and tail a log file
-        logsift logs browse --tail
+        # Pick a log and tail it
+        logsift logs choose --tail
     """
     if tail:
         action = 'tail'
@@ -492,180 +368,28 @@ def logs_browse(
     else:
         action = 'select'
 
-    browse_logs(action=action, interval=interval)
+    choose_log(action=action, interval=interval)
 
 
-@logs_app.command('latest')
-def logs_latest(
-    name: Annotated[
-        str | None,
-        typer.Argument(help='Name of log to find (e.g., "echo", "pytest"). If omitted, shows absolute latest log'),
-    ] = None,
-    tail: Annotated[
-        bool,
-        typer.Option(
-            '--tail',
-            help='Tail the log file in real-time instead of displaying it',
-        ),
-    ] = False,
-    interval: Annotated[
-        int,
-        typer.Option(
-            '-i',
-            '--interval',
-            help='Update interval in seconds when tailing (default: 1)',
-        ),
-    ] = 1,
-) -> None:
-    """Show the most recent log file, optionally tailing it in real-time.
+@analyzed_app.command('choose')
+def analyzed_choose() -> None:
+    """Pick a saved analysis with fzf and page it as Markdown.
 
-    Finds the latest log file by name and displays its raw contents. Use --tail
-    to watch it in real-time. If no name is provided, uses the absolute latest
-    log across all cached logs.
+    Needs a terminal and fzf. Without a terminal it exits 2 and names the
+    command that takes the analysis by name instead.
 
+    \b
     Examples:
-        # Show the latest pytest log
-        logsift logs latest pytest
-
-        # Tail the latest build log in real-time
-        logsift logs latest make --tail
-
-        # Show the absolute latest log (any name)
-        logsift logs latest
-
-        # Tail with custom update interval
-        logsift logs latest pytest --tail --interval 5
+        logsift analyzed choose
     """
-    cache = CacheManager()
-
-    # Get the latest log
-    if name:
-        log_path = cache.get_latest_log(name)
-        if not log_path:
-            stderr_console.print(f'[red]Error: No logs found for name "{name}"[/red]')
-            stderr_console.print('[dim]Run `logsift logs list` to see the cached names[/dim]')
-            raise typer.Exit(1)
-    else:
-        log_path = cache.get_absolute_latest_log()
-        if not log_path:
-            stderr_console.print('[red]Error: No cached logs found[/red]')
-            stderr_console.print(CAPTURE_HINT)
-            raise typer.Exit(1)
-
-    stderr_console.print(f'[cyan]Latest log: {log_path}[/cyan]\n')
-
-    # Either tail or show the raw log
-    if tail:
-        tail_log(str(log_path), interval=interval)
-    else:
-        # Show raw log contents with bat for better UX
-        display_file_with_bat(log_path)
-
-
-@analyzed_app.command('list')
-def analyzed_list(
-    format: Annotated[
-        str,
-        typer.Option(
-            '--format',
-            help='Output format: table (default), json, or plain',
-        ),
-    ] = 'table',
-) -> None:
-    """List all saved analysis results.
-
-    Shows all analysis results saved in the cache directory with metadata
-    including name, size, and modification time.
-
-    Examples:
-        # List in table format
-        logsift analyzed list
-
-        # List in JSON format
-        logsift analyzed list --format json
-    """
-    cache = CacheManager()
-    analyses = cache.list_all_analyzed()
-
-    if not analyses:
-        stderr_console.print('[yellow]No saved analyses found[/yellow]')
-        stderr_console.print(CAPTURE_HINT)
-        return
-
-    if format == 'json':
-        print(json.dumps(analyses, indent=2))
-    elif format == 'plain':
-        for analysis in analyses:
-            print(f'{analysis["name"]}\t{analysis["path"]}\t{analysis["size_bytes"]}\t{analysis["modified_iso"]}')
-    else:
-        # Table format
-        table = Table(title='Saved Analysis Results', show_header=True)
-        table.add_column('Name', style='cyan')
-        table.add_column('Size', justify='right')
-        table.add_column('Modified', style='dim')
-
-        for analysis in analyses:
-            size_kb = int(analysis['size_bytes']) / 1024
-            size_str = f'{size_kb:.1f} KB' if size_kb < 1024 else f'{size_kb / 1024:.1f} MB'
-            table.add_row(str(analysis['name']), size_str, str(analysis['modified_iso']))
-
-        console.print(table)
-        console.print(f'\n[dim]Total: {len(analyses)} analysis result(s)[/dim]')
-
-
-@analyzed_app.command('browse')
-def analyzed_browse() -> None:
-    """Browse saved analyses interactively with fzf.
-
-    Opens an interactive fuzzy-finder to search and select from saved analyses,
-    then displays the selected analysis result.
-
-    Requires fzf to be installed (see https://github.com/junegunn/fzf#installation).
-
-    Examples:
-        logsift analyzed browse
-    """
-    if not is_fzf_available():
-        stderr_console.print('[red]Error: fzf is not installed or not in PATH[/red]')
-        stderr_console.print('[dim]Install fzf: https://github.com/junegunn/fzf#installation[/dim]')
-        raise typer.Exit(1)
-
-    cache = CacheManager()
-    analyses = cache.list_all_analyzed()
-
-    if not analyses:
-        stderr_console.print('[yellow]No saved analyses found[/yellow]')
-        stderr_console.print(CAPTURE_HINT)
-        return
-
-    selected_path = select_log_file(analyses, 'Select analysis result to view')
-
-    if not selected_path:
-        stderr_console.print('[dim]No file selected[/dim]')
-        return
-
-    # Display the analysis with bat for better UX
-    try:
-        analysis_data = json.loads(Path(selected_path).read_text())
-        stderr_console.print(f'[cyan]Analysis: {selected_path}[/cyan]\n')
-
-        output = format_markdown(analysis_data)
-        display_with_bat(output, language='markdown', filename=Path(selected_path).name)
-    except (json.JSONDecodeError, OSError) as e:
-        stderr_console.print(f'[red]Error reading analysis: {e}[/red]')
+    choose_analysis()
 
 
 @analyzed_app.command('latest')
-def analyzed_latest(
-    name: Annotated[
-        str | None,
-        typer.Argument(help='Name to filter by (substring match). If omitted, shows absolute latest'),
-    ] = None,
-) -> None:
-    """Show the most recent saved analysis.
+def analyzed_latest(name: NameArgument = None) -> None:
+    """Page the most recently written analysis, rendered as Markdown.
 
-    Displays the latest saved analysis result, optionally filtered by name.
-
+    \b
     Examples:
         # Show absolute latest analysis
         logsift analyzed latest
@@ -673,32 +397,7 @@ def analyzed_latest(
         # Show latest analysis matching "build"
         logsift analyzed latest build
     """
-    cache = CacheManager()
-
-    if name:
-        latest_analysis = cache.get_latest_analyzed(name)
-        if not latest_analysis:
-            stderr_console.print(f'[red]Error: No analyses found matching "{name}"[/red]')
-            stderr_console.print('[dim]Run `logsift analyzed list` to see the saved names[/dim]')
-            raise typer.Exit(1)
-    else:
-        latest_analysis = cache.get_absolute_latest_analyzed()
-        if not latest_analysis:
-            stderr_console.print('[red]Error: No saved analyses found[/red]')
-            stderr_console.print(CAPTURE_HINT)
-            raise typer.Exit(1)
-
-    stderr_console.print(f'[cyan]Latest analysis: {latest_analysis}[/cyan]\n')
-
-    # Display the analysis with bat for better UX
-    try:
-        analysis_data = json.loads(latest_analysis.read_text())
-
-        output = format_markdown(analysis_data)
-        display_with_bat(output, language='markdown', filename=latest_analysis.name)
-    except (json.JSONDecodeError, OSError) as e:
-        stderr_console.print(f'[red]Error reading analysis: {e}[/red]')
-        raise typer.Exit(1) from None
+    show_latest_analyzed(name)
 
 
 @analyzed_app.command('clean')
@@ -708,7 +407,7 @@ def analyzed_clean(
         typer.Option(
             '-d',
             '--days',
-            help='Delete analyses older than this many days (default: 30)',
+            help='Delete analyses older than this many days',
         ),
     ] = 30,
     dry_run: Annotated[
@@ -725,6 +424,7 @@ def analyzed_clean(
     Raw logs are left for 'logsift logs clean'.
     Use --dry-run to preview what would be deleted.
 
+    \b
     Examples:
         # Clean analyses older than 30 days
         logsift analyzed clean
@@ -735,52 +435,11 @@ def analyzed_clean(
         # Preview what would be deleted
         logsift analyzed clean --dry-run
     """
-    cache = CacheManager()
-    cutoff_timestamp = (dt.datetime.now(tz=dt.UTC) - dt.timedelta(days=days)).timestamp()
-    to_delete = [
-        analysis_file
-        for directory, pattern in ((cache.json_dir, '*.json'), (cache.toon_dir, '*.toon'), (cache.md_dir, '*.md'))
-        for analysis_file in sorted(directory.glob(pattern))
-        if analysis_file.is_file() and analysis_file.stat().st_mtime < cutoff_timestamp
-    ]
-
-    if not to_delete:
-        console.print(f'[green]No analysis files older than {days} days[/green]')
-        return
-
-    if dry_run:
-        console.print(f'[yellow]Would delete {len(to_delete)} analysis file(s) older than {days} days:[/yellow]')
-        for analysis_file in to_delete[:10]:
-            console.print(f'  - {analysis_file}')
-        if len(to_delete) > 10:
-            console.print(f'  ... and {len(to_delete) - 10} more')
-        console.print('\n[dim]Run without --dry-run to actually delete[/dim]')
-        return
-
-    for analysis_file in to_delete:
-        analysis_file.unlink()
-    console.print(f'[green]Deleted {len(to_delete)} analysis file(s) older than {days} days[/green]')
+    clean_analyzed(days=days, dry_run=dry_run)
 
 
-# ============================================================================
-# Format-specific command groups
-# ============================================================================
-#
-# Create unified command groups for each log format using template function.
-# Each format (raw, json, toon, md) gets the same commands: browse, latest, list
-#
-
-# Create format command groups
-raw_app = create_format_commands('raw', '.log', 'raw_dir', 'txt')
-json_app = create_format_commands('json', '.json', 'json_dir', 'json')
-toon_app = create_format_commands('toon', '.toon', 'toon_dir', 'yaml')
-md_app = create_format_commands('md', '.md', 'md_dir', 'markdown')
-
-# Register format commands
-app.add_typer(raw_app, name='raw', rich_help_panel=BROWSE_PANEL)
-app.add_typer(json_app, name='json', rich_help_panel=BROWSE_PANEL)
-app.add_typer(toon_app, name='toon', rich_help_panel=BROWSE_PANEL)
-app.add_typer(md_app, name='md', rich_help_panel=BROWSE_PANEL)
+for kind in SavedKind:
+    app.add_typer(create_kind_group(kind), name=kind, rich_help_panel=BROWSE_PANEL)
 
 
 @app.command('config')
@@ -793,6 +452,7 @@ def config(ctx: typer.Context) -> None:
     would set it. A config.toml that fails to parse, or names a key logsift
     does not read, stops every command and names the problem.
 
+    \b
     Examples:
         logsift config
         LOGSIFT_OUTPUT_FORMAT=json logsift config
@@ -807,28 +467,28 @@ def help(
 ) -> None:
     """Display help information for logsift commands.
 
+    \b
     Examples:
         logsift help
         logsift help monitor
         logsift help analyze
     """
     root_ctx = ctx.parent or ctx
-
     if command is None:
-        # Show main help using custom formatter
-        help_text = format_help_with_colors(root_ctx)
-        typer.echo(help_text, color=True)
-    else:
-        get_command = getattr(root_ctx.command, 'get_command', None)
-        cmd = get_command(root_ctx, command) if get_command else None
-        if cmd is None:
-            # A usage error exits 2, so a caller can tell a mistyped name from a command that ran and failed.
-            typer.echo(f'Error: Unknown command "{command}". Run "logsift help" to see available commands.', err=True)
-            raise typer.Exit(2)
-        # The command's own context class, which is the one Typer would build for it.
-        with cmd.context_class(cmd, info_name=command, parent=root_ctx) as cmd_ctx:
-            help_text = format_help_with_colors(cmd_ctx)
-            typer.echo(help_text, color=True)
+        typer.echo(root_ctx.get_help())
+        return
+
+    # Typer builds the root of an app with subcommands as a TyperGroup.
+    group = cast(typer.core.TyperGroup, root_ctx.command)
+    cmd = group.get_command(root_ctx, command)
+    if cmd is None:
+        # A usage error exits 2, so a caller can tell a mistyped name from a command that ran and failed.
+        known = ', '.join(group.list_commands(root_ctx))
+        typer.echo(f'Error: Unknown command "{command}". The commands are: {known}', err=True)
+        raise typer.Exit(2)
+    # The command's own context class, which is the one Typer would build for it.
+    with cmd.context_class(cmd, info_name=command, parent=root_ctx) as cmd_ctx:
+        typer.echo(cmd_ctx.get_help())
 
 
 if __name__ == '__main__':

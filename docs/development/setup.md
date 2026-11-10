@@ -6,241 +6,107 @@ Complete guide for contributing to logsift.
 
 - Python 3.13+
 - uv (package installer)
+- [Task](https://taskfile.dev) (runs the commands in `Taskfile.yml`)
 - Git
 
 ## Initial Setup
 
 ```bash
-# Clone repository
 git clone https://github.com/datapointchris/logsift.git
 cd logsift
 
-# Install all dependencies (dev + test groups)
-uv sync --group dev --group test
+# Install the dev and test groups, and the commit and commit-msg hooks
+task setup
 
-# Install pre-commit hooks
-uv run pre-commit install --install-hooks
-uv run pre-commit install --hook-type commit-msg
-
-# Install as editable tool
+# Install as an editable tool, so `logsift` runs your checkout
 uv tool install --editable .
 ```
 
-## Verify Installation
-
-```bash
-# Check logsift command works
-logsift --version
-
-# Run tests
-uv run pytest -v
-
-# Run pre-commit hooks
-uv run pre-commit run --all-files
-```
+`task --list` names every command. `logsift --version` and `task test` confirm the install.
 
 ## Development Workflow
 
-### 1. Create Feature Branch
+1. Name a branch for the work it holds, with no type prefix: `git switch -c hook-status-in-toon`.
+2. Edit code in `src/logsift/`, with its tests in `tests/unit/` or `tests/integration/`.
+3. `task format` applies ruff's formatting and autofixes. `task lint` runs ruff, mypy, bandit and
+   deptry without writing, as CI does. `task test` runs the suite.
+4. Commit with a [Conventional Commits](https://www.conventionalcommits.org/) message, such as
+   `feat: read a pattern's code group` or `fix: keep the level prefix in the message`.
+5. Push the branch and open a pull request on GitHub.
 
-```bash
-git checkout -b feature/your-feature-name
-```
-
-### 2. Make Changes
-
-Edit code in `src/logsift/`
-
-### 3. Write Tests
-
-Create tests in `tests/unit/` or `tests/integration/`
-
-```bash
-# Run tests
-uv run pytest -v
-
-# Run with coverage
-uv run pytest --cov=logsift --cov-report=term
-```
-
-### 4. Run Pre-commit
-
-```bash
-uv run pre-commit run --all-files
-```
-
-This runs every hook `.pre-commit-config.yaml` declares, among them ruff, mypy, codespell,
-markdownlint and shellcheck. Bandit is not among them, so run `task lint` for ruff, mypy and bandit
-together. CI runs bandit as well.
-
-### 5. Commit Changes
-
-```bash
-git add <files>
-git commit -m "feat: add new feature"
-```
-
-Follow [Conventional Commits](https://www.conventionalcommits.org/):
-
-- `feat:` - New feature
-- `fix:` - Bug fix
-- `docs:` - Documentation
-- `test:` - Tests
-- `chore:` - Maintenance
-
-### 6. Push and Create PR
-
-```bash
-git push origin feature/your-feature-name
-```
-
-Create pull request on GitHub.
+The commit runs every hook `.pre-commit-config.yaml` declares, and the commit-msg hook checks the
+message. So nothing needs running by hand before a commit. `uv run pre-commit run <hook-id>
+--files <path>` reruns one hook on one file while fixing what it found.
 
 ## Project Structure
 
 ```text
 logsift/
-├── src/logsift/              # Source code
-│   ├── cli.py                # CLI entry point
-│   ├── commands/             # CLI commands
-│   ├── core/                 # Analysis engine
-│   ├── patterns/             # Pattern system
-│   ├── output/               # Formatters
-│   ├── monitor/              # Process monitoring
-│   ├── cache/                # Cache management
-│   └── utils/                # Utilities
-├── tests/                    # Tests
-│   ├── unit/                 # Unit tests
-│   ├── integration/          # Integration tests
+├── src/logsift/
+│   ├── cli.py                # Typer entry: parses the command line and calls a command
+│   ├── commands/             # One module per command, orchestrating the rest
+│   ├── core/                 # Parsing, issue detection, file references, analysis
+│   ├── patterns/             # Pattern loading and validation, and the built-in TOML files
+│   ├── output/               # toon, JSON and Markdown formatters
+│   ├── monitor/              # Following a file as it grows
+│   ├── config/               # config.toml loading and each option's resolved value
+│   ├── cache/                # The cache directory's one door, CacheManager
+│   ├── utils/                # bat, fzf, notifications and timestamps
+│   ├── process_runner.py     # Where every external process starts
+│   └── xdg_dirs.py           # The config and cache directories
+├── tests/
+│   ├── unit/
+│   ├── integration/
 │   └── conftest.py           # Shared fixtures
-├── docs/                     # Documentation
-├── pyproject.toml            # Project config
-└── README.md                 # Project README
+├── schemas/                  # The JSON schema --format json prints to
+├── docs/
+├── pyproject.toml
+└── Taskfile.yml
 ```
 
 ## Running Tests
 
-```bash
-# All tests
-uv run pytest -v
-
-# Specific file
-uv run pytest tests/unit/test_parser.py -v
-
-# Specific test
-uv run pytest tests/unit/test_parser.py::test_parser_initialization -v
-
-# With coverage
-uv run pytest --cov=logsift --cov-report=term
-
-# Watch mode (requires pytest-watch)
-uv run ptw
-```
-
-## Code Quality Tools
-
-### Ruff (Linting + Formatting)
+`task test` passes anything after `--` to pytest:
 
 ```bash
-# Check linting
-uv run ruff check src/ tests/
-
-# Auto-fix issues
-uv run ruff check --fix src/ tests/
-
-# Format code
-uv run ruff format src/ tests/
-```
-
-### Mypy (Type Checking)
-
-```bash
-uv run mypy src/logsift --config-file pyproject.toml
-```
-
-### Bandit (Security)
-
-```bash
-uv run bandit -c pyproject.toml -r .
-```
-
-## Pre-commit Hooks
-
-`.pre-commit-config.yaml` declares the hooks, and `uv run pre-commit run --all-files` lists each one
-as it runs:
-
-```bash
-# Run all hooks
-uv run pre-commit run --all-files
-
-# Run specific hook
-uv run pre-commit run ruff --all-files
-
-# Update hooks
-uv run pre-commit autoupdate
+task test                                                       # all tests
+task test -- tests/unit/test_parser.py -v                       # one file
+task test -- tests/unit/test_parser.py::test_parser_initialization -v  # one test
+task test:coverage                                              # with a coverage report
 ```
 
 ## Testing Philosophy
 
-Follow these principles:
-
 1. **Test behavior, not implementation**
-2. **Aim for 80%+ coverage**
-3. **Integration tests as important as unit tests**
-4. **Use real log samples**
+2. **Integration tests as important as unit tests**
+3. **Use real log samples**
 
 ## Documentation
 
-Build docs locally:
-
 ```bash
-# Install mkdocs (in dev group)
-uv sync --group dev
-
-# Serve docs locally
-uv run mkdocs serve
-
-# Build static site
-uv run mkdocs build
+uv run mkdocs serve   # serve docs locally
+uv run mkdocs build   # build the static site
 ```
 
 ## Troubleshooting
 
-### Pre-commit Fails
+### A Hook Fails the Commit
 
-```bash
-# See what failed
-uv run pre-commit run --all-files
-
-# Auto-fix what can be fixed
-uv run ruff check --fix src/ tests/
-uv run ruff format src/ tests/
-
-# Re-run
-uv run pre-commit run --all-files
-```
+The commit did not happen. Read what each hook printed, fix the cause, stage again and commit again.
+`task format` fixes what ruff can fix itself.
 
 ### Tests Fail
 
 ```bash
-# Run with verbose output
-uv run pytest -vv
-
-# Run with print statements
-uv run pytest -s
-
-# Run specific failing test
-uv run pytest tests/unit/test_file.py::test_name -vv
+task test -- -vv                                      # verbose output
+task test -- -s                                       # show print output
+task test -- tests/unit/test_file.py::test_name -vv   # one failing test
 ```
 
 ### Type Errors
 
 ```bash
-# Check types
-uv run mypy src/logsift
-
-# See specific error
-uv run mypy src/logsift --show-error-codes
+task typecheck
 ```
 
 ## See Also

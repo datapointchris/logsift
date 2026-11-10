@@ -19,67 +19,31 @@ tags = ["pre-commit", "shellcheck", "shell", "location"]
 
 [[patterns]]
 name = "shellcheck_error"
-regex = "SC(\\d+) \\(error\\): (.+)"
+regex = "(?P<code>SC\\d+) \\(error\\): (.+)"
 severity = "error"
 description = "Shellcheck error with SC code"
 tags = ["pre-commit", "shellcheck", "shell", "error"]
 
 [[patterns]]
 name = "shellcheck_warning"
-regex = "SC(\\d+) \\(warning\\): (.+)"
+regex = "(?P<code>SC\\d+) \\(warning\\): (.+)"
 severity = "warning"
 description = "Shellcheck warning with SC code"
 tags = ["pre-commit", "shellcheck", "shell", "warning"]
 
 [[patterns]]
 name = "shellcheck_info"
-regex = "SC(\\d+) \\(info\\): (.+)"
+regex = "(?P<code>SC\\d+) \\(info\\): (.+)"
 severity = "warning"
 description = "Shellcheck info/style suggestion"
 tags = ["pre-commit", "shellcheck", "shell", "info", "style"]
 
 [[patterns]]
 name = "shellcheck_note"
-regex = "SC(\\d+) \\(note\\): (.+)"
+regex = "(?P<code>SC\\d+) \\(note\\): (.+)"
 severity = "warning"
 description = "Shellcheck informational note"
 tags = ["pre-commit", "shellcheck", "shell", "note"]
-
-# Specific shellcheck codes for better detection
-[[patterns]]
-name = "shellcheck_sc2086_quoting"
-regex = "SC2086.*Double quote to prevent globbing"
-severity = "warning"
-description = "Variable expansion needs quoting"
-tags = ["pre-commit", "shellcheck", "quoting", "SC2086"]
-
-[[patterns]]
-name = "shellcheck_sc2155_declare_assign"
-regex = "SC2155.*Declare and assign separately"
-severity = "warning"
-description = "Declaration and assignment should be separate"
-tags = ["pre-commit", "shellcheck", "variables", "SC2155"]
-
-[[patterns]]
-name = "shellcheck_sc2034_unused_var"
-regex = "SC2034.*appears unused"
-severity = "warning"
-description = "Variable defined but not used"
-tags = ["pre-commit", "shellcheck", "unused", "SC2034"]
-
-[[patterns]]
-name = "shellcheck_sc2154_undefined_var"
-regex = "SC2154.*is referenced but not assigned"
-severity = "warning"
-description = "Variable used but not defined"
-tags = ["pre-commit", "shellcheck", "undefined", "SC2154"]
-
-[[patterns]]
-name = "shellcheck_sc2164_cd_fail"
-regex = "SC2164.*Use.*\\|\\| exit.*in case cd fails"
-severity = "warning"
-description = "cd command should handle failure"
-tags = ["pre-commit", "shellcheck", "cd", "SC2164"]
 
 # ============================================================================
 # Python Refactoring Suggestions - refurb
@@ -87,7 +51,7 @@ tags = ["pre-commit", "shellcheck", "cd", "SC2164"]
 
 [[patterns]]
 name = "refurb_suggestion"
-regex = "^(.+?):(\\d+):(\\d+) \\[FURB(\\d+)\\]: (.+)"
+regex = "^(.+?):(\\d+):(\\d+) \\[(?P<code>FURB\\d+)\\]: (.+)"
 severity = "warning"
 description = "Refurb refactoring suggestion"
 tags = ["pre-commit", "refurb", "python", "refactoring", "style"]
@@ -98,7 +62,7 @@ tags = ["pre-commit", "refurb", "python", "refactoring", "style"]
 
 [[patterns]]
 name = "mypy_error"
-regex = "^(.+?):(\\d+): error: (.+?)  \\[(.+?)\\]"
+regex = "^(.+?):(\\d+): error: (.+?)  \\[(?P<code>.+?)\\]"
 severity = "error"
 description = "Mypy type checking error"
 tags = ["pre-commit", "mypy", "python", "type-checking", "error"]
@@ -130,46 +94,17 @@ tags = ["pre-commit", "mypy", "python", "type-checking", "warning"]
 
 [[patterns]]
 name = "ruff_error"
-regex = "^(.+?):(\\d+):(\\d+): ([A-Z]\\d+) (.+)"
+regex = "^(.+?):(\\d+):(\\d+): (?P<code>[A-Z]\\d+) (.+)"
 severity = "error"
 description = "Ruff linting error"
 tags = ["pre-commit", "ruff", "python", "linting", "error"]
 
 [[patterns]]
 name = "ruff_error_simple"
-regex = "^(.+?):(\\d+):(\\d+): ([A-Z]\\d+)"
+regex = "^(.+?):(\\d+):(\\d+): (?P<code>[A-Z]\\d+)"
 severity = "error"
 description = "Ruff linting error (code only)"
 tags = ["pre-commit", "ruff", "python", "linting", "error"]
-
-# Specific ruff codes for better detection
-[[patterns]]
-name = "ruff_f401_unused_import"
-regex = "F401.*imported but unused"
-severity = "error"
-description = "Module imported but never used"
-tags = ["pre-commit", "ruff", "import", "F401"]
-
-[[patterns]]
-name = "ruff_e501_line_too_long"
-regex = "E501.*line too long"
-severity = "error"
-description = "Line exceeds maximum length"
-tags = ["pre-commit", "ruff", "formatting", "E501"]
-
-[[patterns]]
-name = "ruff_f841_unused_variable"
-regex = "F841.*local variable.*is assigned to but never used"
-severity = "error"
-description = "Variable assigned but never used"
-tags = ["pre-commit", "ruff", "unused", "F841"]
-
-[[patterns]]
-name = "ruff_f821_undefined_name"
-regex = "F821.*Undefined name"
-severity = "error"
-description = "Name used but not defined"
-tags = ["pre-commit", "ruff", "undefined", "F821"]
 
 # ============================================================================
 # Spell Checking - codespell
@@ -188,7 +123,7 @@ tags = ["pre-commit", "codespell", "spelling", "typo"]
 
 [[patterns]]
 name = "check_yaml_error"
-regex = "^  in \"(.+?)\", line (\\d+), column (\\d+)"
+regex = "^in \"(.+?)\", line (\\d+), column (\\d+)"
 severity = "error"
 description = "YAML syntax error location"
 tags = ["pre-commit", "yaml", "syntax", "validation"]
@@ -231,31 +166,12 @@ tags = ["pre-commit", "security", "private-key", "secrets"]
 
 [[patterns]]
 name = "bandit_issue_header"
-regex = "^>> Issue: \\[([A-Z]\\d+):[^\\]]+\\] (.+)"
+regex = "^>> Issue: \\[(?P<code>[A-Z]\\d+):[^\\]]+\\] (.+)"
 severity = "warning"
-description = "Bandit security issue header"
+description = "Bandit security issue"
 tags = ["pre-commit", "bandit", "security", "python"]
-
-[[patterns]]
-name = "bandit_severity_high"
-regex = "^   Severity: High"
-severity = "error"
-description = "Bandit high severity security issue"
-tags = ["pre-commit", "bandit", "security", "python", "high-severity"]
-
-[[patterns]]
-name = "bandit_severity_medium"
-regex = "^   Severity: Medium"
-severity = "warning"
-description = "Bandit medium severity security issue"
-tags = ["pre-commit", "bandit", "security", "python", "medium-severity"]
-
-[[patterns]]
-name = "bandit_location"
-regex = "^   Location: (.+?):(\\d+):(\\d+)"
-severity = "warning"
-description = "Bandit issue location"
-tags = ["pre-commit", "bandit", "security", "location"]
+# Its Severity, CWE, More Info and Location lines follow it, so they ride in its context.
+context_lines_after = 4
 
 # ============================================================================
 # Markdown Linting - markdownlint
@@ -263,7 +179,7 @@ tags = ["pre-commit", "bandit", "security", "location"]
 
 [[patterns]]
 name = "markdownlint_error"
-regex = "^(.+?):(\\d+) (MD\\d+)/([^\\s]+) (.+?)(?:\\s+\\[Context: \"(.+?)\"\\])?$"
+regex = "^(.+?):(\\d+) (?P<code>MD\\d+)/([^\\s]+) (.+?)(?:\\s+\\[Context: \"(.+?)\"\\])?$"
 severity = "error"
 description = "Markdownlint rule violation"
 tags = ["pre-commit", "markdownlint", "markdown", "style"]
@@ -314,14 +230,6 @@ regex = "failed to connect to the docker API at unix://([^;\\s]+)"
 severity = "error"
 description = "Docker daemon not reachable via socket"
 tags = ["docker", "infrastructure", "socket"]
-suggestion = "Start Docker: 'open -a Docker' or 'colima start'"
-
-[[patterns]]
-name = "docker_daemon_not_running"
-regex = "Cannot connect to the Docker daemon"
-severity = "error"
-description = "Docker daemon is not running"
-tags = ["docker", "infrastructure", "daemon"]
 suggestion = "Start Docker: 'open -a Docker' or 'colima start'"
 
 [[patterns]]

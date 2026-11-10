@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 
+from logsift.patterns.loader import BUILTIN_PATTERNS
 from logsift.patterns.loader import PatternLoader
 
 
@@ -19,18 +20,11 @@ def test_load_builtin_patterns():
     loader = PatternLoader()
     patterns = loader.load_builtin_patterns()
 
-    # Should have loaded at least the common patterns
-    assert 'common' in patterns
-    assert isinstance(patterns['common'], list)
-    assert len(patterns['common']) > 0
-
-    # Verify pattern structure
-    first_pattern = patterns['common'][0]
-    assert 'name' in first_pattern
-    assert 'regex' in first_pattern
-    assert 'severity' in first_pattern
-    assert 'description' in first_pattern
-    assert 'tags' in first_pattern
+    # Every shipped file is validated on the way in, and loads as a category of its own.
+    shipped = {entry.name.removesuffix('.toml') for entry in BUILTIN_PATTERNS.iterdir() if entry.name.endswith('.toml')}
+    assert set(patterns) == shipped
+    assert all(patterns[category] for category in shipped)
+    assert list(patterns)[-1] == 'common'
 
 
 def test_load_builtin_patterns_stores_in_instance():
