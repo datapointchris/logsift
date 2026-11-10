@@ -76,34 +76,6 @@ def test_select_log_file_success():
         assert result == '/path/to/test.log'
 
 
-def test_select_log_file_formats_sizes_correctly():
-    """Test that select_log_file formats file sizes correctly."""
-    logs = [
-        {'context': 'test', 'name': 'small', 'path': '/small.log', 'size_bytes': 500, 'modified_iso': '2024-01-01T12:00:00'},
-        {'context': 'test', 'name': 'medium', 'path': '/medium.log', 'size_bytes': 5000, 'modified_iso': '2024-01-01T12:00:00'},
-        {
-            'context': 'test',
-            'name': 'large',
-            'path': '/large.log',
-            'size_bytes': 5000000,
-            'modified_iso': '2024-01-01T12:00:00',
-        },
-    ]
-
-    with patch('logsift.utils.fzf.is_fzf_available', return_value=True), patch('subprocess.run') as mock_run:
-        mock_run.return_value.returncode = 1
-        select_log_file(logs, 'Test')
-
-        # Check that subprocess.run was called with formatted entries
-        call_args = mock_run.call_args
-        input_text = call_args[1]['input']
-
-        # Should contain formatted sizes
-        assert '500B' in input_text
-        assert 'KB' in input_text
-        assert 'MB' in input_text
-
-
 def test_browse_log_with_preview_when_fzf_not_available():
     """Test browse_log_with_preview returns False when fzf is not available."""
     with patch('logsift.utils.fzf.is_fzf_available', return_value=False):

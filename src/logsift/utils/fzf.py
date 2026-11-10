@@ -7,6 +7,7 @@ import shutil
 from pathlib import Path
 
 from logsift import process_runner
+from logsift.utils.display import human_size
 
 
 def is_fzf_available() -> bool:
@@ -42,20 +43,8 @@ def select_log_file(log_files: list[dict[str, str | int]], prompt: str = 'Select
     # Format: "name (size) - date"
     entries = []
     for log in log_files:
-        name = str(log['name'])
-        size_bytes = int(log['size_bytes'])
         modified = str(log['modified_iso']).split('T')[0]
-
-        # Format size
-        if size_bytes < 1024:
-            size_str = f'{size_bytes}B'
-        elif size_bytes < 1024 * 1024:
-            size_str = f'{size_bytes / 1024:.1f}KB'
-        else:
-            size_str = f'{size_bytes / (1024 * 1024):.1f}MB'
-
-        # Create display line with path as suffix
-        display = f'{name} ({size_str}) - {modified}'
+        display = f'{log["name"]} ({human_size(int(log["size_bytes"]))}) - {modified}'
         path = str(log['path'])
 
         # Store as "display|path" so we can extract the path later

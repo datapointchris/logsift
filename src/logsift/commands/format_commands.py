@@ -1,15 +1,17 @@
 """The `raw`, `json`, `toon` and `md` groups: one kind of saved file each, shown exactly as stored."""
 
-import json
 from pathlib import Path
 from typing import Annotated
 
 import typer
 from rich.console import Console
-from rich.table import Table
 
 from logsift.cache.manager import CacheManager
 from logsift.cache.manager import SavedKind
+from logsift.commands.listing import LimitOption
+from logsift.commands.listing import ListFormat
+from logsift.commands.listing import ListFormatOption
+from logsift.commands.listing import print_listing
 from logsift.utils.display import display_file_with_bat
 from logsift.utils.display import tail_file
 from logsift.utils.fzf import is_fzf_available
@@ -34,7 +36,7 @@ def create_format_commands(kind: SavedKind) -> typer.Typer:
     """The `list`, `latest` and `browse` commands over one kind of saved file."""
     examples = '\n'.join(
         f'  logsift {kind} {invocation}'
-        for invocation in ('list', 'list --format json', 'latest', 'latest pytest', 'latest build --tail', 'browse')
+        for invocation in ('list -n 10', 'list --format json', 'latest', 'latest pytest', 'latest build --tail', 'browse')
     )
     app = typer.Typer(
         name=kind,
@@ -51,50 +53,9 @@ def create_format_commands(kind: SavedKind) -> typer.Typer:
             display_file_with_bat(file_path, language=BAT_LANGUAGES[kind])
 
     @app.command('list')
-    def format_list(
-        output_format: Annotated[
-            str,
-            typer.Option(
-                '--format',
-                help='Output format: table (default), json (for scripts), plain (simple list)',
-            ),
-        ] = 'table',
-    ) -> None:
-        """List all files with metadata, newest first."""
-        files = CacheManager().listing(kind)
-
-        if not files:
-            stderr_console.print(f'[yellow]No {kind} files found[/yellow]')
-            return
-
-        if output_format == 'json':
-            print(json.dumps(files, indent=2))
-        elif output_format == 'plain':
-            for file in files:
-                print(f'{file["path"]}\t{file["size_bytes"]}\t{file["modified_iso"]}')
-        else:
-            table = Table(title=f'{kind.upper()} Files')
-            table.add_column('Name', style='white')
-            table.add_column('Size', justify='right', style='green')
-            table.add_column('Modified', style='yellow')
-
-            for file in files:
-                size_bytes = int(file['size_bytes'])
-                if size_bytes < 1024:
-                    size_str = f'{size_bytes} B'
-                elif size_bytes < 1024 * 1024:
-                    size_str = f'{size_bytes / 1024:.1f} KB'
-                else:
-                    size_str = f'{size_bytes / (1024 * 1024):.1f} MB'
-
-                name = str(file['name'])
-                if len(name) > 60:
-                    name = name[:57] + '...'
-
-                table.add_row(name, size_str, str(file['modified_iso']).split('T')[0])
-
-            console.print(table)
-            console.print(f'\n[dim]Total: {len(files)} file(s)[/dim]')
+    def format_list(output_format: ListFormatOption = ListFormat.TABLE, limit: LimitOption = None) -> None:
+        """List the files, newest first, with their size and modification time."""
+        print_listing(kind, output_format, limit, f'{kind.upper()} Files', f'No {kind} files found')
 
     @app.command('latest')
     def format_latest(

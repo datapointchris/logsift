@@ -16,6 +16,15 @@ def _write_plain(text: str, stream: TextIO | None) -> None:
     out.flush()
 
 
+def human_size(size_bytes: int) -> str:
+    """A file size in B, KB or MB, one decimal past bytes."""
+    if size_bytes < 1024:
+        return f'{size_bytes} B'
+    if size_bytes < 1024 * 1024:
+        return f'{size_bytes / 1024:.1f} KB'
+    return f'{size_bytes / (1024 * 1024):.1f} MB'
+
+
 def display_with_bat(content: str, language: str = 'txt', filename: str | None = None, stream: TextIO | None = None) -> None:
     """Display content using bat with syntax highlighting and paging.
 

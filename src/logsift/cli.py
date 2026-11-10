@@ -20,13 +20,15 @@ from logsift.commands.analyze import log_file_for
 from logsift.commands.analyze import stream_analyze_log
 from logsift.commands.analyzed import browse_analyzed
 from logsift.commands.analyzed import clean_analyzed
-from logsift.commands.analyzed import list_analyzed
 from logsift.commands.analyzed import show_latest_analyzed
 from logsift.commands.config import show_config
 from logsift.commands.format_commands import create_format_commands
+from logsift.commands.listing import LimitOption
+from logsift.commands.listing import ListFormat
+from logsift.commands.listing import ListFormatOption
+from logsift.commands.listing import print_listing
 from logsift.commands.logs import browse_logs
 from logsift.commands.logs import clean_logs
-from logsift.commands.logs import list_logs
 from logsift.commands.logs import show_latest_log
 from logsift.commands.monitor import monitor_command
 from logsift.config.loader import ConfigError
@@ -281,32 +283,21 @@ app.add_typer(analyzed_app, name='analyzed', rich_help_panel=BROWSE_PANEL)
 
 
 @logs_app.command('list')
-def logs_list(
-    format: Annotated[
-        str,
-        typer.Option(
-            '--format',
-            help='Output format: table (default), json (for scripts), plain (simple list)',
-        ),
-    ] = 'table',
-) -> None:
-    """List all cached log files with metadata.
-
-    Shows all logs stored in the cache directory with their size and modification
-    time. Useful for finding previously monitored sessions.
+def logs_list(format: ListFormatOption = ListFormat.TABLE, limit: LimitOption = None) -> None:
+    """List the cached raw logs, newest first, with their size and modification time.
 
     \b
     Examples:
-        # List all cached logs
-        logsift logs list
+        # The ten newest logs
+        logsift logs list -n 10
 
-        # Get JSON output for scripting
+        # Every log, as JSON for a script
         logsift logs list --format json
 
-        # Simple list of paths
+        # One tab-separated path, size and time per log
         logsift logs list --format plain
     """
-    list_logs(output_format=format)
+    print_listing(SavedKind.RAW, format, limit, 'Cached Log Files', 'No cached logs found')
 
 
 @logs_app.command('clean')
@@ -450,29 +441,15 @@ def logs_latest(
 
 
 @analyzed_app.command('list')
-def analyzed_list(
-    format: Annotated[
-        str,
-        typer.Option(
-            '--format',
-            help='Output format: table (default), json, or plain',
-        ),
-    ] = 'table',
-) -> None:
-    """List all saved analysis results.
-
-    Shows all analysis results saved in the cache directory with metadata
-    including name, size, and modification time.
+def analyzed_list(format: ListFormatOption = ListFormat.TABLE, limit: LimitOption = None) -> None:
+    """List the saved analyses by their JSON file, newest first, with their size and modification time.
 
     \b
     Examples:
-        # List in table format
         logsift analyzed list
-
-        # List in JSON format
-        logsift analyzed list --format json
+        logsift analyzed list -n 5 --format json
     """
-    list_analyzed(output_format=format)
+    print_listing(SavedKind.JSON, format, limit, 'Saved Analysis Results', 'No saved analyses found')
 
 
 @analyzed_app.command('browse')

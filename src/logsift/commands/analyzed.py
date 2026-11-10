@@ -5,7 +5,6 @@ from pathlib import Path
 
 import typer
 from rich.console import Console
-from rich.table import Table
 
 from logsift.cache.manager import ANALYSIS_RENDERERS
 from logsift.cache.manager import CacheManager
@@ -19,35 +18,6 @@ from logsift.utils.fzf import select_log_file
 
 console = Console()
 stderr_console = Console(stderr=True)
-
-
-def list_analyzed(output_format: str) -> None:
-    """List the saved analyses, by their JSON file, newest first."""
-    analyses = CacheManager().listing(SavedKind.JSON)
-
-    if not analyses:
-        stderr_console.print('[yellow]No saved analyses found[/yellow]')
-        stderr_console.print(CAPTURE_HINT)
-        return
-
-    if output_format == 'json':
-        print(json.dumps(analyses, indent=2))
-    elif output_format == 'plain':
-        for analysis in analyses:
-            print(f'{analysis["name"]}\t{analysis["path"]}\t{analysis["size_bytes"]}\t{analysis["modified_iso"]}')
-    else:
-        table = Table(title='Saved Analysis Results', show_header=True)
-        table.add_column('Name', style='cyan')
-        table.add_column('Size', justify='right')
-        table.add_column('Modified', style='dim')
-
-        for analysis in analyses:
-            size_kb = int(analysis['size_bytes']) / 1024
-            size_str = f'{size_kb:.1f} KB' if size_kb < 1024 else f'{size_kb / 1024:.1f} MB'
-            table.add_row(str(analysis['name']), size_str, str(analysis['modified_iso']))
-
-        console.print(table)
-        console.print(f'\n[dim]Total: {len(analyses)} analysis result(s)[/dim]')
 
 
 def show_analysis(json_path: Path) -> None:

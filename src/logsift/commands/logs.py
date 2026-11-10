@@ -3,13 +3,11 @@
 Lists and manages cached log files.
 """
 
-import json
 import sys
 from pathlib import Path
 
 import typer
 from rich.console import Console
-from rich.table import Table
 
 from logsift.cache.manager import CacheManager
 from logsift.cache.manager import SavedKind
@@ -24,55 +22,6 @@ from logsift.utils.fzf import select_log_file
 
 console = Console()
 stderr_console = Console(stderr=True)
-
-
-def list_logs(output_format: str = 'table') -> None:
-    """List cached log files.
-
-    Args:
-        output_format: Output format (table, json, plain)
-    """
-    logs = CacheManager().listing(SavedKind.RAW)
-
-    if not logs:
-        stderr_console.print('[yellow]No cached logs found[/yellow]')
-        stderr_console.print(CAPTURE_HINT)
-        return
-
-    if output_format == 'json':
-        print(json.dumps(logs, indent=2))
-    elif output_format == 'plain':
-        for log in logs:
-            print(f'{log["path"]}\t{log["size_bytes"]}\t{log["modified_iso"]}')
-    else:
-        # Table format (default)
-        table = Table(title='Cached Log Files')
-        table.add_column('Name', style='white')
-        table.add_column('Size', justify='right', style='green')
-        table.add_column('Modified', style='yellow')
-
-        for log in logs:
-            # Format size in human-readable format
-            size_bytes = int(log['size_bytes'])  # Always int from CacheManager
-            if size_bytes < 1024:
-                size_str = f'{size_bytes} B'
-            elif size_bytes < 1024 * 1024:
-                size_str = f'{size_bytes / 1024:.1f} KB'
-            else:
-                size_str = f'{size_bytes / (1024 * 1024):.1f} MB'
-
-            # Truncate name if too long
-            name = str(log['name'])  # Always str from CacheManager
-            if len(name) > 60:
-                name = name[:57] + '...'
-
-            # Format timestamp
-            modified = str(log['modified_iso']).split('T')[0]  # Just the date
-
-            table.add_row(name, size_str, modified)
-
-        console.print(table)
-        console.print(f'\n[dim]Total: {len(logs)} log file(s)[/dim]')
 
 
 def clean_logs(days: int = 90, dry_run: bool = False) -> None:
