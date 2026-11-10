@@ -72,16 +72,22 @@ def test_parse_json_with_extra_fields():
 
 
 def test_parse_structured_key_value():
-    """Test parsing structured logs with key=value format."""
+    """A key=value line's message is its message= or logfmt's msg=, or else the whole line."""
     parser = LogParser()
-    structured_log = '2025-11-27T14:30:22Z level=INFO message="Starting installation" phase=1'
+    structured_log = (
+        '2025-11-27T14:30:22Z level=INFO message="Starting installation" phase=1\n'
+        'time=2025-11-27T14:30:23Z level=error msg="connection refused" port=5432\n'
+        'time=2025-11-27T14:30:24Z level=info phase=2'
+    )
     entries = parser.parse(structured_log)
 
-    assert len(entries) == 1
+    assert len(entries) == 3
     assert entries[0]['level'] == 'INFO'
     assert entries[0]['message'] == 'Starting installation'
     assert entries[0]['phase'] == '1'
     assert entries[0]['format'] == 'structured'
+    assert entries[1]['message'] == 'connection refused'
+    assert entries[2]['message'] == 'time=2025-11-27T14:30:24Z level=info phase=2'
 
 
 # Plain Text Parsing Tests

@@ -163,6 +163,10 @@ class LogParser:
                 value = value[1:-1]
             entry[key] = value
 
+        # logfmt names the message `msg`. A line naming no message keeps the whole line, as a plain line does.
+        if not entry['message']:
+            entry['message'] = entry.get('msg') or line.strip()
+
         # Normalize level field
         if 'level' in entry:
             entry['level'] = entry['level'].upper()
