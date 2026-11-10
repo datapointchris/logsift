@@ -279,32 +279,6 @@ class TestEndToEndWorkflows:
         assert 'first run' in log_content
         assert 'second run' in log_content
 
-    def test_monitor_with_external_log(self, tmp_path):
-        """Test monitoring with external log file."""
-        # Create external log
-        external_log = tmp_path / 'external.log'
-        external_log.write_text('External log entry 1\nExternal log entry 2\n')
-
-        # Monitor command with external log
-        result = runner.invoke(
-            app,
-            [
-                'monitor',
-                f'--external-log={external_log}',
-                '--format=json',
-                '--',
-                'echo',
-                'Command output',
-            ],
-        )
-
-        assert result.exit_code == 0
-
-        data = json.loads(result.stdout)
-
-        # Command should succeed
-        assert data['summary']['exit_code'] == 0
-
 
 class TestPatternMatching:
     """Test pattern matching in real-world scenarios."""

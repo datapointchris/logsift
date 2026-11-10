@@ -148,43 +148,6 @@ def test_monitor_command_without_notify(capsys):
         mock_notify.assert_not_called()
 
 
-def test_monitor_command_with_external_log(tmp_path, capsys):
-    """Test monitoring with external log file."""
-
-    # Create external log file
-    external_log = tmp_path / 'external.log'
-    external_log.write_text('External log line 1\nExternal log line 2\n')
-
-    # Monitor a command while watching the external log
-    monitor_command(
-        ['echo', 'Command output'],
-        output_format='json',
-        save_log=False,
-        external_log=str(external_log),
-    )
-
-    captured = capsys.readouterr()
-
-    # Parse the JSON output
-    data = json.loads(captured.out)
-
-    # Command should have succeeded
-    assert data['summary']['exit_code'] == 0
-    assert 'stats' in data
-
-
-def test_monitor_command_with_nonexistent_external_log(capsys):
-    """Test monitoring with non-existent external log file."""
-    # Should exit with error
-    with suppress(SystemExit):
-        monitor_command(
-            ['echo', 'test'],
-            output_format='json',
-            save_log=False,
-            external_log='/nonexistent/log/file.log',
-        )
-
-
 def test_monitor_command_with_append_mode(tmp_path, capsys):
     """Test monitoring with append mode."""
     # First run - create initial log

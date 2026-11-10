@@ -168,13 +168,6 @@ def monitor(
             help='Send desktop notification on completion (requires notify-send or osascript)',
         ),
     ] = False,
-    external_log: Annotated[
-        str | None,
-        typer.Option(
-            '--external-log',
-            help='Tail external log file while monitoring (merges command output with external logs)',
-        ),
-    ] = None,
     append: Annotated[
         bool,
         typer.Option(
@@ -206,8 +199,7 @@ def monitor(
         --update-interval   Seconds between updates (default: 60)
         --minimal           Suppress progress output (for LLM workflows)
         --notify            Send desktop notification on completion
-        --external-log      Tail external log file while monitoring
-        --append            Append to existing log
+        --append           Append to existing log
 
     Examples:
         logsift monitor -- make build
@@ -229,7 +221,6 @@ def monitor(
         update_interval=update_interval,
         minimal=minimal,
         notify=notify,
-        external_log=external_log,
         append=append,
     )
 

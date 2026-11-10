@@ -53,7 +53,6 @@ logsift monitor [OPTIONS] -- COMMAND [ARGS]...
 - `--update-interval SECONDS` - Seconds between progress updates when not streaming (default: 60)
 - `--minimal` - Suppress all progress output, only show final analysis (ideal for LLM workflows)
 - `--notify` - Send desktop notification on completion (requires notify-send or osascript)
-- `--external-log PATH` - Tail external log file while monitoring (merges with command output)
 - `--append` - Append to existing log instead of creating new (useful for iterative debugging)
 
 **Examples:**
@@ -76,9 +75,6 @@ logsift monitor --minimal -- pre-commit run --files file.py
 
 # Desktop notification on completion
 logsift monitor --notify -- make build
-
-# Monitor with external log file
-logsift monitor --external-log /var/log/app.log -- ./script.sh
 
 # Append to existing log for debugging
 logsift monitor --append -- pytest tests/test_feature.py

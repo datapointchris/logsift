@@ -81,7 +81,6 @@ def monitor_command(
     minimal: bool = False,
     save_log: bool = True,
     notify: bool = False,
-    external_log: str | None = None,
     append: bool = False,
 ) -> None:
     """Monitor a command and analyze its output with live progress updates.
@@ -95,7 +94,6 @@ def monitor_command(
         minimal: Suppress all progress output, only show final analysis result (default: False)
         save_log: Whether to save the log to cache
         notify: Whether to send desktop notification on completion
-        external_log: Optional path to external log file to tail while monitoring
         append: Whether to append to existing log instead of creating new
     """
     # Use command name if no name provided
