@@ -5,15 +5,12 @@ Tests end-to-end functionality with real commands and log files.
 
 import json
 import sys
-import time
-from contextlib import suppress
 from pathlib import Path
 
 from typer.testing import CliRunner
 
 from logsift.cache.manager import CacheManager
 from logsift.cli import app
-from logsift.commands.watch import watch_log
 
 runner = CliRunner()
 
@@ -174,39 +171,6 @@ error: Syntax error in config.yaml:15
         # Should extract errors and warnings
         assert data['stats']['total_errors'] >= 2
         assert data['stats']['total_warnings'] >= 1
-
-
-class TestWatchWorkflow:
-    """Test the complete watch command workflow."""
-
-    def test_watch_existing_file(self, tmp_path, monkeypatch):
-        """Test watching an existing log file."""
-        log_file = tmp_path / 'watch.log'
-        log_file.write_text('Initial line\n')
-
-        # Mock the infinite loop to exit after one iteration
-        original_sleep = time.sleep
-        call_count = {'count': 0}
-
-        def mock_sleep(seconds):
-            call_count['count'] += 1
-            if call_count['count'] >= 2:  # Exit after first watch iteration
-                raise KeyboardInterrupt()
-            original_sleep(0.01)  # Very short sleep for test
-
-        monkeypatch.setattr(time, 'sleep', mock_sleep)
-
-        # Should handle KeyboardInterrupt gracefully
-        with suppress(KeyboardInterrupt, SystemExit):
-            watch_log(str(log_file), interval=1)
-
-    def test_watch_nonexistent_file(self):
-        """Test watching a file that doesn't exist."""
-        result = runner.invoke(app, ['watch', '/nonexistent/file.log'], catch_exceptions=False)
-
-        # Should exit with error (may be 0 or 1 depending on how CliRunner handles sys.exit)
-        # Check that error message is shown
-        assert 'Error' in result.stdout or result.exit_code != 0
 
 
 class TestEndToEndWorkflows:
@@ -409,8 +373,12 @@ class TestMultiFormatCreation:
         # Get stem from raw log
         stem = latest_raw.stem
 
-        # Verify all formats exist
-        formats = cache.get_all_formats(stem)
+        formats = {
+            'raw': latest_raw,
+            'json': cache.json_dir / f'{stem}.json',
+            'toon': cache.toon_dir / f'{stem}.toon',
+            'md': cache.md_dir / f'{stem}.md',
+        }
 
         assert formats['raw'] is not None
         assert formats['raw'].exists()
@@ -484,11 +452,9 @@ class TestMultiFormatCreation:
         assert latest_raw is not None
 
         stem = latest_raw.stem
-        formats = cache.get_all_formats(stem)
 
-        # Compare sizes
-        json_size = formats['json'].stat().st_size
-        toon_size = formats['toon'].stat().st_size
+        json_size = (cache.json_dir / f'{stem}.json').stat().st_size
+        toon_size = (cache.toon_dir / f'{stem}.toon').stat().st_size
 
         # TOON should be smaller than JSON
         assert toon_size < json_size

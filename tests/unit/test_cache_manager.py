@@ -22,7 +22,7 @@ def test_create_log_path_basic():
     with tempfile.TemporaryDirectory() as tmpdir:
         manager = CacheManager(cache_dir=Path(tmpdir))
 
-        log_path = manager.create_log_path('test_command')
+        log_path = manager.create_paths('test_command')['raw']
 
         # Should create a path in raw/ subdirectory
         assert log_path.parent == manager.raw_dir
@@ -36,9 +36,9 @@ def test_create_log_path_unique_timestamps():
     with tempfile.TemporaryDirectory() as tmpdir:
         manager = CacheManager(cache_dir=Path(tmpdir))
 
-        path1 = manager.create_log_path('test_command')
+        path1 = manager.create_paths('test_command')['raw']
         time.sleep(1.1)  # Sleep to ensure different timestamp
-        path2 = manager.create_log_path('test_command')
+        path2 = manager.create_paths('test_command')['raw']
 
         # Paths should be different due to timestamps
         assert path1 != path2
@@ -50,13 +50,13 @@ def test_get_latest_log_returns_most_recent():
         manager = CacheManager(cache_dir=Path(tmpdir))
 
         # Create multiple log files
-        path1 = manager.create_log_path('test_command')
+        path1 = manager.create_paths('test_command')['raw']
         path1.write_text('first log')
 
-        path2 = manager.create_log_path('test_command')
+        path2 = manager.create_paths('test_command')['raw']
         path2.write_text('second log')
 
-        path3 = manager.create_log_path('test_command')
+        path3 = manager.create_paths('test_command')['raw']
         path3.write_text('third log')
 
         # Get latest
@@ -72,10 +72,10 @@ def test_get_latest_log_ignores_other_commands():
         manager = CacheManager(cache_dir=Path(tmpdir))
 
         # Create logs for different commands
-        path1 = manager.create_log_path('npm_build')
+        path1 = manager.create_paths('npm_build')['raw']
         path1.write_text('npm log')
 
-        path2 = manager.create_log_path('pytest')
+        path2 = manager.create_paths('pytest')['raw']
         path2.write_text('pytest log')
 
         # Get latest for npm_build
@@ -91,15 +91,15 @@ def test_get_absolute_latest_log_returns_most_recent():
         manager = CacheManager(cache_dir=Path(tmpdir))
 
         # Create logs for different commands with delays to ensure different timestamps
-        path1 = manager.create_log_path('npm_build')
+        path1 = manager.create_paths('npm_build')['raw']
         path1.write_text('npm log')
         time.sleep(1.1)
 
-        path2 = manager.create_log_path('pytest')
+        path2 = manager.create_paths('pytest')['raw']
         path2.write_text('pytest log')
         time.sleep(1.1)
 
-        path3 = manager.create_log_path('make')
+        path3 = manager.create_paths('make')['raw']
         path3.write_text('make log')
 
         # Get absolute latest (should be the last created)

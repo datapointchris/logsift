@@ -129,11 +129,10 @@ edits the schema in the same commit, and raises both `SCHEMA_VERSION` in
 The pre-commit hook set is `.pre-commit-config.yaml`, and it is generated. Read it there rather
 than restating it here, where it drifts.
 
-## Implementation Status
+## Scope
 
-The core analyzer, pattern loading, streaming, and fzf integration are all implemented. What
-remains stubbed raises `NotImplementedError`, so `rg -l NotImplementedError src/` is the current
-list. Nothing imports those modules.
+Every module under `src/` is reached from a command. A feature is added when it is built, not as
+a stub that waits for one.
 
 **There is no MCP server and no remote monitor, by design.** The CLI is the integration surface
 for an agent: `--format json` for a program that parses the result, or the default toon when an

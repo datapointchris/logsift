@@ -290,7 +290,7 @@ def monitor_command(
             f.write(format_json(analysis_result))
 
         # Save TOON (compact for LLMs)
-        with suppress(OSError, NotImplementedError), log_paths['toon'].open('w', encoding='utf-8') as f:
+        with suppress(OSError), log_paths['toon'].open('w', encoding='utf-8') as f:
             f.write(format_toon(analysis_result))
 
         # Save Markdown (curated for humans)

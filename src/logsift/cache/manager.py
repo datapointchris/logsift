@@ -69,50 +69,6 @@ class CacheManager:
             'md': self.md_dir / f'{stem}.md',
         }
 
-    def get_all_formats(self, stem: str) -> dict[str, Path | None]:
-        """Find all format files for a given timestamp-name stem.
-
-        Args:
-            stem: The timestamp-name stem (e.g., "2025-01-15T10:30:00-install-deps")
-
-        Returns:
-            Dictionary with keys: 'raw', 'json', 'toon', 'md' and Path or None values
-        """
-        return {
-            'raw': self._find_file(self.raw_dir, stem, '.log'),
-            'json': self._find_file(self.json_dir, stem, '.json'),
-            'toon': self._find_file(self.toon_dir, stem, '.toon'),
-            'md': self._find_file(self.md_dir, stem, '.md'),
-        }
-
-    def _find_file(self, directory: Path, stem: str, extension: str) -> Path | None:
-        """Find a file with given stem and extension in a directory.
-
-        Args:
-            directory: Directory to search
-            stem: Filename stem
-            extension: File extension (including dot)
-
-        Returns:
-            Path to file or None if not found
-        """
-        target = directory / f'{stem}{extension}'
-        return target if target.exists() else None
-
-    def create_log_path(self, name: str) -> Path:
-        """Create a path for a new raw log file.
-
-        Deprecated: Use create_paths() instead for new code.
-        This method is kept for backward compatibility.
-
-        Args:
-            name: Name for this log
-
-        Returns:
-            Path to the raw log file
-        """
-        return self.create_paths(name)['raw']
-
     def get_latest_log(self, name: str) -> Path | None:
         """Get the latest raw log file for a given name.
 
@@ -317,19 +273,3 @@ class CacheManager:
             new_path = self.raw_dir / old_log.name
             if not new_path.exists():
                 old_log.rename(new_path)
-
-    def create_analyzed_path(self, log_path: Path) -> Path:
-        """Create a path for a JSON analyzed result based on a log file path.
-
-        Deprecated: Use create_paths() instead for new code.
-        This method is kept for backward compatibility.
-
-        Args:
-            log_path: Path to the log file
-
-        Returns:
-            Path to the JSON analyzed result file
-        """
-        # Get just the stem (filename without extension) and add .json
-        analyzed_name = log_path.stem + '.json'
-        return self.json_dir / analyzed_name
