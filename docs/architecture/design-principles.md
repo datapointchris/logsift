@@ -80,15 +80,17 @@ Reasoning:
 
 ### Why subprocess for Process Monitoring?
 
-**Chosen:** subprocess.run()
+**Chosen:** `subprocess.Popen`, streaming stdout and stderr together line by line
 
 Reasoning:
 
 - stdlib - no external dependency
-- More predictable behavior
-- Better timeout handling
-- Simpler for MVP
-- Works well for capturing command output
+- Each line reaches the raw log and the progress display as the command prints it, where
+  `subprocess.run()` would hand over the output only once the command exits
+- A command that is not an executable, such as a shell alias or function, falls back to
+  `$SHELL -i -c`, so it runs as it would at the prompt
+
+No timeout is applied, so a command that hangs keeps `monitor` waiting until it is interrupted.
 
 ### Why Read the Whole File?
 
@@ -118,10 +120,10 @@ Reasoning:
 ### Modular Pipeline
 
 ```text
-Input → Parser → Extractors → Matchers → Context → Output
+Input → LogParser → IssueDetector → Analyzer (file references, context, hooks) → Formatter → Output
 ```
 
-Each stage is independent and testable.
+Each stage is independent and testable. [Data Flow](data-flow.md) walks through each one.
 
 ### Stateless Analysis
 

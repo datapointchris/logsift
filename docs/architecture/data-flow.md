@@ -15,9 +15,11 @@ Input → Parser → IssueDetector → Analyzer → Formatter → Output
 Command execution or file reading:
 
 ```python
-# Monitor mode
-result = subprocess.run(command, capture_output=True, text=True)
-log_content = result.stdout + result.stderr
+# Monitor mode: stdout and stderr as one stream, read line by line as the command prints
+process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+for line in process.stdout:
+    output_lines.append(line.rstrip('\n'))  # and appended to the raw log
+log_content = '\n'.join(output_lines)
 
 # Analyze mode
 log_content = Path(log_file).read_text()
