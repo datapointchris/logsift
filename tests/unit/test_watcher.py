@@ -17,7 +17,7 @@ def test_log_watcher_initialization(tmp_path):
 
     assert watcher.log_file == log_file
     assert watcher.interval == 1
-    assert watcher._stop is False
+    assert watcher.stop_requested is False
 
 
 def test_log_watcher_file_not_found(tmp_path):
@@ -92,7 +92,7 @@ def test_log_watcher_stop(tmp_path):
     # Wait for thread to finish
     thread.join(timeout=1)
 
-    assert watcher._stop is True
+    assert watcher.stop_requested is True
 
 
 def test_log_watcher_strips_newlines(tmp_path):

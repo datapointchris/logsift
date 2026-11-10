@@ -20,7 +20,7 @@ class LogWatcher:
         """
         self.log_file = log_file
         self.interval = interval
-        self._stop = False
+        self.stop_requested = False
 
     def watch(self, callback: Callable[[str], None]) -> None:
         """Start watching the log file.
@@ -39,7 +39,7 @@ class LogWatcher:
             # Go to end of file
             f.seek(0, 2)
 
-            while not self._stop:
+            while not self.stop_requested:
                 line = f.readline()
 
                 if line:
@@ -51,4 +51,4 @@ class LogWatcher:
 
     def stop(self) -> None:
         """Stop watching the log file."""
-        self._stop = True
+        self.stop_requested = True

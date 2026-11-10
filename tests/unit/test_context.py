@@ -33,7 +33,7 @@ def test_extract_context_basic():
         {'message': 'Line 5', 'line_number': 5},
     ]
     analyzer = Analyzer(context_lines=2)
-    context = analyzer._extract_context(log_entries, error_index=2)
+    context = analyzer.extract_context(log_entries, error_index=2)
 
     assert context is not None
     assert 'context_before' in context
@@ -54,7 +54,7 @@ def test_extract_context_at_beginning():
         {'message': 'Line 3', 'line_number': 3},
     ]
     analyzer = Analyzer(context_lines=2)
-    context = analyzer._extract_context(log_entries, error_index=0)
+    context = analyzer.extract_context(log_entries, error_index=0)
 
     assert context is not None
     assert len(context['context_before']) == 0
@@ -71,7 +71,7 @@ def test_extract_context_at_end():
         {'message': 'ERROR: Something failed', 'line_number': 3},
     ]
     analyzer = Analyzer(context_lines=2)
-    context = analyzer._extract_context(log_entries, error_index=2)
+    context = analyzer.extract_context(log_entries, error_index=2)
 
     assert context is not None
     assert len(context['context_before']) == 2
@@ -89,7 +89,7 @@ def test_extract_context_invalid_index_negative():
     analyzer = Analyzer(context_lines=2)
 
     with pytest.raises((IndexError, ValueError)):
-        analyzer._extract_context(log_entries, error_index=-1)
+        analyzer.extract_context(log_entries, error_index=-1)
 
 
 def test_extract_context_invalid_index_out_of_bounds():
@@ -101,7 +101,7 @@ def test_extract_context_invalid_index_out_of_bounds():
     analyzer = Analyzer(context_lines=2)
 
     with pytest.raises((IndexError, ValueError)):
-        analyzer._extract_context(log_entries, error_index=10)
+        analyzer.extract_context(log_entries, error_index=10)
 
 
 def test_extract_context_empty_log_entries():
@@ -110,4 +110,4 @@ def test_extract_context_empty_log_entries():
     analyzer = Analyzer(context_lines=2)
 
     with pytest.raises((IndexError, ValueError)):
-        analyzer._extract_context(log_entries, error_index=0)
+        analyzer.extract_context(log_entries, error_index=0)

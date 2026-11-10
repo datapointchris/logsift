@@ -8,7 +8,7 @@ from typing import TextIO
 from logsift import process_runner
 
 
-def _write_plain(text: str, stream: TextIO | None) -> None:
+def write_plain(text: str, stream: TextIO | None) -> None:
     """Write text and a trailing newline to stream, or sys.stdout at call time."""
     out = stream if stream is not None else sys.stdout
     out.write(text)
@@ -44,7 +44,7 @@ def display_with_bat(content: str, language: str = 'txt', filename: str | None =
         process_runner.run(cmd, input_text=content)
     except FileNotFoundError:
         # bat not installed, fall back to plain output
-        _write_plain(content, stream)
+        write_plain(content, stream)
 
 
 def display_file_with_bat(file_path: Path, language: str | None = None, stream: TextIO | None = None) -> None:
@@ -65,7 +65,7 @@ def display_file_with_bat(file_path: Path, language: str | None = None, stream: 
         process_runner.run(cmd)
     except FileNotFoundError:
         # bat not installed, fall back to plain output
-        _write_plain(file_path.read_text(), stream)
+        write_plain(file_path.read_text(), stream)
 
 
 def tail_file(file_path: Path, interval: int = 1) -> None:
