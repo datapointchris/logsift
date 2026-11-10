@@ -160,8 +160,9 @@ delete_older_than_days = 90
 delete_older_than_days = 30
 ```
 
-A flag beats its `LOGSIFT_*` variable, which beats the file. A file that fails to parse, or names
-a key logsift does not read, stops every command and names the problem. [Config Format](docs/api/config-format.md) has the details.
+A flag beats its `LOGSIFT_*` variable, which beats the file. `logsift config` prints each value and
+the layer that set it. A file that fails to parse, or names a key logsift does not read, stops
+every command and names the problem. [Config Format](docs/api/config-format.md) has the details.
 
 ### Cache Management
 

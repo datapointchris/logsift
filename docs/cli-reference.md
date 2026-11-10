@@ -206,6 +206,19 @@ logsift toon   # View toon format files
 logsift md     # View markdown analysis results
 ```
 
+### `config`
+
+Print each setting's resolved value and the layer that set it: its flag, its variable,
+`config.toml` or `default`. The first table lists the config file, the custom patterns directory
+and the cache. The second lists each option with the `config.toml` key that would set it.
+
+```bash
+logsift config
+LOGSIFT_OUTPUT_FORMAT=json logsift config   # FROM reads $LOGSIFT_OUTPUT_FORMAT
+```
+
+See [Config Format](api/config-format.md) for the keys and an example of the output.
+
 ### `help`
 
 Display help information for logsift commands.
@@ -333,7 +346,8 @@ delete_older_than_days = 30
 ```
 
 A file that fails to parse, or names a key logsift does not read, stops every command and names
-the problem. See [Config Format](api/config-format.md) for every key.
+the problem. `logsift config` prints each value and the layer that set it. See
+[Config Format](api/config-format.md) for every key.
 
 ### Custom Patterns
 

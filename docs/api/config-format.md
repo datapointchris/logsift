@@ -45,6 +45,28 @@ Each value comes from the first of these that sets it:
 `monitor --name` and `LOGSIFT_SESSION_NAME` have no key. A name in the file would give every run
 the same name.
 
+## `logsift config` prints what resolved
+
+`logsift config` prints each value logsift will use and the layer that set it. FROM names the
+variable, `config.toml` or `default`. FILE KEY names the key that would set it.
+
+```text
+LOCATION         PATH                                          FROM
+config file      /home/me/.config/logsift/config.toml          default
+custom patterns  /home/me/.config/logsift/patterns             default
+cache            /home/me/.cache/logsift                       default
+
+OPTION                     VALUE                    FROM                      FILE KEY
+monitor --format           json                     config.toml               print_analysis_as
+monitor --update-interval  5                        $LOGSIFT_UPDATE_INTERVAL  monitor.report_progress_every_seconds
+monitor --name             named after the command  default                   -
+analyze --format           json                     config.toml               print_analysis_as
+logs clean --days          90                       default                   logs.clean.delete_older_than_days
+analyzed clean --days      30                       default                   analyzed.clean.delete_older_than_days
+```
+
+The config file's path says `(absent)` when there is no file.
+
 ## A file logsift cannot honor stops every command
 
 logsift reads `config.toml` once, before any command runs. These stop the command with exit code 1:
@@ -59,7 +81,8 @@ None of them falls back to the defaults.
 
 ## No key moves a directory
 
-The XDG variables move logsift's directories:
+The XDG variables move logsift's directories, and `logsift config` prints each with the layer that
+set it:
 
 - Custom patterns: `$XDG_CONFIG_HOME/logsift/patterns/`, else `~/.config/logsift/patterns/`.
 - Captured logs and saved analyses: `$XDG_CACHE_HOME/logsift/`, else `~/.cache/logsift/`.

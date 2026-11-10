@@ -1,13 +1,38 @@
-"""A bad config.toml stops the run."""
+"""`logsift config` names the layer behind every value logsift resolves, and a bad config.toml stops the run."""
 
+import re
 from pathlib import Path
 
+import click
 import pytest
+import typer
 from typer.testing import CliRunner
 
+from logsift import xdg_dirs
 from logsift.cli import app
+from logsift.config.loader import FILE_KEYS
 
 runner = CliRunner()
+
+
+def option_variables() -> dict[str, str]:
+    """Every environment variable a logsift option reads, read from the command tree, with a value its type accepts."""
+    found: dict[str, str] = {}
+
+    def walk(command: click.Command) -> None:
+        for param in command.params:
+            envvars = [param.envvar] if isinstance(param.envvar, str) else list(param.envvar or [])
+            for envvar in envvars:
+                found[envvar] = '7' if isinstance(param.type, click.types.IntParamType) else 'json'
+        for subcommand in getattr(command, 'commands', {}).values():
+            walk(subcommand)
+
+    walk(typer.main.get_command(app))
+    return found
+
+
+def config_rows(output: str) -> list[list[str]]:
+    return [re.split(r'\s{2,}', line) for line in output.splitlines() if line]
 
 
 def write_config(home: Path, content: str) -> Path:
@@ -15,6 +40,35 @@ def write_config(home: Path, content: str) -> Path:
     config_file.parent.mkdir(parents=True)
     config_file.write_text(content)
     return config_file
+
+
+VARIABLES = sorted(option_variables().items()) + [(variable, '') for variable, _ in xdg_dirs.BASE_DIRS.values()]
+
+
+@pytest.mark.parametrize(('variable', 'value'), VARIABLES)
+def test_every_variable_logsift_reads_is_named_by_a_row(variable, value, monkeypatch, tmp_path):
+    # An XDG variable is honored only as an absolute path, so it gets one.
+    monkeypatch.setenv(variable, value or str(tmp_path / variable))
+
+    result = runner.invoke(app, ['config'])
+
+    assert result.exit_code == 0, result.output
+    assert any(row[2] == f'${variable}' for row in config_rows(result.stdout)), (
+        f'No row names ${variable} as the layer that answered. Add its option to RESOLVED_OPTIONS '
+        f'in src/logsift/config/resolved_values.py.\n{result.stdout}'
+    )
+
+
+@pytest.mark.parametrize('key', FILE_KEYS)
+def test_every_file_key_is_named_by_a_row_for_each_option_it_sets(key, monkeypatch, tmp_path):
+    monkeypatch.setenv('XDG_CONFIG_HOME', str(tmp_path))
+    write_config(tmp_path, f'{key} = {7 if FILE_KEYS[key].toml_type is int else '"json"'}\n')
+
+    result = runner.invoke(app, ['config'])
+
+    assert result.exit_code == 0, result.output
+    from_file = [row for row in config_rows(result.stdout) if row[-1] == key and row[2] == 'config.toml']
+    assert len(from_file) == len(FILE_KEYS[key].sets), result.stdout
 
 
 @pytest.mark.parametrize(

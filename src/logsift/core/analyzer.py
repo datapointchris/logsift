@@ -31,7 +31,7 @@ class Analyzer:
         self.context_lines = context_lines
 
         builtin = self.pattern_loader.load_builtin_patterns()
-        custom = self.pattern_loader.load_custom_patterns(xdg_dirs.config_dir() / 'patterns')
+        custom = self.pattern_loader.load_custom_patterns(xdg_dirs.custom_patterns_dir())
         # Custom first, so a user's pattern wins; the prefix keeps a custom docker.toml from replacing the built-in one.
         self.patterns = {f'custom/{category}': patterns for category, patterns in custom.items()} | builtin
 

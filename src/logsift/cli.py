@@ -23,6 +23,7 @@ from logsift.cache.manager import CacheManager
 from logsift.cli_formatter import format_help_with_colors
 from logsift.commands.analyze import analyze_log
 from logsift.commands.analyze import stream_analyze_log
+from logsift.commands.config import show_config
 from logsift.commands.format_commands import create_format_commands
 from logsift.commands.logs import CAPTURE_HINT
 from logsift.commands.logs import browse_logs
@@ -791,6 +792,23 @@ app.add_typer(raw_app, name='raw', rich_help_panel=BROWSE_PANEL)
 app.add_typer(json_app, name='json', rich_help_panel=BROWSE_PANEL)
 app.add_typer(toon_app, name='toon', rich_help_panel=BROWSE_PANEL)
 app.add_typer(md_app, name='md', rich_help_panel=BROWSE_PANEL)
+
+
+@app.command('config')
+def config(ctx: typer.Context) -> None:
+    """Print each setting's resolved value and the layer that set it.
+
+    A value comes from its flag, then its environment variable, then
+    config.toml in $XDG_CONFIG_HOME/logsift, then logsift's default. FROM
+    names the layer that answered, and FILE KEY the config.toml key that
+    would set it. A config.toml that fails to parse, or names a key logsift
+    does not read, stops every command and names the problem.
+
+    Examples:
+        logsift config
+        LOGSIFT_OUTPUT_FORMAT=json logsift config
+    """
+    show_config(ctx.find_root())
 
 
 @app.command()

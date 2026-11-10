@@ -7,4 +7,4 @@ writing a consumer against logsift's output, or when hand-editing one of its TOM
 
 - [JSON Schema](json-schema.md) — Every field logsift emits, with types and nullability, plus the stability promise and Python and jq parsing examples
 - [Pattern Format](pattern-format.md) — Keys a `[[patterns]]` entry takes, the rules each key enforces, match priority, and worked capture-group regexes
-- [Config Format](config-format.md) — The config file's location, every key at its default, the flag and variable that beat each, and what a bad file prints
+- [Config Format](config-format.md) — The config file's location, every key at its default, the flag and variable that beat each, and what `logsift config` and a bad file print

@@ -187,7 +187,8 @@ logsift needs no config file. To make every run print JSON, create
 print_analysis_as = "json"
 ```
 
-See [Config Format](api/config-format.md) for every key.
+`logsift config` prints each value logsift will use and the layer that set it. See
+[Config Format](api/config-format.md) for every key.
 
 ## Cache Management
 

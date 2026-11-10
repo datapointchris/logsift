@@ -119,8 +119,10 @@ edits the schema in the same commit, and raises both `SCHEMA_VERSION` in
 - **Process monitoring**: `commands/monitor.py` runs the command with `subprocess.Popen` and streams its output line by line. It is the one place logsift runs a monitored command.
 - **`config.toml` is Click's `default_map`.** The root callback in `cli.py` reads and validates
   it once, through `config/loader.py`, and no later code re-checks it. Click then resolves each
-  option from its flag, its variable, the file, then its default. A new file key goes in
-  `FILE_KEYS`.
+  option from its flag, its variable, the file, then its default, and `logsift config` reports
+  Click's own parameter source. A new file key goes in `FILE_KEYS`. A new option with an `envvar`
+  goes in `RESOLVED_OPTIONS` in `config/resolved_values.py`, or
+  `tests/integration/test_config_cli.py` fails.
 - **Coverage**: `fail_under` in `pyproject.toml` is the enforced floor; run
   `task test:coverage` for the current figure rather than trusting a number written here.
 

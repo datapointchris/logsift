@@ -173,6 +173,7 @@ cat > "${XDG_CONFIG_HOME:-$HOME/.config}/logsift/config.toml" << 'EOF'
 [logs.clean]
 delete_older_than_days = 30
 EOF
+logsift config   # logs clean --days now reads 30, from config.toml
 ```
 
 See [Config Format](api/config-format.md) for every key.
