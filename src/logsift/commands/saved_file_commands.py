@@ -16,9 +16,9 @@ from logsift.commands.find_saved_file import NameArgument
 from logsift.commands.find_saved_file import TailOption
 from logsift.commands.find_saved_file import choose_file
 from logsift.commands.find_saved_file import latest_file
+from logsift.commands.listing import JsonOption
 from logsift.commands.listing import LimitOption
-from logsift.commands.listing import ListFormat
-from logsift.commands.listing import ListFormatOption
+from logsift.commands.listing import PlainOption
 from logsift.commands.listing import print_listing
 from logsift.utils.display import display_file_with_bat
 from logsift.utils.display import tail_file
@@ -56,10 +56,10 @@ def add_list_command(app: typer.Typer, kind: SavedKind, group: str) -> None:
     @app.command(
         'list',
         help=f"List the saved {NOUNS[kind]}, newest first, with each one's size and modification time.",
-        epilog=examples(group, 'list -n 10', 'list --format json', 'list --format plain'),
+        epilog=examples(group, 'list -n 10', 'list --json', 'list --plain'),
     )
-    def list_files(output_format: ListFormatOption = ListFormat.TABLE, limit: LimitOption = None) -> None:
-        print_listing(kind, output_format, limit)
+    def list_files(as_json: JsonOption = False, plain: PlainOption = False, limit: LimitOption = None) -> None:
+        print_listing(kind, as_json, plain, limit)
 
 
 def add_latest_command(app: typer.Typer, kind: SavedKind, group: str) -> None:

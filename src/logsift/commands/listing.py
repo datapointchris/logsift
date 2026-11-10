@@ -1,6 +1,5 @@
 """What every `list` command prints: the saved files of one kind, newest first."""
 
-import enum
 import json
 from typing import Annotated
 
@@ -18,32 +17,28 @@ console = Console()
 stderr_console = Console(stderr=True)
 
 
-class ListFormat(enum.StrEnum):
-    TABLE = 'table'
-    JSON = 'json'
-    PLAIN = 'plain'
-
-
-ListFormatOption = Annotated[
-    ListFormat,
-    typer.Option('--format', help='table for a person, json for a program, plain for one tab-separated path, size and time per file'),
-]
+JsonOption = Annotated[bool, typer.Option('--json', help='Print the files as a JSON array, for a program')]
+PlainOption = Annotated[bool, typer.Option('--plain', help='Print one tab-separated path, size and time per file')]
 LimitOption = Annotated[int | None, typer.Option('--limit', '-n', min=0, help='Print only the newest N files')]
 
 
-def print_listing(kind: SavedKind, output_format: ListFormat, limit: int | None) -> None:
+def print_listing(kind: SavedKind, as_json: bool, plain: bool, limit: int | None) -> None:
     """Print the saved files of kind, newest first, at most limit of them.
 
     An empty cache prints `[]` as json and nothing as plain, so a program reads it like any other
     listing. The table says so on stderr instead.
     """
+    if as_json and plain:
+        stderr_console.print('[red]Error: --json and --plain cannot be given together[/red]')
+        raise typer.Exit(2)
+
     rows = CacheManager().listing(kind)
     shown = rows[:limit]
 
-    if output_format is ListFormat.JSON:
+    if as_json:
         print(json.dumps(shown, indent=2))
         return
-    if output_format is ListFormat.PLAIN:
+    if plain:
         for row in shown:
             print(f'{row["path"]}\t{row["size_bytes"]}\t{row["modified_iso"]}')
         return

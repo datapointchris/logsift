@@ -21,15 +21,15 @@ class TestLogsListCommand:
         runner.invoke(app, ['monitor', '-n', 'older', '--format=json', '--', 'echo', 'one'])
         runner.invoke(app, ['monitor', '-n', 'newer', '--format=json', '--', 'echo', 'two'])
 
-        listed = json.loads(runner.invoke(app, ['logs', 'list', '--format', 'json']).stdout)
-        limited = json.loads(runner.invoke(app, ['raw', 'list', '-n', '1', '--format', 'json']).stdout)
+        listed = json.loads(runner.invoke(app, ['logs', 'list', '--json']).stdout)
+        limited = json.loads(runner.invoke(app, ['raw', 'list', '-n', '1', '--json']).stdout)
 
         assert [row['name'][20:] for row in listed] == ['newer.log', 'older.log']
         assert limited == listed[:1]
 
     def test_an_empty_listing_prints_nothing_a_program_must_special_case(self):
-        as_json = runner.invoke(app, ['analyzed', 'list', '--format', 'json'])
-        as_plain = runner.invoke(app, ['logs', 'list', '--format', 'plain'])
+        as_json = runner.invoke(app, ['analyzed', 'list', '--json'])
+        as_plain = runner.invoke(app, ['logs', 'list', '--plain'])
         as_table = runner.invoke(app, ['logs', 'list'])
 
         assert json.loads(as_json.stdout) == []

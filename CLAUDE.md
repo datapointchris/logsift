@@ -156,7 +156,8 @@ a stub that waits for one.
 
 **There is no MCP server and no remote monitor, by design.** The CLI is the integration surface
 for an agent: `--format json` for a program that parses the result, or the default toon when an
-agent reads piped output itself. No command takes `--json`. A remote command is monitored like any other:
-`logsift monitor -- ssh user@host ./deploy.sh`.
+agent reads piped output itself. `--format` belongs to the commands whose job is printing an
+analysis. Every `list` is a read, and takes `--json` instead. A remote command is monitored like
+any other: `logsift monitor -- ssh user@host ./deploy.sh`.
 
 When implementing: tests first (TDD), implement in `core/`/`patterns/`/`output/`, wire up in `commands/`.
