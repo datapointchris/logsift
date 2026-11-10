@@ -44,8 +44,9 @@ XDG_VARIABLES = {variable for variable, _ in xdg_dirs.BASE_DIRS.values()}
 
 @pytest.mark.parametrize('variable', sorted(option_variables() | XDG_VARIABLES))
 def test_every_variable_logsift_reads_is_named_by_a_row(variable, monkeypatch, tmp_path):
-    # An XDG variable is honored only as an absolute path. Every option variable takes an int or any string.
-    monkeypatch.setenv(variable, str(tmp_path / variable) if variable in XDG_VARIABLES else '7')
+    # An XDG variable is honored only as an absolute path. The format takes a name from its set, any other option an int or string.
+    value = {'LOGSIFT_OUTPUT_FORMAT': 'json'}.get(variable, '7')
+    monkeypatch.setenv(variable, str(tmp_path / variable) if variable in XDG_VARIABLES else value)
 
     result = runner.invoke(app, ['config'])
 

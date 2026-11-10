@@ -86,7 +86,7 @@ Analyzer (file references + context) →
 Output (toon for LLMs when piped, JSON for programs, Markdown on a terminal)
 ```
 
-- TTY detection (`utils/tty.py`): `detect_output_format()` returns Markdown on a TTY, else toon
+- `--format auto` resolves in `output/analysis_format.py`: Markdown on a TTY, else toon
 - Commands in `commands/` orchestrate but don't implement logic
 - Module layout: `cli.py` (Typer entry), `commands/`, `core/`, `patterns/`, `output/`, `monitor/`, `config/`, `cache/`, `utils/`
 

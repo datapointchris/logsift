@@ -14,12 +14,9 @@ The format is automatically detected based on context, but can be forced with `-
 
 ## Auto-Detection
 
-By default (`--format=auto`), `detect_output_format()` in `utils/tty.py` picks the format:
-
-```python
-def detect_output_format() -> str:
-    return 'markdown' if is_interactive() else 'toon'
-```
+By default (`--format=auto`), `resolve_format()` in `output/analysis_format.py` picks Markdown
+when stdout is a terminal and toon when it is not. Any other value prints that format.
+`--format` accepts `auto`, `json`, `toon` and `markdown`, and refuses anything else with exit 2.
 
 ### Examples
 
@@ -260,10 +257,10 @@ logsift analyze app.log --format=auto  # or omit --format
 
 ## Plain Text Output
 
-`--format=plain` prints the same Markdown as `--format=markdown`, which already has no ANSI colors:
+Markdown has no ANSI colors, so `--format=markdown` is already plain text in a file:
 
 ```bash
-logsift analyze app.log --format=plain > errors.txt
+logsift analyze app.log --format=markdown > errors.txt
 ```
 
 ## Comparison Table

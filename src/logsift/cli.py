@@ -33,6 +33,7 @@ from logsift.commands.monitor import monitor_command
 from logsift.config.loader import ConfigError
 from logsift.config.loader import default_map
 from logsift.config.loader import load_user_config
+from logsift.output.analysis_format import AnalysisFormat
 from logsift.output.markdown_formatter import format_markdown
 from logsift.utils.display import display_file_with_bat
 from logsift.utils.display import display_with_bat
@@ -138,13 +139,13 @@ def monitor(
         ),
     ] = None,
     format: Annotated[
-        str,
+        AnalysisFormat,
         typer.Option(
             '--format',
-            help='Output format: auto (markdown on a terminal, toon when piped), json, toon, markdown, plain (same as markdown)',
+            help='How to print the analysis. auto is markdown on a terminal and toon when piped',
             envvar='LOGSIFT_OUTPUT_FORMAT',
         ),
-    ] = 'auto',
+    ] = AnalysisFormat.AUTO,
     stream: Annotated[
         bool,
         typer.Option(
@@ -193,7 +194,7 @@ def monitor(
 
     Common Options:
         -n, --name          Name for this monitoring session
-        --format            Output format: auto, json, toon, markdown, plain
+        --format            Output format: auto, json, toon or markdown
         --stream            Stream all output in real-time
         --update-interval   Seconds between updates (default: 60)
         --minimal           Suppress progress output (for LLM workflows)
@@ -232,13 +233,13 @@ def analyze(
         typer.Argument(help='Path to log file, "latest" for most recent, or "browse" to select with fzf'),
     ] = None,
     format: Annotated[
-        str,
+        AnalysisFormat,
         typer.Option(
             '--format',
-            help='Output format: auto (markdown on a terminal, toon when piped), json, toon, markdown, plain (same as markdown)',
+            help='How to print the analysis. auto is markdown on a terminal and toon when piped',
             envvar='LOGSIFT_OUTPUT_FORMAT',
         ),
-    ] = 'auto',
+    ] = AnalysisFormat.AUTO,
     stream: Annotated[
         bool,
         typer.Option(

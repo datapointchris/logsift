@@ -144,7 +144,7 @@ logsift runs on its defaults, and reads `$XDG_CONFIG_HOME/logsift/config.toml`, 
 `~/.config/logsift/config.toml`, when it exists. Each key below is set to logsift's default:
 
 ```toml
-# How monitor and analyze print the analysis: auto, json, toon, markdown or plain.
+# How monitor and analyze print the analysis: auto, json, toon or markdown.
 print_analysis_as = "auto"
 
 [monitor]

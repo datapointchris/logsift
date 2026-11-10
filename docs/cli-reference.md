@@ -48,7 +48,7 @@ logsift monitor [OPTIONS] -- COMMAND [ARGS]...
 **Options:**
 
 - `-n, --name NAME` - Custom name for monitoring session (default: auto-generated timestamp)
-- `--format FORMAT` - Output format: `auto`, `json`, `toon`, `markdown`, or `plain`, which prints the same Markdown (default: `auto`)
+- `--format FORMAT` - Output format: `auto`, `json`, `toon` or `markdown` (default: `auto`)
 - `--stream` - Stream all output to terminal in real-time (default: show periodic updates)
 - `--update-interval SECONDS` - Seconds between progress updates when not streaming (default: 60)
 - `--minimal` - Suppress all progress output, only show final analysis (ideal for LLM workflows)
@@ -115,7 +115,7 @@ logsift analyze [OPTIONS] LOG_FILE
 
 **Options:**
 
-- `--format FORMAT` - Output format: `auto`, `json`, `toon`, `markdown`, or `plain`, which prints the same Markdown (default: `auto`)
+- `--format FORMAT` - Output format: `auto`, `json`, `toon` or `markdown` (default: `auto`)
 
 **Examples:**
 
@@ -406,7 +406,7 @@ A variable beats its `config.toml` key, and a flag beats both.
 ### Options
 
 - `LOGSIFT_SESSION_NAME` - `monitor --name`. No `config.toml` key
-- `LOGSIFT_OUTPUT_FORMAT` - `--format` for `monitor` and `analyze`: `auto`, `json`, `toon`, `markdown`, `plain`. Key `print_analysis_as`
+- `LOGSIFT_OUTPUT_FORMAT` - `--format` for `monitor` and `analyze`: `auto`, `json`, `toon` or `markdown`. Key `print_analysis_as`
 - `LOGSIFT_UPDATE_INTERVAL` - `monitor --update-interval`, in seconds. Key `monitor.report_progress_every_seconds`
 - `LOGSIFT_RETENTION_DAYS` - `logs clean --days`. Key `logs.clean.delete_older_than_days`
 

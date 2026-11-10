@@ -14,11 +14,9 @@ from logsift import process_runner
 from logsift.cache.manager import CacheManager
 from logsift.commands.analyze import report_unsaved
 from logsift.core.analyzer import Analyzer
-from logsift.output.json_formatter import format_json
-from logsift.output.markdown_formatter import format_markdown
-from logsift.output.toon_formatter import format_toon
+from logsift.output.analysis_format import AnalysisFormat
+from logsift.output.analysis_format import render_analysis
 from logsift.utils.notifications import notify_command_complete
-from logsift.utils.tty import detect_output_format
 
 stderr_console = Console(stderr=True)
 
@@ -72,7 +70,7 @@ def generate_log_name(command: list[str]) -> str:
 def monitor_command(
     command: list[str],
     name: str | None = None,
-    output_format: str = 'auto',
+    output_format: str = AnalysisFormat.AUTO,
     stream: bool = False,
     update_interval: int = 60,
     minimal: bool = False,
@@ -85,7 +83,7 @@ def monitor_command(
     Args:
         command: Command to monitor as list of strings
         name: Optional name for the monitoring session
-        output_format: Desired output format (auto, json, markdown, toon)
+        output_format: An AnalysisFormat value
         stream: Whether to stream all output in real-time (default: False, show periodic updates)
         update_interval: Seconds between progress updates when not streaming (default: 60)
         minimal: Suppress all progress output, only show final analysis result (default: False)
@@ -111,11 +109,6 @@ def monitor_command(
             # Create new log file paths (all 4 formats)
             log_paths = cache.create_paths(name)
             log_file = log_paths['raw']
-
-    # Determine output format early
-    final_format = output_format
-    if output_format == 'auto':
-        final_format = detect_output_format()
 
     # Show progress output unless explicitly suppressed with --minimal
     # Progress goes to stderr so it doesn't interfere with piping stdout
@@ -237,15 +230,7 @@ def monitor_command(
         stderr_console.print('[dim]' + '─' * 60 + '[/dim]')
 
     # Format and output results (to stdout, not stderr)
-    if final_format == 'json':
-        output = format_json(analysis_result)
-        print(output)
-    elif final_format == 'toon':
-        output = format_toon(analysis_result)
-        print(output)
-    else:
-        output = format_markdown(analysis_result)
-        print(output)
+    print(render_analysis(analysis_result, output_format))
 
     if log_file and show_progress:
         stderr_console.print(f'\n[dim]Full log: {log_file}[/dim]')

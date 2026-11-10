@@ -11,21 +11,20 @@ from rich.console import Console
 from logsift.cache.manager import CacheManager
 from logsift.core.analyzer import Analyzer
 from logsift.monitor.watcher import LogWatcher
-from logsift.output.json_formatter import format_json
+from logsift.output.analysis_format import AnalysisFormat
+from logsift.output.analysis_format import render_analysis
 from logsift.output.markdown_formatter import format_markdown
-from logsift.output.toon_formatter import format_toon
-from logsift.utils.tty import detect_output_format
 
 console = Console()
 stderr_console = Console(stderr=True)
 
 
-def analyze_log(log_file: str, output_format: str = 'auto', save: bool = True) -> None:
+def analyze_log(log_file: str, output_format: str = AnalysisFormat.AUTO, save: bool = True) -> None:
     """Analyze an existing log file.
 
     Args:
         log_file: Path to the log file to analyze
-        output_format: Desired output format (auto, json, markdown, plain)
+        output_format: An AnalysisFormat value
         save: Whether to auto-save the analysis result (default: True)
     """
     # Check if file exists
@@ -48,24 +47,7 @@ def analyze_log(log_file: str, output_format: str = 'auto', save: bool = True) -
     if save:
         report_unsaved(CacheManager().save_analysis(analysis_result, log_path.stem))
 
-    # Determine output format
-    if output_format == 'auto':
-        output_format = detect_output_format()
-
-    # Format and output results
-    if output_format == 'json':
-        output = format_json(analysis_result)
-        print(output)
-    elif output_format == 'toon':
-        output = format_toon(analysis_result)
-        print(output)
-    elif output_format == 'markdown':
-        output = format_markdown(analysis_result)
-        print(output)
-    else:
-        # Plain format fallback - just use markdown
-        output = format_markdown(analysis_result)
-        print(output)
+    print(render_analysis(analysis_result, output_format))
 
 
 def report_unsaved(failures: list[str]) -> None:

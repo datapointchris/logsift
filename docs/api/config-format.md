@@ -9,8 +9,8 @@ This file sets each key to the value logsift uses when the key is absent. Copy o
 mean to change.
 
 ```toml
-# How monitor and analyze print the analysis: auto, json, toon, markdown or plain.
-# auto prints Markdown on a terminal and toon when piped. plain prints the same Markdown.
+# How monitor and analyze print the analysis: auto, json, toon or markdown.
+# auto prints Markdown on a terminal and toon when piped.
 print_analysis_as = "auto"
 
 [monitor]
