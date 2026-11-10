@@ -236,58 +236,10 @@ logsift analyze app.log | jq
 
 ### JSON (`--format=json`)
 
-Structured JSON output optimized for LLM consumption:
-
-```json
-{
-  "summary": {
-    "status": "failed",
-    "exit_code": 1,
-    "duration_seconds": 2.45,
-    "command": "npm run build",
-    "timestamp": "2024-01-15T10:30:00Z",
-    "log_file": "/Users/user/.cache/logsift/monitor/npm-20240115_103000.log"
-  },
-  "errors": [
-    {
-      "id": 1,
-      "severity": "error",
-      "line_in_log": 45,
-      "message": "Module not found: Error: Can't resolve './missing.js'",
-      "file": "src/index.js",
-      "file_line": 12,
-      "context_before": ["import React from 'react';", "import App from './App';"],
-      "context_after": ["", "ReactDOM.render(<App />, document.getElementById('root'));"],
-      "suggestion": {
-        "action": "create_missing_file",
-        "description": "Create the missing file or fix the import path",
-        "confidence": "high"
-      },
-      "pattern_matched": "webpack_module_not_found",
-      "tags": ["webpack", "import", "fixable"]
-    }
-  ],
-  "actionable_items": [
-    {
-      "priority": 1,
-      "file": "src/index.js",
-      "line": 12,
-      "action": "fix_import",
-      "description": "Create ./missing.js or fix import path",
-      "automated": false
-    }
-  ],
-  "stats": {
-    "total_errors": 1,
-    "total_warnings": 3,
-    "fixable_errors": 1,
-    "log_size_bytes": 45678,
-    "log_lines": 234
-  }
-}
-```
-
-See [JSON Schema](api/json-schema.md) for complete schema documentation.
+Structured JSON for scripts and programs. Its shape is
+[`schemas/analysis.schema.json`](https://github.com/datapointchris/logsift/blob/main/schemas/analysis.schema.json),
+and [JSON Schema](api/json-schema.md) says how to read it. `monitor` adds a `summary` of the run that
+`analyze` does not have.
 
 ### Markdown (`--format=markdown`)
 
@@ -492,7 +444,7 @@ logsift analyze app.log --format=json | jq -r '.errors[0].message'
 logsift analyze app.log --format=json | jq '.stats.total_errors'
 
 # Get all file references
-logsift analyze app.log --format=json | jq -r '.errors[] | select(.file) | "\(.file):\(.file_line)"'
+logsift analyze app.log --format=json | jq -r '.errors[].file_references[]? | "\(.[0]):\(.[1])"'
 ```
 
 ### fzf (Fuzzy Finding)
@@ -504,7 +456,7 @@ logsift analyze app.log --format=json | jq -r '.errors[] | select(.file) | "\(.f
 logsift logs list | fzf
 
 # Jump to error in editor
-logsift analyze app.log --format=json | jq -r '.errors[] | "\(.file):\(.file_line)"' | fzf | xargs -I {} vim {}
+logsift analyze app.log --format=json | jq -r '.errors[].file_references[]? | "+\(.[1]) \(.[0])"' | fzf | xargs -o vim
 ```
 
 ### Claude Code
@@ -512,14 +464,12 @@ logsift analyze app.log --format=json | jq -r '.errors[] | "\(.file):\(.file_lin
 Use with Claude Code for automated workflows:
 
 ```python
-# Claude Code can parse JSON and apply fixes
-result = subprocess.run(['logsift', 'monitor', '--format=json', '--', 'npm', 'run', 'build'], capture_output=True, text=True)
+# An agent reads the errors, then decides the fix itself
+result = subprocess.run(['logsift', 'monitor', '--minimal', '--format=json', '--', 'npm', 'run', 'build'], capture_output=True, text=True)
 analysis = json.loads(result.stdout)
 
 for error in analysis['errors']:
-    if error['suggestion']['automated_fix']:
-        # Apply fix automatically
-        apply_fix(error)
+    print(error['message'], error.get('suggestion', ''))
 ```
 
 See [Agentic Integration](concepts/agentic-integration.md) for complete workflows.

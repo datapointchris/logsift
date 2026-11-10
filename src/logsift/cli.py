@@ -186,8 +186,8 @@ def monitor(
     """Monitor a command and analyze its output for errors
 
     Runs a command while capturing both stdout and stderr, then analyzes the
-    output using pattern matching to identify errors, warnings, and actionable
-    items. Results are cached and can be re-analyzed later.
+    output using pattern matching to identify errors and warnings. Results are
+    cached and can be re-analyzed later.
 
     By default, shows periodic progress updates every 60 seconds. Use --stream
     to see all output in real-time.
@@ -265,8 +265,8 @@ def analyze(
 ) -> None:
     """Analyze an existing log file for errors and patterns
 
-    Analyzes a log file (from disk or cache) and extracts errors, warnings,
-    and actionable items using pattern matching. Works with any log format
+    Analyzes a log file (from disk or cache) and extracts errors and warnings,
+    with a fix hint where a pattern has one. Works with any log format
     (JSON, structured, plain text).
 
     By default, analysis results are saved in all formats (JSON, TOON, Markdown).

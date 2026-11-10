@@ -4,7 +4,6 @@ Monitors a command and analyzes its output.
 """
 
 import datetime as dt
-import json
 import os
 import shlex
 import subprocess  # nosec B404
@@ -287,9 +286,8 @@ def monitor_command(
 
     # Save all analysis formats if we created new paths
     if log_paths:
-        # Save JSON (full analysis with metadata)
         with suppress(OSError), log_paths['json'].open('w', encoding='utf-8') as f:
-            json.dump(analysis_result, f, indent=2)
+            f.write(format_json(analysis_result))
 
         # Save TOON (compact for LLMs)
         with suppress(OSError, NotImplementedError), log_paths['toon'].open('w', encoding='utf-8') as f:

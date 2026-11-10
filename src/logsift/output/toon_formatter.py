@@ -13,7 +13,7 @@ from toon_format import encode
 def format_toon(analysis_result: dict[str, Any]) -> str:
     """Format analysis results as TOON for LLM consumption.
 
-    Strips non-actionable metadata (pattern_matched, description, tags) and
+    Strips non-actionable metadata (pattern_name, description, tags, file_references) and
     null fields to create compact output optimized for LLM agents.
 
     Args:
@@ -33,7 +33,7 @@ def prepare_for_toon(data: dict[str, Any]) -> dict[str, Any]:
     """Prepare data for TOON encoding by stripping non-actionable fields.
 
     Removes:
-    - Pattern metadata (pattern_matched, description, tags)
+    - Pattern metadata (pattern_name, description, tags) and file_references
     - Null/None fields
     - Verbose context arrays (simplified to essential info)
 
@@ -75,8 +75,8 @@ def prepare_for_toon(data: dict[str, Any]) -> dict[str, Any]:
 def compact_error(error: dict[str, Any]) -> dict[str, Any]:
     """Strip non-actionable fields from an error/warning.
 
-    Keeps only: id, severity, line_in_log, message, file, file_line, suggestion
-    Removes: pattern_matched, description, tags, context_before
+    Keeps only: id, severity, line_in_log, message, file, file_line, code, suggestion
+    Removes: pattern_name, description, tags, file_references, context_before
 
     For multi-line errors (pattern_context_lines_after is set), context_after
     is preserved as a simple list of message strings for LLM consumption.

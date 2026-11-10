@@ -104,16 +104,15 @@ suggestion = "Remove package from install list or use 'brew upgrade' instead"
 
 Required: name, regex, severity, description, tags. Optional: suggestion.
 
-## JSON Output Schema (DO NOT CHANGE — LLM contract)
+## JSON Output Contract (agents parse it — change it only with a version)
 
-```json
-{
-  "summary": { "status": "failed|success", "exit_code": 0, "duration_seconds": 0.0, "command": "", "timestamp": "ISO8601", "log_file": "" },
-  "errors": [{ "id": 0, "severity": "error|warning", "line_in_log": 0, "message": "", "file": "", "file_line": 0, "context_before": [], "context_after": [], "suggestion": { "action": "", "description": "", "confidence": "high|medium|low", "automated_fix": "" }, "pattern_matched": "", "tags": [] }],
-  "actionable_items": [{ "priority": 0, "file": "", "line": 0, "action": "", "description": "", "automated": false }],
-  "stats": { "total_errors": 0, "total_warnings": 0, "fixable_errors": 0, "log_size_bytes": 0, "log_lines": 0 }
-}
-```
+`schemas/analysis.schema.json` is the shape `--format json` prints, for `analyze`, for `monitor` and
+for every saved analysis. Read the fields there, and copy none of them into a doc.
+`tests/integration/test_json_contract.py` validates a real run of both commands against it.
+
+Agents parse this output, so a renamed or removed field breaks them without an error. Such a change
+edits the schema in the same commit, and raises both `SCHEMA_VERSION` in
+`output/json_formatter.py` and the schema's `$id`. An added optional field raises neither.
 
 ## Conventions specific to logsift
 

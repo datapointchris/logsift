@@ -51,8 +51,7 @@ Output: List of `LogLine` objects with:
 Single-pass detection of errors, warnings, and issues using TOML patterns:
 
 ```python
-detector = IssueDetector(patterns)
-issues = detector.detect(log_lines)
+errors, warnings = IssueDetector().detect_issues(log_entries, patterns)
 ```
 
 Detection strategy:
@@ -66,13 +65,11 @@ Detection strategy:
 Pattern matching:
 
 ```python
-for line in log_lines:
-    for pattern in patterns:
-        if re.match(pattern.regex, line.content):
-            issue = create_issue(line, pattern)
-            issue.pattern_matched = pattern.name
-            issue.suggestion = pattern.suggestion
-            issue.tags = pattern.tags
+for entry in log_entries:
+    for pattern in all_patterns:
+        if re.search(pattern['regex'], entry['message']):
+            issue = self._build_issue(entry, pattern['severity'], issue_id, pattern)
+            # issue['pattern_name'], ['description'], ['tags'] and ['suggestion'] come from the pattern
             break  # First match wins
 ```
 
@@ -86,41 +83,42 @@ for line in log_lines:
 Orchestrates the analysis pipeline and enhances issues with context:
 
 ```python
-analyzer = Analyzer(parser, detector, file_detector)
+analyzer = Analyzer(context_lines=2)
 result = analyzer.analyze(log_content)
 ```
 
 Responsibilities:
 
-- Extract file references from error messages
-- Add ±N lines of context around each issue
-- Generate actionable items from suggestions
-- Calculate statistics
+- Extract file:line references from each issue's message into `file_references`
+- Add the parsed lines around each issue as `context_before` and `context_after`
+- Name the pre-commit hooks the log shows passing or failing, under `hooks`
+- Count errors and warnings under `stats`
 
-Context extraction:
+Context extraction works on the parsed entries, so a blank line, which parses to nothing, is never
+context:
 
 ```python
-for issue in issues:
-    line_idx = issue.line_in_log - 1
-    issue.context_before = log_lines[max(0, line_idx - context_lines) : line_idx]
-    issue.context_after = log_lines[line_idx + 1 : line_idx + 1 + context_lines]
+idx = position of the issue's entry in log_entries
+issue['context_before'] = log_entries[max(0, idx - context_lines) : idx]
+issue['context_after'] = log_entries[idx + 1 : idx + 1 + (pattern_context_lines_after or context_lines)]
 ```
 
 Default: `context_lines = 2`
 
 ### 5. Formatter
 
-Convert to JSON or Markdown based on format:
+`monitor` adds a `summary` of the run to the result, then the requested format renders it:
 
 ```python
 if output_format == 'json':
-    output = format_json(analysis_result)
+    output = format_json(analysis_result)  # adds schema_version
+elif output_format == 'toon':
+    output = format_toon(analysis_result)
 else:
     output = format_markdown(analysis_result)
 ```
 
-JSON formatter creates stable schema.
-Markdown formatter creates colored, formatted text.
+`format_json` writes the document `schemas/analysis.schema.json` describes.
 
 ### 6. Output
 
@@ -147,34 +145,10 @@ class LogLine:
     level: str | None = None  # INFO, WARNING, ERROR
 ```
 
-### Error
+### Issues and the Analysis Result
 
-```python
-@dataclass
-class Error:
-    id: int
-    severity: str  # error, warning, info
-    line_in_log: int
-    message: str
-    file: str | None = None
-    file_line: int | None = None
-    context_before: list[str] = field(default_factory=list)
-    context_after: list[str] = field(default_factory=list)
-    pattern_matched: str | None = None
-    tags: list[str] = field(default_factory=list)
-    suggestion: Suggestion | None = None
-```
-
-### Analysis Result
-
-```python
-@dataclass
-class AnalysisResult:
-    summary: Summary
-    errors: list[Error]
-    actionable_items: list[ActionableItem]
-    stats: Stats
-```
+The analyzer passes plain dictionaries from stage to stage, with no dataclass for an issue or a
+result. `schemas/analysis.schema.json` is the shape the result takes once `format_json` writes it.
 
 ## Performance Characteristics
 

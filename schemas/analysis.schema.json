@@ -1,0 +1,108 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:logsift:analysis:v1",
+  "title": "logsift analyze and monitor --format json",
+  "description": "One analysis of one log: the errors and warnings found in it, the pre-commit hooks it names, and their counts. `logsift analyze --format json` prints it for a log file, and `logsift monitor --format json` prints it for a command's output with a summary of the run added. Each saved analysis under $XDG_CACHE_HOME/logsift/json/ holds the same document. A change that renames or removes a field, or changes a field's meaning, raises schema_version.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "errors", "warnings", "hooks", "stats"],
+  "properties": {
+    "schema_version": {
+      "description": "The version of this shape. A reader checks it before trusting any other field.",
+      "const": 1
+    },
+    "summary": {
+      "description": "The monitored run. Present only from `logsift monitor`, because `logsift analyze` reads a file and ran nothing.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "exit_code", "duration_seconds", "command", "log_file"],
+      "properties": {
+        "status": {"description": "success when the command exited 0, else failed.", "enum": ["success", "failed"]},
+        "exit_code": {"description": "The command's exit status, which logsift monitor also exits with.", "type": "integer"},
+        "duration_seconds": {"description": "Wall time from starting the command to its exit.", "type": "number", "minimum": 0},
+        "command": {"description": "The command and its arguments, joined by single spaces.", "type": "string"},
+        "log_file": {"description": "The raw log saved under $XDG_CACHE_HOME/logsift/raw/. Null when the run saved no log.", "type": ["string", "null"]}
+      }
+    },
+    "errors": {
+      "description": "Each line found to be an error, in log order.",
+      "type": "array",
+      "items": {"$ref": "#/definitions/issue"}
+    },
+    "warnings": {
+      "description": "Each line found to be a warning, in log order.",
+      "type": "array",
+      "items": {"$ref": "#/definitions/issue"}
+    },
+    "hooks": {
+      "description": "Pre-commit hooks named on a `name.....Passed` or `name.....Failed` line, each listed once.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["passed", "failed"],
+      "properties": {
+        "passed": {"type": "array", "items": {"type": "string"}},
+        "failed": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "stats": {
+      "description": "Counts over the whole log.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total_errors", "total_warnings"],
+      "properties": {
+        "total_errors": {"description": "The length of errors.", "type": "integer", "minimum": 0},
+        "total_warnings": {"description": "The length of warnings.", "type": "integer", "minimum": 0}
+      }
+    }
+  },
+  "definitions": {
+    "issue": {
+      "description": "One error or warning. A line is one when a JSON or key=value log line says level error or warning, or when a TOML pattern matches its message. The pattern fields are absent for the first kind.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "severity", "message", "line_in_log", "format", "context_before", "context_after"],
+      "properties": {
+        "id": {"description": "Its position among the errors, or among the warnings, counting from 1.", "type": "integer", "minimum": 1},
+        "severity": {"enum": ["error", "warning"]},
+        "message": {"description": "The line as logged, with ANSI escapes and a leading ISO timestamp removed.", "type": "string"},
+        "line_in_log": {"description": "The line's number in the log, counting from 1.", "type": "integer", "minimum": 1},
+        "format": {"description": "How the parser read the line.", "enum": ["json", "structured", "syslog", "plain"]},
+        "pattern_name": {"description": "The name of the TOML pattern that matched.", "type": "string"},
+        "description": {"description": "The matching pattern's description.", "type": "string"},
+        "tags": {"description": "The matching pattern's tags.", "type": "array", "items": {"type": "string"}},
+        "suggestion": {"description": "The matching pattern's fix hint, where it has one.", "type": "string"},
+        "pattern_context_lines_after": {"description": "How many lines after this one the matching pattern asked to keep, which context_after then holds in place of the default two.", "type": "integer", "minimum": 0},
+        "code": {"description": "A linter or tool code found in the message, such as F401, SC2086, FURB101, arg-type or B101.", "type": "string"},
+        "timestamp": {"description": "The line's timestamp, where the parser found one.", "type": "string"},
+        "file": {"description": "Copied from a JSON or key=value log line that carries a file field.", "type": "string"},
+        "file_line": {"description": "Copied from a JSON or key=value log line that carries a file_line field.", "type": ["integer", "string"]},
+        "file_references": {
+          "description": "Each file:line reference found in the message, in the order found. Each is a two-item array: the path as a string, then the line as an integer.",
+          "type": "array",
+          "items": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": {"type": ["string", "integer"]}
+          }
+        },
+        "context_before": {"description": "Up to two parsed lines before this one. Blank lines are skipped.", "type": "array", "items": {"$ref": "#/definitions/log_entry"}},
+        "context_after": {"description": "Parsed lines after this one: two, or pattern_context_lines_after where set.", "type": "array", "items": {"$ref": "#/definitions/log_entry"}}
+      }
+    },
+    "log_entry": {
+      "description": "One parsed log line. A JSON line keeps every field it had, and a key=value line every pair, beside the fields named here.",
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["line_number", "format", "level", "message"],
+      "properties": {
+        "line_number": {"description": "The line's number in the log, counting from 1.", "type": "integer", "minimum": 1},
+        "format": {"enum": ["json", "structured", "syslog", "plain"]},
+        "level": {"description": "The line's own level field, or INFO where it has none. Patterns decide a plain line's severity, not this.", "type": "string"},
+        "message": {"description": "The line's message, empty for a key=value line with no message pair.", "type": "string"},
+        "timestamp": {"description": "A leading ISO timestamp, or a JSON line's own timestamp field.", "type": "string"},
+        "priority": {"description": "A syslog line's <N> priority.", "type": "integer"}
+      }
+    }
+  }
+}

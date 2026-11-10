@@ -71,6 +71,7 @@ test = [
     "Faker>=25.0.1",
     "freezegun>=1.5.1",
     "pytest>=8.4.1",
+    "jsonschema>=4.0",
 ]
 
 

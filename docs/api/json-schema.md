@@ -1,264 +1,76 @@
 # JSON Output Schema
 
-Complete specification of logsift's JSON output format.
+[`schemas/analysis.schema.json`](https://github.com/datapointchris/logsift/blob/main/schemas/analysis.schema.json)
+is the contract for `--format json`. It is a draft-07 JSON Schema with `$id`
+`urn:logsift:analysis:v1`, and each field's meaning is its `description` there. Read the fields
+from the file rather than from an example, because an example goes stale and the file is what a
+test validates every real run against.
 
-## Schema Stability
+## Three places print it
 
-The JSON schema is a **stable contract** between logsift and consuming applications:
+- `logsift analyze --format json <log>` prints the analysis of a log file. It has no `summary`,
+  because nothing ran.
+- `logsift monitor --format json -- <command>` adds `summary`: the status, exit code, duration and
+  command of the run, and the path of the raw log it saved.
+- Each saved analysis under `$XDG_CACHE_HOME/logsift/json/` holds the same document.
 
-- Fields will never be removed without deprecation
-- Types will never change
-- Field names will never change
-- Breaking changes require major version bump
+## Versioning
 
-New optional fields may be added in minor versions.
+Every document carries `schema_version`, which is `1`. A change that renames or removes a field, or
+changes what a field means, raises it along with the `$id`. Adding an optional field raises neither.
+Check `schema_version` before trusting any other field.
 
-## Root Object
+## Reading it
 
-```json
-{
-  "summary": {...},
-  "errors": [...],
-  "actionable_items": [...],
-  "stats": {...}
-}
+- **An optional field is absent, never null.** `pattern_name`, `description`, `tags` and
+  `suggestion` appear only when a TOML pattern matched the line. A JSON or key=value line flagged by
+  its own `level` field carries none of them.
+- **`suggestion` is a string**: the matching pattern's fix hint.
+- **`file_references` lists `[path, line]` pairs** found in the message, such as
+  `["src/main.py", 42]`.
+- **`context_before` and `context_after` hold parsed lines**, each an object with `line_number`,
+  `level`, `format` and `message`, rather than bare strings.
+- **`hooks.failed` names each pre-commit hook** the log showed failing.
+
+## Validating output against it
+
+```bash
+logsift analyze --format json app.log > analysis.json
+uvx check-jsonschema --schemafile schemas/analysis.schema.json analysis.json
 ```
 
-## summary
-
-Command execution metadata:
-
-```json
-{
-  "summary": {
-    "status": "failed",              // "failed" | "success"
-    "exit_code": 1,                  // integer
-    "duration_seconds": 2.45,        // float
-    "command": "npm run build",      // string
-    "timestamp": "2024-01-15T10:30:00Z",  // ISO8601
-    "log_file": "/path/to/log.log"   // string | null
-  }
-}
-```
-
-**Fields:**
-
-- `status` (string) - `"failed"` or `"success"`
-- `exit_code` (integer) - Command exit code
-- `duration_seconds` (float) - Execution time
-- `command` (string) - Command that was run
-- `timestamp` (string) - ISO8601 timestamp
-- `log_file` (string | null) - Path to cached log file
-
-## errors
-
-Array of detected errors with context:
-
-```json
-{
-  "errors": [
-    {
-      "id": 1,
-      "severity": "error",
-      "line_in_log": 45,
-      "message": "Module not found: Error: Can't resolve './missing.js'",
-      "file": "src/index.js",
-      "file_line": 12,
-      "context_before": ["import React from 'react';", "import App from './App';"],
-      "context_after": ["", "ReactDOM.render(<App />, document.getElementById('root'));"],
-      "suggestion": {
-        "action": "create_missing_file",
-        "description": "Create the missing file or fix the import path",
-        "confidence": "high",
-        "automated_fix": "touch src/missing.js"
-      },
-      "pattern_matched": "webpack_module_not_found",
-      "tags": ["webpack", "import", "fixable"]
-    }
-  ]
-}
-```
-
-**Error Object Fields:**
-
-- `id` (integer) - Unique error identifier (1-indexed)
-- `severity` (string) - `"error"`, `"warning"`, or `"info"`
-- `line_in_log` (integer) - Line number in original log
-- `message` (string) - Error message
-- `file` (string | null) - Source file path (if detected)
-- `file_line` (integer | null) - Line number in source file (if detected)
-- `context_before` (array[string]) - Lines before error (default: 2 lines)
-- `context_after` (array[string]) - Lines after error (default: 2 lines)
-- `suggestion` (object | null) - Fix suggestion (if available)
-- `pattern_matched` (string | null) - Pattern name that matched
-- `tags` (array[string]) - Categorization tags
-
-## suggestion
-
-Fix suggestion for automated workflows:
-
-```json
-{
-  "suggestion": {
-    "action": "create_missing_file",
-    "description": "Create the missing file or fix the import path",
-    "confidence": "high",
-    "automated_fix": "touch src/missing.js"
-  }
-}
-```
-
-**Fields:**
-
-- `action` (string) - Action type identifier
-- `description` (string) - Human-readable fix description
-- `confidence` (string) - `"high"`, `"medium"`, or `"low"`
-- `automated_fix` (string | null) - Shell command to fix (if available)
-
-## actionable_items
-
-Prioritized list of fixes:
-
-```json
-{
-  "actionable_items": [
-    {
-      "priority": 1,
-      "file": "src/index.js",
-      "line": 12,
-      "action": "fix_import",
-      "description": "Create ./missing.js or fix import path",
-      "automated": true
-    }
-  ]
-}
-```
-
-**Fields:**
-
-- `priority` (integer) - Priority (1 = highest)
-- `file` (string | null) - File to edit
-- `line` (integer | null) - Line to edit
-- `action` (string) - Action type
-- `description` (string) - What to do
-- `automated` (boolean) - Can be automated?
-
-## stats
-
-Summary statistics:
-
-```json
-{
-  "stats": {
-    "total_errors": 1,
-    "total_warnings": 3,
-    "fixable_errors": 1,
-    "log_size_bytes": 45678,
-    "log_lines": 234
-  }
-}
-```
-
-**Fields:**
-
-- `total_errors` (integer) - Count of errors
-- `total_warnings` (integer) - Count of warnings
-- `fixable_errors` (integer) - Errors with automated fixes
-- `log_size_bytes` (integer) - Log file size
-- `log_lines` (integer) - Total log lines
-
-## Complete Example
-
-```json
-{
-  "summary": {
-    "status": "failed",
-    "exit_code": 1,
-    "duration_seconds": 2.45,
-    "command": "npm run build",
-    "timestamp": "2024-01-15T10:30:00Z",
-    "log_file": "/Users/user/.cache/logsift/monitor/npm-20240115_103000.log"
-  },
-  "errors": [
-    {
-      "id": 1,
-      "severity": "error",
-      "line_in_log": 45,
-      "message": "Module not found: Error: Can't resolve './missing.js'",
-      "file": "src/index.js",
-      "file_line": 12,
-      "context_before": [
-        "import React from 'react';",
-        "import App from './App';"
-      ],
-      "context_after": [
-        "",
-        "ReactDOM.render(<App />, document.getElementById('root'));"
-      ],
-      "suggestion": {
-        "action": "create_missing_file",
-        "description": "Create the missing file or fix the import path",
-        "confidence": "high",
-        "automated_fix": "touch src/missing.js"
-      },
-      "pattern_matched": "webpack_module_not_found",
-      "tags": ["webpack", "import", "fixable"]
-    }
-  ],
-  "actionable_items": [
-    {
-      "priority": 1,
-      "file": "src/index.js",
-      "line": 12,
-      "action": "fix_import",
-      "description": "Create ./missing.js or fix import path",
-      "automated": true
-    }
-  ],
-  "stats": {
-    "total_errors": 1,
-    "total_warnings": 0,
-    "fixable_errors": 1,
-    "log_size_bytes": 45678,
-    "log_lines": 234
-  }
-}
-```
-
-## Parsing Examples
+## Parsing examples
 
 ### Python
 
 ```python
 import json
+import subprocess
 
-data = json.loads(logsift_output)
+run = subprocess.run(['logsift', 'monitor', '--minimal', '--format', 'json', '--', 'make', 'build'], capture_output=True, text=True)
+data = json.loads(run.stdout)
 
 if data['summary']['status'] == 'failed':
     for error in data['errors']:
         print(f'Error: {error["message"]}')
-        if error['file']:
-            print(f'  at {error["file"]}:{error["file_line"]}')
+        for path, line in error.get('file_references', []):
+            print(f'  at {path}:{line}')
 ```
 
 ### jq
 
 ```bash
-# Get all error messages
-jq -r '.errors[].message'
+# Every error message
+logsift analyze --format json app.log | jq -r '.errors[].message'
 
-# Get file references
-jq -r '.errors[] | select(.file) | "\(.file):\(.file_line)"'
+# Every file:line reference
+logsift analyze --format json app.log | jq -r '.errors[].file_references[]? | "\(.[0]):\(.[1])"'
 
-# Count fixable errors
-jq '.stats.fixable_errors'
+# Errors that carry a fix hint
+logsift analyze --format json app.log | jq '[.errors[] | select(.suggestion)]'
 ```
-
-## Version History
-
-- **v0.1.0** - Initial schema
 
 ## See Also
 
-- [Output Modes](../concepts/output-modes.md) - JSON vs Markdown
+- [Output Modes](../concepts/output-modes.md) - JSON, toon and Markdown
 - [Agentic Integration](../concepts/agentic-integration.md) - Using JSON with AI

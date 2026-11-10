@@ -42,7 +42,7 @@ class Analyzer:
             log_content: Raw log content to analyze
 
         Returns:
-            Dictionary containing analysis results with errors, warnings, and actionable items
+            Dictionary of errors, warnings, hooks and stats, the body of schemas/analysis.schema.json
         """
         # Parse log content
         log_entries = self.parser.parse(log_content)

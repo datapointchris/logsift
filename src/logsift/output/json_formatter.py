@@ -1,14 +1,16 @@
 """JSON formatter for LLM-optimized output.
 
-Generates structured JSON output designed for Claude Code and other AI agents.
+Generates the document schemas/analysis.schema.json describes, for Claude Code and other AI agents.
 """
 
 import json
 from typing import Any
 
+SCHEMA_VERSION = 1
+
 
 def format_json(analysis_result: dict[str, Any]) -> str:
-    """Format analysis results as JSON for LLM consumption.
+    """Format analysis results as the JSON document schemas/analysis.schema.json describes.
 
     Args:
         analysis_result: Analysis results dictionary
@@ -16,8 +18,7 @@ def format_json(analysis_result: dict[str, Any]) -> str:
     Returns:
         JSON string formatted for LLM agents
     """
-    # Convert file_references tuples to lists for JSON serialization
-    output = prepare_for_json(analysis_result)
+    output = {'schema_version': SCHEMA_VERSION} | prepare_for_json(analysis_result)
 
     # Pretty-print with 2-space indentation for readability
     return json.dumps(output, indent=2, ensure_ascii=False)

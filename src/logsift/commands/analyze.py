@@ -3,7 +3,6 @@
 Analyzes an existing log file and outputs results.
 """
 
-import json
 import sys
 from contextlib import suppress
 from pathlib import Path
@@ -60,9 +59,8 @@ def analyze_log(log_file: str, output_format: str = 'auto', save: bool = True) -
         md_path = cache.md_dir / f'{stem}.md'
 
         # Silently fail if we can't save - don't interrupt the analysis
-        # Save JSON (full analysis with metadata)
         with suppress(OSError), json_path.open('w', encoding='utf-8') as f:
-            json.dump(analysis_result, f, indent=2)
+            f.write(format_json(analysis_result))
 
         # Save TOON (compact for LLMs)
         with suppress(OSError), toon_path.open('w', encoding='utf-8') as f:

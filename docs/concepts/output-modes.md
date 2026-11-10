@@ -53,73 +53,9 @@ Structured output optimized for machine consumption and LLM parsing.
 
 ### JSON Structure
 
-```json
-{
-  "summary": {
-    "status": "failed",
-    "exit_code": 1,
-    "duration_seconds": 2.45,
-    "command": "npm run build",
-    "timestamp": "2024-01-15T10:30:00Z",
-    "log_file": "/Users/user/.cache/logsift/monitor/npm-20240115_103000.log"
-  },
-  "errors": [
-    {
-      "id": 1,
-      "severity": "error",
-      "line_in_log": 45,
-      "message": "Module not found: Error: Can't resolve './missing.js'",
-      "file": "src/index.js",
-      "file_line": 12,
-      "context_before": [
-        "import React from 'react';",
-        "import App from './App';"
-      ],
-      "context_after": [
-        "",
-        "ReactDOM.render(<App />, document.getElementById('root'));"
-      ],
-      "suggestion": {
-        "action": "create_missing_file",
-        "description": "Create the missing file or fix the import path",
-        "confidence": "high",
-        "automated_fix": "touch src/missing.js"
-      },
-      "pattern_matched": "webpack_module_not_found",
-      "tags": ["webpack", "import", "fixable"]
-    }
-  ],
-  "actionable_items": [
-    {
-      "priority": 1,
-      "file": "src/index.js",
-      "line": 12,
-      "action": "fix_import",
-      "description": "Create ./missing.js or fix import path",
-      "automated": true
-    }
-  ],
-  "stats": {
-    "total_errors": 1,
-    "total_warnings": 3,
-    "fixable_errors": 1,
-    "log_size_bytes": 45678,
-    "log_lines": 234
-  }
-}
-```
-
-### JSON Stability Guarantee
-
-The JSON schema is a **stable contract**. Changes require a major version bump.
-
-Fields will never be:
-
-- Removed without deprecation
-- Changed in type
-- Renamed without migration path
-
-New optional fields may be added in minor versions.
+[`schemas/analysis.schema.json`](https://github.com/datapointchris/logsift/blob/main/schemas/analysis.schema.json)
+is the shape, and [JSON Schema](../api/json-schema.md) says how to read it. Every document carries
+`schema_version`, which rises whenever a field is renamed, removed or changes meaning.
 
 ### Processing JSON
 
@@ -133,13 +69,10 @@ logsift analyze app.log --format=json | jq -r '.errors[].message'
 logsift analyze app.log --format=json | jq '.stats.total_errors'
 
 # Get file references
-logsift analyze app.log --format=json | jq -r '.errors[] | select(.file) | "\(.file):\(.file_line)"'
+logsift analyze app.log --format=json | jq -r '.errors[].file_references[]? | "\(.[0]):\(.[1])"'
 
-# Filter high-confidence fixes
-logsift analyze app.log --format=json | jq '.errors[] | select(.suggestion.confidence == "high")'
-
-# Extract automated fixes
-logsift analyze app.log --format=json | jq -r '.errors[].suggestion.automated_fix | select(. != null)'
+# Errors a pattern recognized, with its fix hint
+logsift analyze app.log --format=json | jq '.errors[] | select(.suggestion) | {pattern_name, suggestion}'
 ```
 
 #### With Python
@@ -154,11 +87,11 @@ analysis = json.loads(result.stdout)
 
 # Process errors
 for error in analysis['errors']:
-    print(f'Error at {error.get("file")}:{error.get("file_line")}')
-    print(f'  {error["message"]}')
-
+    print(f'Line {error["line_in_log"]}: {error["message"]}')
+    for path, line in error.get('file_references', []):
+        print(f'  at {path}:{line}')
     if error.get('suggestion'):
-        print(f'  Fix: {error["suggestion"]["description"]}')
+        print(f'  Fix: {error["suggestion"]}')
 ```
 
 #### With Node.js
@@ -176,7 +109,7 @@ const analysis = JSON.parse(output);
 analysis.errors.forEach(error => {
   console.log(`Error: ${error.message}`);
   if (error.suggestion) {
-    console.log(`Fix: ${error.suggestion.description}`);
+    console.log(`Fix: ${error.suggestion}`);
   }
 });
 ```

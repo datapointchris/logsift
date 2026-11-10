@@ -100,33 +100,14 @@ ModuleNotFoundError: No module named 'nonexistent_module'
 
 ### JSON Output (for LLMs and Scripts)
 
-When piped or with `--format=json`, logsift outputs structured JSON:
+With `--format=json`, logsift prints the document
+[`schemas/analysis.schema.json`](https://github.com/datapointchris/logsift/blob/main/schemas/analysis.schema.json)
+describes. [JSON Schema](api/json-schema.md) says how to read it:
 
-```json
-{
-  "summary": {
-    "status": "failed",
-    "exit_code": 1,
-    "duration_seconds": 0.23,
-    "command": "python -c import nonexistent_module"
-  },
-  "errors": [
-    {
-      "id": 1,
-      "severity": "error",
-      "line_in_log": 3,
-      "message": "ModuleNotFoundError: No module named 'nonexistent_module'",
-      "suggestion": {
-        "action": "install_module",
-        "description": "Install the missing module using pip"
-      }
-    }
-  ],
-  "stats": {
-    "total_errors": 1,
-    "total_warnings": 0
-  }
-}
+```bash
+logsift monitor --minimal --format=json -- python -c "import nonexistent_module" \
+  | jq -c '{status: .summary.status, errors: [.errors[] | {message, pattern_name}]}'
+# {"status":"failed","errors":[{"message":"ModuleNotFoundError: No module named 'nonexistent_module'","pattern_name":"module_not_found"}]}
 ```
 
 ## Auto-Format Detection
