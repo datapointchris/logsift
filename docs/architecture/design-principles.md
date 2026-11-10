@@ -8,8 +8,8 @@ Why logsift works the way it does.
 
 This inverts traditional tool design:
 
-- JSON output is optimized for parsing, not reading
-- Schema stability is critical (breaking changes = major version)
+- Piped output is toon, compact for an LLM to read, and JSON is optimized for parsing
+- Schema stability is critical: `schemas/analysis.schema.json` is the contract, and a breaking change raises its `schema_version`
 - Fail fast - no defensive coding with inline defaults
 - Universal compatibility - works with ANY log format
 
@@ -48,12 +48,14 @@ Works with ANY log format:
 
 Auto-detection, no configuration needed.
 
-### 4. Dual Output Modes
+### 4. Three Output Formats
 
-- **JSON** for machines (LLMs, scripts, automation)
+- **toon** for an LLM reading piped output, with the fewest tokens
+- **JSON** for programs, with a published schema
 - **Markdown** for humans (terminals, debugging)
 
-Auto-detected via TTY check.
+A TTY check picks Markdown on a terminal and toon otherwise. JSON is always asked for with
+`--format json`. Every `monitor` run saves all three.
 
 ### 5. Extensible Patterns
 
@@ -110,9 +112,8 @@ Reasoning:
 
 Reasoning:
 
-- Best default for 90% of use cases
-- Terminal users get beauty
-- Scripts get structure
+- A person at a terminal gets Markdown, and an agent reading a pipe gets toon
+- A program asks for JSON, so its parse never depends on whether stdout is a terminal
 - Can override when needed
 
 ## Architecture Decisions
@@ -148,7 +149,7 @@ What logsift intentionally does NOT do:
 1. **Log aggregation** - Use ELK, Splunk, etc.
 2. **Metrics/monitoring** - Use Prometheus, Grafana
 3. **Log storage** - Cache is temporary, not database
-4. **Multi-format output** - JSON + Markdown only
+4. **Multi-format output** - JSON, toon and Markdown only
 
 ## Success Criteria
 
