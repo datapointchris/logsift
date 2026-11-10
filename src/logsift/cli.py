@@ -7,6 +7,7 @@ import datetime as dt
 import json
 from pathlib import Path
 from typing import Annotated
+from typing import cast
 
 import typer
 from pyselfupdate import Config
@@ -18,8 +19,6 @@ from rich.table import Table
 from logsift import __version__
 from logsift import xdg_dirs
 from logsift.cache.manager import CacheManager
-from logsift.cli_formatter import ColoredTyperGroup
-from logsift.cli_formatter import format_help_with_colors
 from logsift.commands.analyze import analyze_log
 from logsift.commands.analyze import stream_analyze_log
 from logsift.commands.config import show_config
@@ -48,23 +47,28 @@ app = typer.Typer(
         'and prints the errors it found. Reach for `logsift analyze` only when the log '
         'already exists: a file another tool wrote, or `latest` to re-run the patterns '
         'over the last capture.\n\n'
-        '`logs` holds what a run printed, and `analyzed` holds what logsift found in it. '
-        'Open `logs` to read the raw output, and `analyzed` to reread the errors '
-        'without running the command again.'
+        '`logs` holds what a run printed, and `analyzed` holds what logsift found in it, '
+        'rendered as Markdown. Open `logs` to read the raw output, and `analyzed` to reread the '
+        'errors without running the command again. `raw`, `json`, `toon` and `md` each show one '
+        'kind of saved file exactly as it is stored: the raw log, or the analysis as '
+        '`--format json`, `toon` or `markdown` printed it.'
     ),
     add_completion=False,
-    rich_markup_mode=None,  # Disable Rich markup
-    pretty_exceptions_enable=False,  # Disable Rich exceptions
+    no_args_is_help=True,
+    pretty_exceptions_enable=False,
     epilog=(
         '\b\n'
         'Examples:\n'
-        '  logsift monitor -- make build                             run it, show errors\n'
-        '  logsift monitor --minimal --format json -- pytest tests/  JSON only, for LLMs\n'
-        '  logsift analyze latest                                    re-scan last capture\n'
-        '  logsift analyzed latest build                             reread build errors\n\n'
-        'Use `logsift help <command>` for more details on a specific command.'
+        '  # Run a build, then print the errors it hit\n'
+        '  logsift monitor -- make build\n'
+        '  # Print only the analysis, as JSON\n'
+        '  logsift monitor --minimal --format json -- pytest tests/\n'
+        '  # Re-run the patterns over the last capture\n'
+        '  logsift analyze latest\n'
+        '  # Reread the newest analysis of a run named build\n'
+        '  logsift analyzed latest build\n\n'
+        '`logsift <command> --help` describes one command.'
     ),
-    cls=ColoredTyperGroup,  # Use our custom colored formatter
 )
 console = Console()
 stderr_console = Console(stderr=True)
@@ -74,8 +78,8 @@ stderr_console = Console(stderr=True)
 UPDATE_CONFIG = Config(tool='logsift', owner='datapointchris')
 add_update_command(app, UPDATE_CONFIG)
 
-# Help sections, named for what their commands are for. A command with no panel, such as
-# `help` and `update`, is listed after them under "Additional commands".
+# Help sections, named for what their commands are for. Typer lists a command with no panel,
+# such as `help` and `update`, first, under "Commands".
 ANALYZE_PANEL = 'Analyze'
 BROWSE_PANEL = 'Browse saved runs'
 
@@ -87,7 +91,7 @@ def version_callback(value: bool) -> None:
         raise typer.Exit()
 
 
-@app.callback(invoke_without_command=True)
+@app.callback()
 def main(
     ctx: typer.Context,
     version: bool = typer.Option(
@@ -99,23 +103,13 @@ def main(
         help='Display the logsift version',
     ),
 ) -> None:
-    """logsift - Intelligent log analysis for agentic workflows.
-
-    An LLM-optimized log analysis and command monitoring tool designed for
-    Claude Code and other AI agents. Extracts actionable insights from verbose
-    logs and provides structured output optimized for LLMs.
-    """
+    """Load config.toml for every command, and queue the daily update notice."""
     # Never raises and never prints an error; the notice is deferred to exit so
     # it lands after the command's own output. `logsift update` is the only
     # place an update failure is reported, and is skipped here because it is
     # about to do the thing the notice would suggest.
     if ctx.invoked_subcommand != 'update':
         notify(UPDATE_CONFIG)
-
-    # If no subcommand is provided, show help (like uv does)
-    if ctx.invoked_subcommand is None:
-        console.print(ctx.get_help())
-        raise typer.Exit()
 
     # Click builds the subcommand's context after this callback, so it inherits this default_map.
     try:
@@ -125,7 +119,7 @@ def main(
         raise typer.Exit(1) from None
 
 
-@app.command(rich_help_panel=ANALYZE_PANEL)
+@app.command(rich_help_panel=ANALYZE_PANEL, no_args_is_help=True)
 def monitor(
     ctx: typer.Context,
     command: Annotated[list[str] | None, typer.Argument(help='Command to monitor')] = None,
@@ -134,7 +128,7 @@ def monitor(
         typer.Option(
             '-n',
             '--name',
-            help='Name for this monitoring session (default: auto-generated timestamp)',
+            help='Name for this run, used in its saved file names. Taken from the command when omitted',
             envvar='LOGSIFT_SESSION_NAME',
         ),
     ] = None,
@@ -150,14 +144,14 @@ def monitor(
         bool,
         typer.Option(
             '--stream',
-            help='Stream all output to terminal in real-time (default: show periodic updates)',
+            help='Print every line of output as it arrives, instead of a progress report every --update-interval',
         ),
     ] = False,
     update_interval: Annotated[
         int,
         typer.Option(
             '--update-interval',
-            help='Seconds between progress updates when not streaming (default: 60)',
+            help='Seconds between progress updates when not streaming',
             envvar='LOGSIFT_UPDATE_INTERVAL',
         ),
     ] = 60,
@@ -192,29 +186,15 @@ def monitor(
     By default, shows periodic progress updates every 60 seconds. Use --stream
     to see all output in real-time.
 
-    Common Options:
-        -n, --name          Name for this monitoring session
-        --format            Output format: auto, json, toon or markdown
-        --stream            Stream all output in real-time
-        --update-interval   Seconds between updates (default: 60)
-        --minimal           Suppress progress output (for LLM workflows)
-        --notify            Send desktop notification on completion
-        --append           Append to existing log
-
+    \b
     Examples:
         logsift monitor -- make build
         logsift monitor --stream -- npm install
         logsift monitor --minimal -- pre-commit run --files file.py
         logsift monitor --format json -- docker build -t myapp .
     """
-    # Show help if no command provided
-    if command is None or len(command) == 0:
-        help_text = format_help_with_colors(ctx)
-        typer.echo(help_text, color=True)
-        raise typer.Exit()
-
     monitor_command(
-        command,
+        command or [],
         name=name,
         output_format=format,
         stream=stream,
@@ -225,13 +205,13 @@ def monitor(
     )
 
 
-@app.command(rich_help_panel=ANALYZE_PANEL)
+@app.command(rich_help_panel=ANALYZE_PANEL, no_args_is_help=True)
 def analyze(
     ctx: typer.Context,
     log_file: Annotated[
-        str | None,
+        str,
         typer.Argument(help='Path to log file, "latest" for most recent, or "browse" to select with fzf'),
-    ] = None,
+    ],
     format: Annotated[
         AnalysisFormat,
         typer.Option(
@@ -252,7 +232,7 @@ def analyze(
         typer.Option(
             '-i',
             '--interval',
-            help='Update interval in seconds when streaming (default: 1)',
+            help='Update interval in seconds when streaming',
         ),
     ] = 1,
     no_save: Annotated[
@@ -272,6 +252,7 @@ def analyze(
     By default, analysis results are saved in all formats (JSON, TOON, Markdown).
     Use --no-save to skip saving (useful when testing pattern changes).
 
+    \b
     Examples:
         logsift analyze /var/log/app.log
         logsift analyze --format json build.log
@@ -280,12 +261,6 @@ def analyze(
         logsift analyze latest --stream
         logsift analyze browse
     """
-    # Show help if no arguments provided
-    if not log_file:
-        help_text = format_help_with_colors(ctx)
-        typer.echo(help_text, color=True)
-        raise typer.Exit()
-
     # Handle "latest" shortcut
     if log_file == 'latest':
         cache = CacheManager()
@@ -336,43 +311,19 @@ def analyze(
 # Create logs command group
 logs_app = typer.Typer(
     help='Manage cached log files',
-    rich_markup_mode=None,
+    no_args_is_help=True,
     pretty_exceptions_enable=False,
-    cls=ColoredTyperGroup,  # Use our custom colored formatter
-    invoke_without_command=True,
 )
 app.add_typer(logs_app, name='logs', rich_help_panel=BROWSE_PANEL)
-
-
-@logs_app.callback()
-def logs_callback(ctx: typer.Context) -> None:
-    """Manage cached log files."""
-    # Show help if no subcommand provided
-    if ctx.invoked_subcommand is None:
-        help_text = format_help_with_colors(ctx)
-        typer.echo(help_text, color=True)
-        raise typer.Exit()
 
 
 # Create analyzed command group
 analyzed_app = typer.Typer(
     help='Manage saved analysis results',
-    rich_markup_mode=None,
+    no_args_is_help=True,
     pretty_exceptions_enable=False,
-    cls=ColoredTyperGroup,  # Use our custom colored formatter
-    invoke_without_command=True,
 )
 app.add_typer(analyzed_app, name='analyzed', rich_help_panel=BROWSE_PANEL)
-
-
-@analyzed_app.callback()
-def analyzed_callback(ctx: typer.Context) -> None:
-    """Manage saved analysis results."""
-    # Show help if no subcommand provided
-    if ctx.invoked_subcommand is None:
-        help_text = format_help_with_colors(ctx)
-        typer.echo(help_text, color=True)
-        raise typer.Exit()
 
 
 @logs_app.command('list')
@@ -390,6 +341,7 @@ def logs_list(
     Shows all logs stored in the cache directory with their size and modification
     time. Useful for finding previously monitored sessions.
 
+    \b
     Examples:
         # List all cached logs
         logsift logs list
@@ -410,7 +362,7 @@ def logs_clean(
         typer.Option(
             '-d',
             '--days',
-            help='Delete logs older than N days (default: 90)',
+            help='Delete logs older than N days',
             envvar='LOGSIFT_RETENTION_DAYS',
         ),
     ] = 90,
@@ -427,6 +379,7 @@ def logs_clean(
     Deletes cached logs older than the specified number of days. Use --dry-run
     to preview what would be deleted before actually removing files.
 
+    \b
     Examples:
         # Preview what would be deleted (safe)
         logsift logs clean --dry-run
@@ -464,7 +417,7 @@ def logs_browse(
         typer.Option(
             '-i',
             '--interval',
-            help='Update interval in seconds when tailing (default: 1)',
+            help='Update interval in seconds when tailing',
         ),
     ] = 1,
 ) -> None:
@@ -476,6 +429,7 @@ def logs_browse(
 
     Requires fzf to be installed (see https://github.com/junegunn/fzf#installation).
 
+    \b
     Examples:
         # Browse and analyze a cached log
         logsift logs browse
@@ -514,7 +468,7 @@ def logs_latest(
         typer.Option(
             '-i',
             '--interval',
-            help='Update interval in seconds when tailing (default: 1)',
+            help='Update interval in seconds when tailing',
         ),
     ] = 1,
 ) -> None:
@@ -524,6 +478,7 @@ def logs_latest(
     to watch it in real-time. If no name is provided, uses the absolute latest
     log across all cached logs.
 
+    \b
     Examples:
         # Show the latest pytest log
         logsift logs latest pytest
@@ -578,6 +533,7 @@ def analyzed_list(
     Shows all analysis results saved in the cache directory with metadata
     including name, size, and modification time.
 
+    \b
     Examples:
         # List in table format
         logsift analyzed list
@@ -623,6 +579,7 @@ def analyzed_browse() -> None:
 
     Requires fzf to be installed (see https://github.com/junegunn/fzf#installation).
 
+    \b
     Examples:
         logsift analyzed browse
     """
@@ -667,6 +624,7 @@ def analyzed_latest(
 
     Displays the latest saved analysis result, optionally filtered by name.
 
+    \b
     Examples:
         # Show absolute latest analysis
         logsift analyzed latest
@@ -709,7 +667,7 @@ def analyzed_clean(
         typer.Option(
             '-d',
             '--days',
-            help='Delete analyses older than this many days (default: 30)',
+            help='Delete analyses older than this many days',
         ),
     ] = 30,
     dry_run: Annotated[
@@ -726,6 +684,7 @@ def analyzed_clean(
     Raw logs are left for 'logsift logs clean'.
     Use --dry-run to preview what would be deleted.
 
+    \b
     Examples:
         # Clean analyses older than 30 days
         logsift analyzed clean
@@ -763,21 +722,11 @@ def analyzed_clean(
     console.print(f'[green]Deleted {len(to_delete)} analysis file(s) older than {days} days[/green]')
 
 
-# ============================================================================
-# Format-specific command groups
-# ============================================================================
-#
-# Create unified command groups for each log format using template function.
-# Each format (raw, json, toon, md) gets the same commands: browse, latest, list
-#
-
-# Create format command groups
 raw_app = create_format_commands('raw', '.log', 'raw_dir', 'txt')
 json_app = create_format_commands('json', '.json', 'json_dir', 'json')
 toon_app = create_format_commands('toon', '.toon', 'toon_dir', 'yaml')
 md_app = create_format_commands('md', '.md', 'md_dir', 'markdown')
 
-# Register format commands
 app.add_typer(raw_app, name='raw', rich_help_panel=BROWSE_PANEL)
 app.add_typer(json_app, name='json', rich_help_panel=BROWSE_PANEL)
 app.add_typer(toon_app, name='toon', rich_help_panel=BROWSE_PANEL)
@@ -794,6 +743,7 @@ def config(ctx: typer.Context) -> None:
     would set it. A config.toml that fails to parse, or names a key logsift
     does not read, stops every command and names the problem.
 
+    \b
     Examples:
         logsift config
         LOGSIFT_OUTPUT_FORMAT=json logsift config
@@ -808,28 +758,28 @@ def help(
 ) -> None:
     """Display help information for logsift commands.
 
+    \b
     Examples:
         logsift help
         logsift help monitor
         logsift help analyze
     """
     root_ctx = ctx.parent or ctx
-
     if command is None:
-        # Show main help using custom formatter
-        help_text = format_help_with_colors(root_ctx)
-        typer.echo(help_text, color=True)
-    else:
-        get_command = getattr(root_ctx.command, 'get_command', None)
-        cmd = get_command(root_ctx, command) if get_command else None
-        if cmd is None:
-            # A usage error exits 2, so a caller can tell a mistyped name from a command that ran and failed.
-            typer.echo(f'Error: Unknown command "{command}". Run "logsift help" to see available commands.', err=True)
-            raise typer.Exit(2)
-        # The command's own context class, which is the one Typer would build for it.
-        with cmd.context_class(cmd, info_name=command, parent=root_ctx) as cmd_ctx:
-            help_text = format_help_with_colors(cmd_ctx)
-            typer.echo(help_text, color=True)
+        typer.echo(root_ctx.get_help())
+        return
+
+    # Typer builds the root of an app with subcommands as a TyperGroup.
+    group = cast(typer.core.TyperGroup, root_ctx.command)
+    cmd = group.get_command(root_ctx, command)
+    if cmd is None:
+        # A usage error exits 2, so a caller can tell a mistyped name from a command that ran and failed.
+        known = ', '.join(group.list_commands(root_ctx))
+        typer.echo(f'Error: Unknown command "{command}". The commands are: {known}', err=True)
+        raise typer.Exit(2)
+    # The command's own context class, which is the one Typer would build for it.
+    with cmd.context_class(cmd, info_name=command, parent=root_ctx) as cmd_ctx:
+        typer.echo(cmd_ctx.get_help())
 
 
 if __name__ == '__main__':

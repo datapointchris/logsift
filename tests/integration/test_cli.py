@@ -14,17 +14,12 @@ def test_cli_version():
     assert 'logsift version' in result.stdout
 
 
-def test_help_lists_the_commands_arguments_and_options():
-    """The root help lists each command under its section, and a command's help its arguments and options."""
-    root = runner.invoke(app, ['--help'])
-    assert root.exit_code == 0
-    for expected in ('Analyze:', 'monitor', 'Browse saved runs:', 'analyzed', 'Additional commands:', 'Global options:', '--version'):
-        assert expected in root.stdout
-
-    monitor = runner.invoke(app, ['help', 'monitor'])
-    assert monitor.exit_code == 0
-    for expected in ('Arguments:', 'Command to monitor', 'Output options:', '--format', 'Global options:', '--minimal'):
-        assert expected in monitor.stdout
+def test_help_command_prints_what_help_flag_prints():
+    for command in ([], ['monitor']):
+        flag = runner.invoke(app, [*command, '--help'])
+        named = runner.invoke(app, ['help', *command])
+        assert named.exit_code == 0
+        assert named.stdout == flag.stdout
 
 
 def test_help_for_an_unknown_command_is_a_usage_error():

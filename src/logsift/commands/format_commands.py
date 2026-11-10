@@ -14,14 +14,20 @@ from rich.console import Console
 from rich.table import Table
 
 from logsift.cache.manager import CacheManager
-from logsift.cli_formatter import ColoredTyperGroup
-from logsift.cli_formatter import format_help_with_colors
 from logsift.utils.display import display_file_with_bat
 from logsift.utils.fzf import is_fzf_available
 from logsift.utils.fzf import select_log_file
 
 console = Console()
 stderr_console = Console(stderr=True)
+
+# What each namespace holds, so its row on the root screen says how it differs from `logs` and `analyzed`.
+FORMAT_HELP = {
+    'raw': 'Show raw logs, exactly what each run printed, as stored',
+    'json': 'Show saved analyses as the JSON `--format json` prints, as stored',
+    'toon': 'Show saved analyses as the toon a piped run prints, as stored',
+    'md': 'Show saved analyses as the Markdown a terminal run prints, as stored',
+}
 
 
 def create_format_commands(
@@ -46,23 +52,17 @@ def create_format_commands(
         - logsift {format} latest [name] [--tail]
         - logsift {format} list
     """
+    examples = '\n'.join(
+        f'  logsift {format_name} {invocation}'
+        for invocation in ('list', 'list --format json', 'latest', 'latest pytest', 'latest build --tail', 'browse')
+    )
     app = typer.Typer(
         name=format_name,
-        help=f'View {format_name} format files',
-        rich_markup_mode=None,
+        help=FORMAT_HELP[format_name],
+        epilog=f'\b\nExamples:\n{examples}',
+        no_args_is_help=True,
         pretty_exceptions_enable=False,
-        cls=ColoredTyperGroup,
-        invoke_without_command=True,
     )
-
-    @app.callback()
-    def format_callback(ctx: typer.Context) -> None:
-        """Manage format files."""
-        # Show help if no subcommand provided
-        if ctx.invoked_subcommand is None:
-            help_text = format_help_with_colors(ctx)
-            typer.echo(help_text, color=True)
-            raise typer.Exit()
 
     @app.command('list')
     def format_list(
@@ -77,11 +77,6 @@ def create_format_commands(
         """List all files with metadata.
 
         Shows all files in the cache directory with their size and modification time.
-
-        Examples:
-            logsift <format> list
-            logsift <format> list --format json
-            logsift <format> list --format plain
         """
         cache = CacheManager()
 
@@ -145,19 +140,13 @@ def create_format_commands(
             typer.Option(
                 '-i',
                 '--interval',
-                help='Update interval in seconds when tailing (default: 1)',
+                help='Update interval in seconds when tailing',
             ),
         ] = 1,
     ) -> None:
         """Show the most recent file, optionally tailing it.
 
         Finds the latest file by name and displays its contents.  Use --tail to watch it in real-time.
-
-        Examples:
-            logsift <format> latest
-            logsift <format> latest pytest
-            logsift <format> latest build --tail
-            logsift <format> latest pytest --tail --interval 5
         """
         cache = CacheManager()
 
@@ -207,7 +196,7 @@ def create_format_commands(
             typer.Option(
                 '-i',
                 '--interval',
-                help='Update interval in seconds when tailing (default: 1)',
+                help='Update interval in seconds when tailing',
             ),
         ] = 1,
     ) -> None:  # nosec B608
@@ -217,10 +206,6 @@ def create_format_commands(
         Displays the selected file or tails it in real-time.
 
         Requires fzf to be installed (see https://github.com/junegunn/fzf#installation).
-
-        Examples:
-            logsift <format> browse
-            logsift <format> browse --tail
         """
         if not is_fzf_available():
             stderr_console.print('[red]Error: fzf is not installed or not in PATH[/red]')
