@@ -4,8 +4,9 @@ Provides utilities for using fzf to select log files and browse logs interactive
 """
 
 import shutil
-import subprocess  # nosec B404
 from pathlib import Path
+
+from logsift import process_runner
 
 
 def is_fzf_available() -> bool:
@@ -67,7 +68,7 @@ def select_log_file(log_files: list[dict[str, str | int]], prompt: str = 'Select
     try:
         # Run fzf with enhanced options
         # 100% width, 100% height, with 80% preview and 20% for list (showing ~10 logs)
-        result = subprocess.run(  # nosec B603 B607
+        result = process_runner.run(
             [
                 'fzf',
                 '--prompt',
@@ -87,10 +88,8 @@ def select_log_file(log_files: list[dict[str, str | int]], prompt: str = 'Select
                 '1',  # Only show first field (before |) in main window
                 '--reverse',  # Newest (first in list) at top
             ],
-            input=input_text,
-            capture_output=True,
-            text=True,
-            check=False,
+            input_text=input_text,
+            capture=True,
         )
 
         if result.returncode == 0 and result.stdout.strip():
@@ -102,7 +101,7 @@ def select_log_file(log_files: list[dict[str, str | int]], prompt: str = 'Select
 
         return None
 
-    except (subprocess.SubprocessError, FileNotFoundError):
+    except OSError:
         return None
 
 
@@ -135,7 +134,7 @@ def browse_log_with_preview(log_path: Path) -> bool:
         input_text = '\n'.join(numbered_lines)
 
         # Run fzf with preview showing context around selected line
-        subprocess.run(  # nosec B603 B607
+        process_runner.run(
             [
                 'fzf',
                 '--prompt',
@@ -155,12 +154,10 @@ def browse_log_with_preview(log_path: Path) -> bool:
                 'CTRL-/: toggle preview | ESC: exit',
                 '--no-sort',  # Keep original order
             ],
-            input=input_text,
-            text=True,
-            check=False,
+            input_text=input_text,
         )
 
         return True
 
-    except (subprocess.SubprocessError, FileNotFoundError, OSError):
+    except OSError:
         return False

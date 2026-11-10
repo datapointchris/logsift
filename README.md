@@ -234,6 +234,15 @@ logsift --help         # Show all commands
 uv tool uninstall logsift
 ```
 
+### Optional Programs
+
+logsift starts four programs when they are on `PATH`, and works without each:
+
+- `fzf`: the `browse` commands pick a file with it. Without it they exit 1 and say to install it.
+- `bat`: `latest` and `browse` page a file through it. Without it the file prints as plain text.
+- `notify-send` on Linux, `osascript` on macOS: `monitor --notify` posts through it. Without it
+  monitor says on stderr that no notification was sent.
+
 ### Troubleshooting Installation
 
 **Command not found after install:**

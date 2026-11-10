@@ -1,9 +1,10 @@
 """Display utilities for showing content with bat or fallback."""
 
-import subprocess  # nosec B404
 import sys
 from pathlib import Path
 from typing import TextIO
+
+from logsift import process_runner
 
 
 def _write_plain(text: str, stream: TextIO | None) -> None:
@@ -30,7 +31,7 @@ def display_with_bat(content: str, language: str = 'txt', filename: str | None =
         if filename:
             cmd.extend(['--file-name', filename])
 
-        subprocess.run(cmd, input=content, text=True, check=False)  # nosec B603
+        process_runner.run(cmd, input_text=content)
     except FileNotFoundError:
         # bat not installed, fall back to plain output
         _write_plain(content, stream)
@@ -51,7 +52,7 @@ def display_file_with_bat(file_path: Path, language: str | None = None, stream: 
         if language:
             cmd.append(f'--language={language}')
 
-        subprocess.run(cmd, check=False)  # nosec B603
+        process_runner.run(cmd)
     except FileNotFoundError:
         # bat not installed, fall back to plain output
         _write_plain(file_path.read_text(), stream)

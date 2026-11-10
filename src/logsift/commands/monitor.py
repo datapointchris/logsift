@@ -4,9 +4,6 @@ Monitors a command and analyzes its output.
 """
 
 import datetime as dt
-import os
-import shlex
-import subprocess  # nosec B404
 import sys
 import time
 from contextlib import suppress
@@ -14,6 +11,7 @@ from pathlib import Path
 
 from rich.console import Console
 
+from logsift import process_runner
 from logsift.cache.manager import CacheManager
 from logsift.core.analyzer import Analyzer
 from logsift.output.json_formatter import format_json
@@ -150,41 +148,7 @@ def monitor_command(
             if append and log_file.exists():
                 log_handle.write('\n')
 
-        # Try to run command directly first (for executables in PATH)
-        # If that fails, fall back to interactive shell (for shell functions/aliases)
-        use_shell_filtering = False  # Track if we need to filter shell init output
-        marker = '___LOGSIFT_COMMAND_START___'
-
-        try:
-            # First attempt: direct execution without shell
-            process = subprocess.Popen(  # nosec B603
-                command,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                bufsize=1,
-            )
-        except FileNotFoundError:
-            # Command not found - likely a shell function, alias, or builtin
-            # Fall back to interactive shell which loads user's configuration
-            use_shell_filtering = True
-            shell = os.environ.get('SHELL', '/bin/bash')
-            command_str = shlex.join(command)
-
-            # Use a marker to separate shell init output from command output
-            # We'll filter out everything before the marker
-            wrapped_command = f'printf "\\n{marker}\\n" >&2; {command_str}'
-
-            # Use interactive shell to load functions and aliases
-            shell_command = [shell, '-i', '-c', wrapped_command]
-
-            process = subprocess.Popen(  # nosec B603
-                shell_command,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                bufsize=1,
-            )
+        process = process_runner.stream(command)
 
         if show_progress:
             stderr_console.print(f'[dim]Process started with PID: {process.pid}[/dim]')
@@ -197,43 +161,23 @@ def monitor_command(
         last_update_time = time.time()
         update_count = 0
 
-        # Track whether we've seen the marker (for shell init filtering)
-        seen_marker = not use_shell_filtering  # If not using shell, act like we've seen it
+        for line in process.lines():
+            if log_handle:
+                log_handle.write(line)
+            output_lines.append(line.rstrip('\n'))
 
-        # Stream or collect output line by line
-        if process.stdout:
-            for line in process.stdout:
-                # Filter out shell initialization output if using shell fallback
-                if use_shell_filtering and not seen_marker:
-                    if marker in line:
-                        seen_marker = True
-                    continue  # Skip all lines until we see the marker
-
-                # Save to log file
-                if log_handle:
-                    log_handle.write(line)
-
-                # Keep in memory for analysis
-                output_lines.append(line.rstrip('\n'))
-
-                # Handle output display based on stream flag
-                if show_progress:
-                    if stream:
-                        # Stream mode: print every line immediately
-                        stderr_console.print(line, end='', markup=False, highlight=False)
-                    else:
-                        # Periodic update mode: show updates at intervals
-                        current_time = time.time()
-                        if current_time - last_update_time >= update_interval:
-                            elapsed = current_time - start_time
-                            update_count += 1
-
-                            # Show update with progress info
-                            stderr_console.print(
-                                f'[dim]Update #{update_count}: {len(output_lines)} lines captured, {elapsed:.0f}s elapsed[/dim]'
-                            )
-
-                            last_update_time = current_time
+            if show_progress:
+                if stream:
+                    stderr_console.print(line, end='', markup=False, highlight=False)
+                else:
+                    current_time = time.time()
+                    if current_time - last_update_time >= update_interval:
+                        elapsed = current_time - start_time
+                        update_count += 1
+                        stderr_console.print(
+                            f'[dim]Update #{update_count}: {len(output_lines)} lines captured, {elapsed:.0f}s elapsed[/dim]'
+                        )
+                        last_update_time = current_time
 
         # Wait for process to complete
         exit_code = process.wait()
@@ -246,7 +190,6 @@ def monitor_command(
         stderr_console.print('\n\n[yellow]Interrupted by user[/yellow]')
         if process:
             process.terminate()
-            process.wait()
         if log_handle:
             log_handle.close()
         sys.exit(130)
@@ -318,13 +261,15 @@ def monitor_command(
 
     # Send notification if requested
     if notify:
-        notify_command_complete(
+        posted = notify_command_complete(
             command=' '.join(command),
             success=exit_code == 0,
             errors=analysis_result['stats']['total_errors'],
             warnings=analysis_result['stats']['total_warnings'],
             duration_seconds=duration,
         )
+        if not posted:
+            stderr_console.print('[yellow]Desktop notification not sent: it needs notify-send on Linux or osascript on macOS[/yellow]')
 
     # Exit with command's exit code
     if exit_code != 0:

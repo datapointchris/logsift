@@ -116,7 +116,14 @@ edits the schema in the same commit, and raises both `SCHEMA_VERSION` in
 
 ## Conventions specific to logsift
 
-- **Process monitoring**: `commands/monitor.py` runs the command with `subprocess.Popen` and streams its output line by line. It is the one place logsift runs a monitored command.
+- **Every external process starts in `process_runner.py`**: `run()` for fzf, bat, notify-send and
+  osascript, and `stream()` for the command `monitor` watches, with the interactive-shell fallback
+  for an alias or function. Nothing else imports `subprocess`. A missing program raises
+  `FileNotFoundError`, and each caller falls back without it, as the README's Optional Programs
+  section lists.
+- **Runtime dependencies** are the ones `pyproject.toml` declares. Typer builds the CLI, tomllib
+  reads config and patterns, python-dateutil parses timestamps and toon-format writes toon. Only
+  pyselfupdate reaches the network: `logsift update`, and a daily check for a newer release.
 - **`config.toml` is Click's `default_map`.** The root callback in `cli.py` reads and validates
   it once, through `config/loader.py`, and no later code re-checks it. Click then resolves each
   option from its flag, its variable, the file, then its default, and `logsift config` reports
