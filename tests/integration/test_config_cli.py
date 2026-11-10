@@ -3,7 +3,6 @@
 import re
 from pathlib import Path
 
-import click
 import pytest
 import typer
 from typer.testing import CliRunner
@@ -15,15 +14,13 @@ from logsift.config.loader import FILE_KEYS
 runner = CliRunner()
 
 
-def option_variables() -> dict[str, str]:
-    """Every environment variable a logsift option reads, read from the command tree, with a value its type accepts."""
-    found: dict[str, str] = {}
+def option_variables() -> set[str]:
+    """Every environment variable a logsift option reads, read from the command tree."""
+    found: set[str] = set()
 
-    def walk(command: click.Command) -> None:
+    def walk(command) -> None:
         for param in command.params:
-            envvars = [param.envvar] if isinstance(param.envvar, str) else list(param.envvar or [])
-            for envvar in envvars:
-                found[envvar] = '7' if isinstance(param.type, click.types.IntParamType) else 'json'
+            found.update([param.envvar] if isinstance(param.envvar, str) else list(param.envvar or []))
         for subcommand in getattr(command, 'commands', {}).values():
             walk(subcommand)
 
@@ -42,13 +39,13 @@ def write_config(home: Path, content: str) -> Path:
     return config_file
 
 
-VARIABLES = sorted(option_variables().items()) + [(variable, '') for variable, _ in xdg_dirs.BASE_DIRS.values()]
+XDG_VARIABLES = {variable for variable, _ in xdg_dirs.BASE_DIRS.values()}
 
 
-@pytest.mark.parametrize(('variable', 'value'), VARIABLES)
-def test_every_variable_logsift_reads_is_named_by_a_row(variable, value, monkeypatch, tmp_path):
-    # An XDG variable is honored only as an absolute path, so it gets one.
-    monkeypatch.setenv(variable, value or str(tmp_path / variable))
+@pytest.mark.parametrize('variable', sorted(option_variables() | XDG_VARIABLES))
+def test_every_variable_logsift_reads_is_named_by_a_row(variable, monkeypatch, tmp_path):
+    # An XDG variable is honored only as an absolute path. Every option variable takes an int or any string.
+    monkeypatch.setenv(variable, str(tmp_path / variable) if variable in XDG_VARIABLES else '7')
 
     result = runner.invoke(app, ['config'])
 

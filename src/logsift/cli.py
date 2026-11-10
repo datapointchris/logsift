@@ -132,7 +132,8 @@ def main(
     try:
         ctx.default_map = default_map(load_user_config(xdg_dirs.config_file()))
     except ConfigError as fault:
-        raise click.ClickException(str(fault)) from None
+        typer.echo(f'Error: {fault}', err=True)
+        raise typer.Exit(1) from None
 
 
 @app.command(rich_help_panel=ANALYZE_PANEL)
@@ -808,7 +809,7 @@ def config(ctx: typer.Context) -> None:
         logsift config
         LOGSIFT_OUTPUT_FORMAT=json logsift config
     """
-    show_config(ctx.find_root())
+    show_config(ctx)
 
 
 @app.command()
@@ -835,7 +836,8 @@ def help(
         cmd = get_command(click_ctx, command) if get_command else None
         if cmd is None:
             # A usage error exits 2, so a caller can tell a mistyped name from a command that ran and failed.
-            raise click.UsageError(f'Unknown command "{command}". Run "logsift help" to see available commands.', ctx=ctx)
+            typer.echo(f'Error: Unknown command "{command}". Run "logsift help" to see available commands.', err=True)
+            raise typer.Exit(2)
         with click.Context(cmd, info_name=command, parent=click_ctx) as cmd_ctx:
             help_text = format_help_with_colors(cmd_ctx)
             click.echo(help_text, color=True)

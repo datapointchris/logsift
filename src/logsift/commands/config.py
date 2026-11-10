@@ -5,7 +5,7 @@ Prints logsift's locations, then every option that resolves through a layer, eac
 
 from collections.abc import Sequence
 
-import click
+import typer
 
 from logsift.config.resolved_values import resolve_locations
 from logsift.config.resolved_values import resolve_options
@@ -17,7 +17,7 @@ def print_table(rows: Sequence[Sequence[str]]) -> None:
         print('  '.join(cell.ljust(width) for cell, width in zip(row, widths, strict=True)).rstrip())
 
 
-def show_config(root_ctx: click.Context) -> None:
+def show_config(command_ctx: typer.Context) -> None:
     print_table([('LOCATION', 'PATH', 'FROM'), *(row[:3] for row in resolve_locations())])
     print()
-    print_table([('OPTION', 'VALUE', 'FROM', 'FILE KEY'), *resolve_options(root_ctx)])
+    print_table([('OPTION', 'VALUE', 'FROM', 'FILE KEY'), *resolve_options(command_ctx)])

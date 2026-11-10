@@ -2,12 +2,12 @@
 
 Each option row is read from a Click context built the way the command itself would build it, so
 the value and its source are the ones the command would get, not a second walk of the layers.
+Typer from 0.27 runs its own copy of Click, so nothing here names a class from the `click` package.
 """
 
 from typing import NamedTuple
 
-import click
-from click.core import ParameterSource
+import typer
 
 from logsift import xdg_dirs
 from logsift.config.loader import FILE_KEYS
@@ -37,29 +37,31 @@ def file_key_for(option: tuple[str, ...]) -> str:
     return next((key for key, file_key in FILE_KEYS.items() if option in file_key.sets), '-')
 
 
-def resolve_option(root_ctx: click.Context, option: tuple[str, ...]) -> ResolvedValue:
+def resolve_option(command_ctx: typer.Context, option: tuple[str, ...]) -> ResolvedValue:
     *command_path, parameter_name = option
-    ctx = root_ctx
+    # The root carries config.toml as its default_map, and each subcommand's context inherits it.
+    ctx = command_ctx.find_root()
     for name in command_path:
-        group = ctx.command
-        command = group.get_command(ctx, name) if isinstance(group, click.Group) else None
+        get_command = getattr(ctx.command, 'get_command', None)
+        command = get_command(ctx, name) if get_command else None
         if command is None:
-            raise LookupError(f'{group.name} has no subcommand {name}')
+            raise LookupError(f'{ctx.command.name} has no subcommand {name}')
         ctx = command.make_context(name, [], parent=ctx)
     param = next(param for param in ctx.command.params if param.name == parameter_name)
     source = ctx.get_parameter_source(parameter_name)
     value = ctx.params[parameter_name]
+    # Keyed by ParameterSource's member names, which Click and Typer's copy of it share.
     labels = {
-        ParameterSource.COMMANDLINE: max(param.opts, key=len),
-        ParameterSource.ENVIRONMENT: f'${param.envvar}',
-        ParameterSource.DEFAULT_MAP: 'config.toml',
-        ParameterSource.DEFAULT: 'default',
+        'COMMANDLINE': max(param.opts, key=len),
+        'ENVIRONMENT': f'${param.envvar}',
+        'DEFAULT_MAP': 'config.toml',
+        'DEFAULT': 'default',
     }
     return ResolvedValue(
         setting=f'{" ".join(command_path)} {max(param.opts, key=len)}',
         value=UNSET_MEANS.get(option, 'unset') if value is None else str(value),
         # A source added to Click and missing here prints its own name rather than a wrong layer.
-        source=labels.get(source, source.name.lower()) if source else 'unknown',
+        source=labels.get(source.name, source.name.lower()) if source else 'unknown',
         file_key=file_key_for(option),
     )
 
@@ -77,6 +79,6 @@ def resolve_locations() -> list[ResolvedValue]:
     ]
 
 
-def resolve_options(root_ctx: click.Context) -> list[ResolvedValue]:
-    """Every option that resolves through a layer, given the root context carrying config.toml as its default_map."""
-    return [resolve_option(root_ctx, option) for option in RESOLVED_OPTIONS]
+def resolve_options(command_ctx: typer.Context) -> list[ResolvedValue]:
+    """Every option that resolves through a layer, given any context in the running command tree."""
+    return [resolve_option(command_ctx, option) for option in RESOLVED_OPTIONS]
