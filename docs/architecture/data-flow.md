@@ -25,26 +25,26 @@ log_content = Path(log_file).read_text()
 
 ### 2. Parser
 
-Auto-detect format and normalize to internal representation:
+`LogParser.parse` detects each line's format on its own, so one log may mix them:
 
 ```python
-def parse(log_content: str) -> list[LogLine]:
-    if is_json_log(log_content):
-        return parse_json_log(log_content)
-    elif is_structured_log(log_content):
-        return parse_structured_log(log_content)
-    else:
-        return parse_plain_text(log_content)
+for line_num, line in enumerate(log_content.splitlines(), start=1):
+    if not line.strip():
+        continue  # a blank line yields no entry
+    line_format = self._detect_line_format(line)  # json, structured, syslog or plain
+    entry = parse that line by its format
 ```
 
 **Critical**: Parser preserves FULL original message content and always sets `level='INFO'` as default. It does NOT detect error/warning levels from message content - that's the IssueDetector's job.
 
-Output: List of `LogLine` objects with:
+Output: a list of dictionaries, one per non-blank line, with:
 
 - `line_number`
-- `content` (full original message preserved)
-- `timestamp` (if detected from structured format)
+- `format` (`json`, `structured`, `syslog` or `plain`)
+- `message` (full original message preserved, less ANSI escapes and a leading timestamp)
+- `timestamp` (if a leading ISO timestamp was found)
 - `level` (explicit field from JSON/structured, or 'INFO' default)
+- every field of a JSON line, and every pair of a key=value line
 
 ### 3. IssueDetector
 
@@ -122,33 +122,23 @@ else:
 
 ### 6. Output
 
-Write to stdout (and optionally save to cache):
+`monitor` names the run's files before it starts the command, and writes the raw log line by line
+as the command prints. Once the analysis is done it saves every format, then prints the one asked
+for:
 
 ```python
+log_paths = cache.create_paths(name)  # raw, json, toon and md paths sharing one stem
+# ... the command runs, each line appended to log_paths['raw'] ...
+log_paths['json'].write_text(format_json(analysis_result))  # likewise toon and md
 print(output)
-
-if save_log:
-    log_file = cache.create_log_path(name, context='monitor')
-    log_file.write_text(raw_log_content)
 ```
 
 ## Data Structures
 
-### LogLine
+### Log Entries, Issues and the Analysis Result
 
-```python
-@dataclass
-class LogLine:
-    line_number: int
-    content: str
-    timestamp: datetime | None = None
-    level: str | None = None  # INFO, WARNING, ERROR
-```
-
-### Issues and the Analysis Result
-
-The analyzer passes plain dictionaries from stage to stage, with no dataclass for an issue or a
-result. `schemas/analysis.schema.json` is the shape the result takes once `format_json` writes it.
+The analyzer passes plain dictionaries from stage to stage, with no dataclass for a log entry, an
+issue or a result. `schemas/analysis.schema.json` is the shape the result takes once `format_json` writes it.
 
 ## Performance Characteristics
 
@@ -164,7 +154,7 @@ Total: O(n × p) dominated by pattern matching
 ### Space Complexity
 
 - **Input**: O(n) - full log in memory
-- **Parsed**: O(n) - LogLine objects
+- **Parsed**: O(n) - one entry dictionary per non-blank line
 - **Errors**: O(e) - typically e << n
 - **Output**: O(e × c) - errors with context
 

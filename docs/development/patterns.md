@@ -10,17 +10,17 @@ Use Python 3.13+ modern syntax:
 
 ```python
 # ✓ GOOD - Modern syntax
-def parse(log_content: str) -> list[LogLine]: ...
+def parse(log_content: str) -> list[dict[str, Any]]: ...
 
 
 def get_config(key: str) -> str | None: ...
 
 
 # ✗ BAD - Old syntax
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 
-def parse(log_content: str) -> List[LogLine]: ...
+def parse(log_content: str) -> List[Dict[str, Any]]: ...
 
 
 def get_config(key: str) -> Optional[str]: ...
@@ -76,38 +76,28 @@ if not log_file.exists():
 
 ## Architecture Patterns
 
-### Dataclasses
+### Dictionaries Between Stages
 
-Use dataclasses for data structures:
-
-```python
-from dataclasses import dataclass, field
-
-
-@dataclass
-class Error:
-    id: int
-    severity: str
-    message: str
-    file: str | None = None
-    file_line: int | None = None
-    tags: list[str] = field(default_factory=list)
-```
+Log entries, issues and the analysis result are plain dictionaries, because a JSON log line's own
+fields ride along on its entry and the result is written straight to JSON.
+`schemas/analysis.schema.json` is the shape a result takes in the output, so a new field goes there
+in the same change.
 
 ### Composition Over Inheritance
 
 ```python
-# ✓ GOOD - Composition
+# ✓ GOOD - Composition, as core/analyzer.py does it
 class Analyzer:
-    def __init__(self):
-        self.parser = Parser()
-        self.extractor = Extractor()
-        self.matcher = Matcher()
+    def __init__(self, context_lines: int = 2) -> None:
+        self.parser = LogParser()
+        self.pattern_loader = PatternLoader()
+        self.issue_detector = IssueDetector()
+        self.file_reference_detector = FileReferenceDetector()
 
-    def analyze(self, log: str) -> dict:
-        lines = self.parser.parse(log)
-        errors = self.extractor.extract(lines)
-        return self.matcher.match(errors)
+    def analyze(self, log_content: str) -> dict[str, Any]:
+        log_entries = self.parser.parse(log_content)
+        errors, warnings = self.issue_detector.detect_issues(log_entries, self.patterns)
+        ...
 
 
 # ✗ BAD - Deep inheritance
@@ -134,17 +124,17 @@ def format_json(analysis: dict) -> str:
 ### Arrange-Act-Assert
 
 ```python
-def test_parser_extracts_errors():
+def test_parser_keeps_the_message():
     # Arrange
     log_content = 'ERROR: Something failed'
-    parser = Parser()
+    parser = LogParser()
 
     # Act
     result = parser.parse(log_content)
 
     # Assert
     assert len(result) == 1
-    assert 'failed' in result[0].message
+    assert 'failed' in result[0]['message']
 ```
 
 ### Fixtures for Reusability
@@ -153,15 +143,13 @@ def test_parser_extracts_errors():
 @pytest.fixture
 def sample_error_log():
     return """
-    ERROR: Connection failed at host:port
-    File "app.py", line 42
+    Error: failed to load config at app.py:42
     """
 
 
 def test_extract_file_reference(sample_error_log):
-    errors = extract_errors(sample_error_log)
-    assert errors[0].file == 'app.py'
-    assert errors[0].file_line == 42
+    errors = Analyzer().analyze(sample_error_log)['errors']
+    assert errors[0]['file_references'] == [('app.py', 42)]
 ```
 
 ## File Organization
@@ -178,7 +166,7 @@ from pathlib import Path
 
 import typer
 
-from logsift.core.parser import Parser
+from logsift.core.parser import LogParser
 
 # Constants
 DEFAULT_CONTEXT_LINES = 2
@@ -211,11 +199,11 @@ from pathlib import Path
 import typer
 from rich.console import Console
 
-from logsift.core.parser import Parser
+from logsift.core.parser import LogParser
 from logsift.utils.tty import detect_output_format
 
 # ✗ BAD - Mixed order
-from logsift.core.parser import Parser
+from logsift.core.parser import LogParser
 import sys
 import typer
 from pathlib import Path

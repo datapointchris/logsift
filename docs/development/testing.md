@@ -51,26 +51,19 @@ uv run pytest tests/unit/test_parser.py::test_parser_initialization -v
 Test individual components in isolation:
 
 ```python
-from logsift.core.parser import Parser
+from logsift.core.parser import LogParser
 
 
-def test_parser_initialization():
-    """Test that Parser initializes correctly."""
-    parser = Parser()
-    assert parser is not None
+def test_parse_plain_text_keeps_the_whole_message():
+    """The parser normalizes lines and leaves level detection to the patterns."""
+    entries = LogParser().parse('ERROR: Something failed\nWARNING: Be careful')
 
-
-def test_parse_plain_text():
-    """Test parsing plain text logs."""
-    parser = Parser()
-    log_content = 'ERROR: Something failed\nWARNING: Be careful'
-
-    lines = parser.parse(log_content)
-
-    assert len(lines) == 2
-    assert lines[0].content == 'ERROR: Something failed'
-    assert lines[1].content == 'WARNING: Be careful'
+    assert [entry['message'] for entry in entries] == ['ERROR: Something failed', 'WARNING: Be careful']
+    assert {entry['level'] for entry in entries} == {'INFO'}
 ```
+
+`parse` returns a list of dictionaries, one per non-blank line, each with `line_number`, `format`,
+`level` and `message`.
 
 ### Using Fixtures
 
@@ -88,14 +81,14 @@ def sample_log():
     """
 
 
-def test_extract_errors(sample_log):
-    """Test error extraction."""
-    from logsift.core.extractors import extract_errors
+def test_analyze_finds_the_error(sample_log):
+    """Test error detection."""
+    from logsift.core.analyzer import Analyzer
 
-    errors = extract_errors(sample_log)
+    errors = Analyzer().analyze(sample_log)['errors']
 
     assert len(errors) == 1
-    assert 'Connection failed' in errors[0].message
+    assert 'Connection failed' in errors[0]['message']
 ```
 
 ## Writing Integration Tests
@@ -143,15 +136,14 @@ uv run pytest --cov=logsift --cov-report=html  # HTML report
 ```python
 # ✓ GOOD - Test behavior
 def test_parser_handles_empty_input():
-    parser = Parser()
-    result = parser.parse('')
-    assert result == []
+    assert LogParser().parse('') == []
 
 
 # ✗ BAD - Test implementation
-def test_parser_calls_internal_method():
-    parser = Parser()
-    assert parser._internal_method() is called
+def test_parser_calls_internal_method(mocker):
+    spy = mocker.spy(LogParser, '_parse_plain_line')
+    LogParser().parse('one line')
+    spy.assert_called_once()
 ```
 
 ### 2. Use Descriptive Names
@@ -170,21 +162,21 @@ def test_extractor(): ...
 ```python
 # ✓ GOOD
 def test_error_has_correct_message():
-    error = extract_first_error(log)
-    assert error.message == 'Expected message'
+    error = Analyzer().analyze(log)['errors'][0]
+    assert error['message'] == 'Expected message'
 
 
 def test_error_has_correct_line_number():
-    error = extract_first_error(log)
-    assert error.line_number == 42
+    error = Analyzer().analyze(log)['errors'][0]
+    assert error['line_in_log'] == 42
 
 
 # ✗ BAD
 def test_error():
-    error = extract_first_error(log)
-    assert error.message == 'Expected message'
-    assert error.line_number == 42
-    assert error.severity == 'error'
+    error = Analyzer().analyze(log)['errors'][0]
+    assert error['message'] == 'Expected message'
+    assert error['line_in_log'] == 42
+    assert error['severity'] == 'error'
     # Too many unrelated assertions
 ```
 
@@ -192,7 +184,7 @@ def test_error():
 
 ```python
 def test_parser_handles_edge_cases():
-    parser = Parser()
+    parser = LogParser()
 
     # Empty input
     assert parser.parse('') == []
@@ -229,14 +221,14 @@ def test_monitor_command_sends_notification(mocker):
 Use pytest's tmp_path fixture:
 
 ```python
-def test_cache_manager_creates_log_file(tmp_path):
-    """Test that CacheManager creates log files."""
+def test_cache_manager_puts_raw_logs_under_raw(tmp_path):
+    """create_paths names a file in each format directory, and creates none of the files."""
     cache = CacheManager(cache_dir=tmp_path)
 
-    log_file = cache.create_log_path('test', context='monitor')
+    paths = cache.create_paths('test')
 
-    assert log_file.exists()
-    assert log_file.parent == tmp_path / 'monitor'
+    assert paths['raw'].parent == tmp_path / 'raw'
+    assert not paths['raw'].exists()
 ```
 
 ## Testing with Real Logs
