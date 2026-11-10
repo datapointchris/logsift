@@ -24,8 +24,9 @@ logsift config            # every setting's value, and the flag, variable or fil
 - **1**: logsift could not do it: a log file that does not exist, a `latest` with nothing saved,
   a file `clean` could not delete, a `config.toml` that fails to parse, or fzf missing.
 - **2**: the command line was wrong: an unknown command or flag, a value outside a flag's set,
-  `analyze` given more or fewer than one of a path, `--latest` and `--choose`, or a `choose` run
-  without a terminal.
+  `analyze` given more or fewer than one of a path, `--latest` and `--choose`, `analyze latest`
+  or `analyze browse` with no file by that name, `monitor` with no command after `--`, or a
+  `choose` run without a terminal.
 - **Anything else**: `monitor` exits with the monitored command's own code, so a caller branches
   on the command's result as if it had run the command itself.
 

@@ -54,7 +54,7 @@ def analyze_log(log_file: str, output_format: str = AnalysisFormat.AUTO, save: b
     print(render_analysis(analysis_result, output_format))
 
 
-# Words analyze once took in place of a path; a file by one of these names is still analyzed.
+# Paths a caller may have meant as a flag. When no file by that name exists, the usage error names the flag.
 FORMER_SENTINELS = {'latest': '--latest', 'browse': '--choose'}
 
 
@@ -68,7 +68,7 @@ def log_file_for(path: str | None, latest: bool, choose: bool, stream: bool) -> 
         if path in FORMER_SENTINELS and not Path(path).exists():
             stderr_console.print(f'[red]Error: Log file not found: {path}[/red]')
             stderr_console.print(f'To analyze a captured log, pass {FORMER_SENTINELS[path]}')
-            raise typer.Exit(1)
+            raise typer.Exit(2)
         return path
 
     if latest:

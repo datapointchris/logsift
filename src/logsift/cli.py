@@ -169,7 +169,6 @@ def monitor(
         bool,
         typer.Option('--quiet', '-q', help='Print only the analysis: no banner, progress or summary on stderr'),
     ] = False,
-    minimal: Annotated[bool, typer.Option('--minimal', hidden=True, help='The same as --quiet')] = False,
 ) -> None:
     """Monitor a command and analyze its output for errors
 
@@ -196,7 +195,7 @@ def monitor(
         output_format=format,
         stream=stream,
         update_interval=update_interval,
-        quiet=quiet or minimal,
+        quiet=quiet,
         notify=notify,
         append=append,
     )
