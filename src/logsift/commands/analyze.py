@@ -6,17 +6,24 @@ Analyzes an existing log file and outputs results.
 import sys
 from pathlib import Path
 
+import typer
 from rich.console import Console
 
 from logsift.cache.manager import CacheManager
+from logsift.cache.manager import SavedKind
 from logsift.core.analyzer import Analyzer
 from logsift.monitor.watcher import LogWatcher
 from logsift.output.analysis_format import AnalysisFormat
 from logsift.output.analysis_format import render_analysis
 from logsift.output.markdown_formatter import format_markdown
+from logsift.utils.fzf import is_fzf_available
+from logsift.utils.fzf import select_log_file
 
 console = Console()
 stderr_console = Console(stderr=True)
+
+# Printed under every empty-cache message: monitor is the one command that writes logs and analyses.
+CAPTURE_HINT = '[dim]Run `logsift monitor -- <command>` to capture a run and analyze it[/dim]'
 
 
 def analyze_log(log_file: str, output_format: str = AnalysisFormat.AUTO, save: bool = True) -> None:
@@ -48,6 +55,38 @@ def analyze_log(log_file: str, output_format: str = AnalysisFormat.AUTO, save: b
         report_unsaved(CacheManager().save_analysis(analysis_result, log_path.stem))
 
     print(render_analysis(analysis_result, output_format))
+
+
+def log_file_for(argument: str, stream: bool) -> str:
+    """The log file analyze's argument names: a path, `latest` for the newest raw log, or `browse` to pick one."""
+    if argument == 'latest':
+        latest_log = CacheManager().latest(SavedKind.RAW)
+        if not latest_log:
+            stderr_console.print('[red]Error: No cached logs found[/red]')
+            stderr_console.print(CAPTURE_HINT)
+            raise typer.Exit(1)
+        log_file = str(latest_log)
+    elif argument == 'browse':
+        if not is_fzf_available():
+            stderr_console.print('[red]Error: fzf is not available[/red]')
+            stderr_console.print('[dim]Install fzf to use browse mode[/dim]')
+            raise typer.Exit(1)
+        logs = CacheManager().listing(SavedKind.RAW)
+        if not logs:
+            stderr_console.print('[yellow]No cached logs found[/yellow]')
+            stderr_console.print(CAPTURE_HINT)
+            raise typer.Exit(1)
+        selected = select_log_file(logs, 'Select log file to analyze')
+        if not selected:
+            stderr_console.print('[dim]No file selected[/dim]')
+            raise typer.Exit(0)
+        log_file = selected
+    else:
+        return argument
+
+    action = 'Stream analyzing' if stream else 'Analyzing'
+    stderr_console.print(f'[cyan]{action}: {log_file}[/cyan]\n')
+    return log_file
 
 
 def report_unsaved(failures: list[str]) -> None:

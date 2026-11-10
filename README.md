@@ -325,7 +325,7 @@ logsift is built with a modular architecture:
 - **Pattern System**: Extensible TOML-based pattern libraries with validation
 - **Output Formatters**: JSON (LLM-optimized) and Markdown (human-readable)
 - **Process Monitor**: Command execution and output capture via subprocess
-- **Cache System**: Organized log storage with automatic rotation
+- **Cache System**: One directory per kind of saved file, trimmed by `logs clean` and `analyzed clean`
 
 **Data Flow:**
 

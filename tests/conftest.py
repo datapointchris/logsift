@@ -7,8 +7,6 @@ from pathlib import Path
 
 import pytest
 
-from logsift.cache.manager import CacheManager
-
 
 @pytest.fixture
 def sample_log_content() -> str:
@@ -29,37 +27,9 @@ def sample_log_file(tmp_path: Path, sample_log_content: str) -> Path:
     return log_file
 
 
-@pytest.fixture
-def cache_dir(tmp_path: Path) -> Path:
-    """Create a temporary cache directory for testing."""
-    cache = tmp_path / 'cache'
-    cache.mkdir()
-    return cache
-
-
 @pytest.fixture(autouse=True)
-def isolate_cache(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """Automatically isolate all tests to use a temporary cache directory.
-
-    This prevents tests from polluting the user's real cache directory
-    at $XDG_CACHE_HOME/logsift/. Every test gets its own isolated cache.
-    """
-    test_cache = tmp_path / 'logsift_test_cache'
-    test_cache.mkdir(parents=True, exist_ok=True)
-
-    # Point every home-relative and XDG path at the temporary directory
+def isolate_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Point HOME at the test's directory and unset the XDG variables, so no test reads or writes the user's config or cache."""
     monkeypatch.setenv('HOME', str(tmp_path))
     monkeypatch.delenv('XDG_CACHE_HOME', raising=False)
     monkeypatch.delenv('XDG_CONFIG_HOME', raising=False)
-
-    # Also patch the default cache location
-    original_init = CacheManager.__init__
-
-    def patched_init(self, cache_dir=None):
-        if cache_dir is None:
-            cache_dir = test_cache
-        original_init(self, cache_dir=cache_dir)
-
-    monkeypatch.setattr(CacheManager, '__init__', patched_init)
-
-    return test_cache

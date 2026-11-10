@@ -3,9 +3,6 @@
 This module defines the primary logsift command-line interface with subcommands for monitoring, analyzing, and managing logs.
 """
 
-import datetime as dt
-import json
-from pathlib import Path
 from typing import Annotated
 from typing import cast
 
@@ -14,30 +11,28 @@ from pyselfupdate import Config
 from pyselfupdate import notify
 from pyselfupdate.typercmd import add_update_command
 from rich.console import Console
-from rich.table import Table
 
 from logsift import __version__
 from logsift import xdg_dirs
-from logsift.cache.manager import CacheManager
+from logsift.cache.manager import SavedKind
 from logsift.commands.analyze import analyze_log
+from logsift.commands.analyze import log_file_for
 from logsift.commands.analyze import stream_analyze_log
+from logsift.commands.analyzed import browse_analyzed
+from logsift.commands.analyzed import clean_analyzed
+from logsift.commands.analyzed import list_analyzed
+from logsift.commands.analyzed import show_latest_analyzed
 from logsift.commands.config import show_config
 from logsift.commands.format_commands import create_format_commands
-from logsift.commands.logs import CAPTURE_HINT
 from logsift.commands.logs import browse_logs
 from logsift.commands.logs import clean_logs
 from logsift.commands.logs import list_logs
-from logsift.commands.logs import tail_log
+from logsift.commands.logs import show_latest_log
 from logsift.commands.monitor import monitor_command
 from logsift.config.loader import ConfigError
 from logsift.config.loader import default_map
 from logsift.config.loader import load_user_config
 from logsift.output.analysis_format import AnalysisFormat
-from logsift.output.markdown_formatter import format_markdown
-from logsift.utils.display import display_file_with_bat
-from logsift.utils.display import display_with_bat
-from logsift.utils.fzf import is_fzf_available
-from logsift.utils.fzf import select_log_file
 
 app = typer.Typer(
     name='logsift',
@@ -71,7 +66,6 @@ app = typer.Typer(
     ),
 )
 console = Console()
-stderr_console = Console(stderr=True)
 
 # Shared by the `update` command and the daily check in the callback below, so
 # the notice cannot name a release the update command would not install.
@@ -261,47 +255,7 @@ def analyze(
         logsift analyze latest --stream
         logsift analyze browse
     """
-    # Handle "latest" shortcut
-    if log_file == 'latest':
-        cache = CacheManager()
-        latest_log = cache.get_absolute_latest_log()
-
-        if not latest_log:
-            stderr_console.print('[red]Error: No cached logs found[/red]')
-            stderr_console.print(CAPTURE_HINT)
-            raise typer.Exit(1)
-
-        log_file = str(latest_log)
-        action = 'Stream analyzing' if stream else 'Analyzing'
-        stderr_console.print(f'[cyan]{action} latest log: {log_file}[/cyan]\n')
-
-    # Handle "browse" shortcut
-    elif log_file == 'browse':
-        if not is_fzf_available():
-            stderr_console.print('[red]Error: fzf is not available[/red]')
-            stderr_console.print('[dim]Install fzf to use browse mode[/dim]')
-            raise typer.Exit(1)
-
-        # Use fzf to select a log file
-        cache = CacheManager()
-        logs = cache.list_all_logs()
-
-        if not logs:
-            stderr_console.print('[yellow]No cached logs found[/yellow]')
-            stderr_console.print(CAPTURE_HINT)
-            raise typer.Exit(1)
-
-        selected = select_log_file(logs, 'Select log file to analyze')
-
-        if not selected:
-            stderr_console.print('[dim]No file selected[/dim]')
-            raise typer.Exit(0)
-
-        log_file = selected
-        action = 'Stream analyzing' if stream else 'Analyzing'
-        stderr_console.print(f'[cyan]{action}: {log_file}[/cyan]\n')
-
-    # Call appropriate function based on stream flag
+    log_file = log_file_for(log_file, stream)
     if stream:
         stream_analyze_log(log_file, interval=interval)
     else:
@@ -492,30 +446,7 @@ def logs_latest(
         # Tail with custom update interval
         logsift logs latest pytest --tail --interval 5
     """
-    cache = CacheManager()
-
-    # Get the latest log
-    if name:
-        log_path = cache.get_latest_log(name)
-        if not log_path:
-            stderr_console.print(f'[red]Error: No logs found for name "{name}"[/red]')
-            stderr_console.print('[dim]Run `logsift logs list` to see the cached names[/dim]')
-            raise typer.Exit(1)
-    else:
-        log_path = cache.get_absolute_latest_log()
-        if not log_path:
-            stderr_console.print('[red]Error: No cached logs found[/red]')
-            stderr_console.print(CAPTURE_HINT)
-            raise typer.Exit(1)
-
-    stderr_console.print(f'[cyan]Latest log: {log_path}[/cyan]\n')
-
-    # Either tail or show the raw log
-    if tail:
-        tail_log(str(log_path), interval=interval)
-    else:
-        # Show raw log contents with bat for better UX
-        display_file_with_bat(log_path)
+    show_latest_log(name, tail, interval)
 
 
 @analyzed_app.command('list')
@@ -541,33 +472,7 @@ def analyzed_list(
         # List in JSON format
         logsift analyzed list --format json
     """
-    cache = CacheManager()
-    analyses = cache.list_all_analyzed()
-
-    if not analyses:
-        stderr_console.print('[yellow]No saved analyses found[/yellow]')
-        stderr_console.print(CAPTURE_HINT)
-        return
-
-    if format == 'json':
-        print(json.dumps(analyses, indent=2))
-    elif format == 'plain':
-        for analysis in analyses:
-            print(f'{analysis["name"]}\t{analysis["path"]}\t{analysis["size_bytes"]}\t{analysis["modified_iso"]}')
-    else:
-        # Table format
-        table = Table(title='Saved Analysis Results', show_header=True)
-        table.add_column('Name', style='cyan')
-        table.add_column('Size', justify='right')
-        table.add_column('Modified', style='dim')
-
-        for analysis in analyses:
-            size_kb = int(analysis['size_bytes']) / 1024
-            size_str = f'{size_kb:.1f} KB' if size_kb < 1024 else f'{size_kb / 1024:.1f} MB'
-            table.add_row(str(analysis['name']), size_str, str(analysis['modified_iso']))
-
-        console.print(table)
-        console.print(f'\n[dim]Total: {len(analyses)} analysis result(s)[/dim]')
+    list_analyzed(output_format=format)
 
 
 @analyzed_app.command('browse')
@@ -583,34 +488,7 @@ def analyzed_browse() -> None:
     Examples:
         logsift analyzed browse
     """
-    if not is_fzf_available():
-        stderr_console.print('[red]Error: fzf is not installed or not in PATH[/red]')
-        stderr_console.print('[dim]Install fzf: https://github.com/junegunn/fzf#installation[/dim]')
-        raise typer.Exit(1)
-
-    cache = CacheManager()
-    analyses = cache.list_all_analyzed()
-
-    if not analyses:
-        stderr_console.print('[yellow]No saved analyses found[/yellow]')
-        stderr_console.print(CAPTURE_HINT)
-        return
-
-    selected_path = select_log_file(analyses, 'Select analysis result to view')
-
-    if not selected_path:
-        stderr_console.print('[dim]No file selected[/dim]')
-        return
-
-    # Display the analysis with bat for better UX
-    try:
-        analysis_data = json.loads(Path(selected_path).read_text())
-        stderr_console.print(f'[cyan]Analysis: {selected_path}[/cyan]\n')
-
-        output = format_markdown(analysis_data)
-        display_with_bat(output, language='markdown', filename=Path(selected_path).name)
-    except (json.JSONDecodeError, OSError) as e:
-        stderr_console.print(f'[red]Error reading analysis: {e}[/red]')
+    browse_analyzed()
 
 
 @analyzed_app.command('latest')
@@ -632,32 +510,7 @@ def analyzed_latest(
         # Show latest analysis matching "build"
         logsift analyzed latest build
     """
-    cache = CacheManager()
-
-    if name:
-        latest_analysis = cache.get_latest_analyzed(name)
-        if not latest_analysis:
-            stderr_console.print(f'[red]Error: No analyses found matching "{name}"[/red]')
-            stderr_console.print('[dim]Run `logsift analyzed list` to see the saved names[/dim]')
-            raise typer.Exit(1)
-    else:
-        latest_analysis = cache.get_absolute_latest_analyzed()
-        if not latest_analysis:
-            stderr_console.print('[red]Error: No saved analyses found[/red]')
-            stderr_console.print(CAPTURE_HINT)
-            raise typer.Exit(1)
-
-    stderr_console.print(f'[cyan]Latest analysis: {latest_analysis}[/cyan]\n')
-
-    # Display the analysis with bat for better UX
-    try:
-        analysis_data = json.loads(latest_analysis.read_text())
-
-        output = format_markdown(analysis_data)
-        display_with_bat(output, language='markdown', filename=latest_analysis.name)
-    except (json.JSONDecodeError, OSError) as e:
-        stderr_console.print(f'[red]Error reading analysis: {e}[/red]')
-        raise typer.Exit(1) from None
+    show_latest_analyzed(name)
 
 
 @analyzed_app.command('clean')
@@ -695,42 +548,11 @@ def analyzed_clean(
         # Preview what would be deleted
         logsift analyzed clean --dry-run
     """
-    cache = CacheManager()
-    cutoff_timestamp = (dt.datetime.now(tz=dt.UTC) - dt.timedelta(days=days)).timestamp()
-    to_delete = [
-        analysis_file
-        for directory, pattern in ((cache.json_dir, '*.json'), (cache.toon_dir, '*.toon'), (cache.md_dir, '*.md'))
-        for analysis_file in sorted(directory.glob(pattern))
-        if analysis_file.is_file() and analysis_file.stat().st_mtime < cutoff_timestamp
-    ]
-
-    if not to_delete:
-        console.print(f'[green]No analysis files older than {days} days[/green]')
-        return
-
-    if dry_run:
-        console.print(f'[yellow]Would delete {len(to_delete)} analysis file(s) older than {days} days:[/yellow]')
-        for analysis_file in to_delete[:10]:
-            console.print(f'  - {analysis_file}')
-        if len(to_delete) > 10:
-            console.print(f'  ... and {len(to_delete) - 10} more')
-        console.print('\n[dim]Run without --dry-run to actually delete[/dim]')
-        return
-
-    for analysis_file in to_delete:
-        analysis_file.unlink()
-    console.print(f'[green]Deleted {len(to_delete)} analysis file(s) older than {days} days[/green]')
+    clean_analyzed(days=days, dry_run=dry_run)
 
 
-raw_app = create_format_commands('raw', '.log', 'raw_dir', 'txt')
-json_app = create_format_commands('json', '.json', 'json_dir', 'json')
-toon_app = create_format_commands('toon', '.toon', 'toon_dir', 'yaml')
-md_app = create_format_commands('md', '.md', 'md_dir', 'markdown')
-
-app.add_typer(raw_app, name='raw', rich_help_panel=BROWSE_PANEL)
-app.add_typer(json_app, name='json', rich_help_panel=BROWSE_PANEL)
-app.add_typer(toon_app, name='toon', rich_help_panel=BROWSE_PANEL)
-app.add_typer(md_app, name='md', rich_help_panel=BROWSE_PANEL)
+for kind in SavedKind:
+    app.add_typer(create_format_commands(kind), name=kind, rich_help_panel=BROWSE_PANEL)
 
 
 @app.command('config')

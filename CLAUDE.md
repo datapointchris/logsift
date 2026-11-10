@@ -87,7 +87,10 @@ Output (toon for LLMs when piped, JSON for programs, Markdown on a terminal)
 ```
 
 - `--format auto` resolves in `output/analysis_format.py`: Markdown on a TTY, else toon
-- Commands in `commands/` orchestrate but don't implement logic
+- Commands in `commands/` orchestrate but don't implement logic, and `cli.py` only parses and calls them
+- `cache/manager.py` is the one door to the cache directory. Naming a run's files, what `latest`
+  finds, what `clean` counts as stale, and deleting all live in `CacheManager`, so no command globs
+  or unlinks under the cache itself
 - Module layout: `cli.py` (Typer entry), `commands/`, `core/`, `patterns/`, `output/`, `monitor/`, `config/`, `cache/`, `utils/`
 
 ### TOML Pattern Format

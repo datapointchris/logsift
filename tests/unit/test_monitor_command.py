@@ -6,6 +6,7 @@ from contextlib import suppress
 from unittest.mock import patch
 
 from logsift.cache.manager import CacheManager
+from logsift.cache.manager import SavedKind
 from logsift.commands.monitor import monitor_command
 
 
@@ -159,9 +160,8 @@ def test_monitor_command_with_append_mode(tmp_path, capsys):
         append=False,
     )
 
-    # Get the created log file
     cache = CacheManager()
-    log_file = cache.get_latest_log('test-append')
+    log_file = cache.latest(SavedKind.RAW, 'test-append')
 
     assert log_file is not None
     assert log_file.exists()
@@ -170,7 +170,10 @@ def test_monitor_command_with_append_mode(tmp_path, capsys):
     initial_content = log_file.read_text()
     assert 'first run' in initial_content
 
-    # Second run - append to existing log
+    # A newer run whose name starts with this one's must not take the appended output.
+    other = cache.create_paths('test-append-docs')[SavedKind.RAW]
+    other.write_text('other run\n')
+
     monitor_command(
         ['echo', 'second run'],
         name='test-append',
@@ -182,9 +185,9 @@ def test_monitor_command_with_append_mode(tmp_path, capsys):
     # Read updated content
     updated_content = log_file.read_text()
 
-    # Should contain both runs
     assert 'first run' in updated_content
     assert 'second run' in updated_content
+    assert other.read_text() == 'other run\n'
 
 
 def test_monitor_command_append_without_existing_log(capsys):

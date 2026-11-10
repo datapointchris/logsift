@@ -1,11 +1,13 @@
-"""Cache directory management.
+"""The cache directory: each run's raw log and its saved analyses.
 
-Manages the $XDG_CACHE_HOME/logsift directory structure and log file storage.
+Every read, listing and deletion under the cache directory goes through CacheManager, so the name
+rule, what counts as latest and what counts as stale are each defined once, here.
 """
 
 import datetime as dt
+import enum
 import re
-from operator import itemgetter
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
@@ -14,284 +16,113 @@ from logsift.output.json_formatter import format_json
 from logsift.output.markdown_formatter import format_markdown
 from logsift.output.toon_formatter import format_toon
 
+# A saved file's stem is its run's UTC start time in this format, a hyphen, then the run's name.
+STAMP_FORMAT = '%Y-%m-%dT%H:%M:%S'
+STAMP_LENGTH = len('2025-01-01T00:00:00')
+
+
+class SavedKind(enum.StrEnum):
+    """One kind of file a run saves, named as its directory under the cache."""
+
+    RAW = 'raw'
+    JSON = 'json'
+    TOON = 'toon'
+    MD = 'md'
+
+
+SUFFIXES = {SavedKind.RAW: '.log', SavedKind.JSON: '.json', SavedKind.TOON: '.toon', SavedKind.MD: '.md'}
+ANALYSIS_RENDERERS = {SavedKind.JSON: format_json, SavedKind.TOON: format_toon, SavedKind.MD: format_markdown}
+
+
+def sanitize_name(name: str) -> str:
+    """The run name as a file name carries it: slashes become hyphens, any other unsafe character an underscore."""
+    return re.sub(r'[^\w\-.]', '_', name.lstrip('/').replace('/', '-'))
+
+
+def run_name(path: Path) -> str:
+    """The run name a saved file's stem carries after its start time."""
+    return path.stem[STAMP_LENGTH + 1 :]
+
 
 class CacheManager:
-    """Manage cache directory and log file storage."""
+    """Every operation on the cache directory."""
 
     def __init__(self, cache_dir: Path | None = None) -> None:
-        """Initialize the cache manager.
-
-        Args:
-            cache_dir: Optional cache directory path (defaults to $XDG_CACHE_HOME/logsift, else ~/.cache/logsift)
-        """
+        """Use cache_dir, else $XDG_CACHE_HOME/logsift, else ~/.cache/logsift, creating a directory per kind."""
         self.cache_dir = cache_dir or xdg_dirs.cache_dir()
+        for kind in SavedKind:
+            self.directory(kind).mkdir(parents=True, exist_ok=True)
 
-        # New directory structure: raw/, json/, toon/, md/
-        self.raw_dir = self.cache_dir / 'raw'
-        self.json_dir = self.cache_dir / 'json'
-        self.toon_dir = self.cache_dir / 'toon'
-        self.md_dir = self.cache_dir / 'md'
+    def directory(self, kind: SavedKind) -> Path:
+        return self.cache_dir / kind
 
-        # Legacy directories for migration
-        self.logs_dir = self.cache_dir / 'logs'
-        self.analyzed_dir = self.cache_dir / 'analyzed'
-
-        # Create new subdirectories
-        self.raw_dir.mkdir(parents=True, exist_ok=True)
-        self.json_dir.mkdir(parents=True, exist_ok=True)
-        self.toon_dir.mkdir(parents=True, exist_ok=True)
-        self.md_dir.mkdir(parents=True, exist_ok=True)
-
-        # Migrate from old structure if needed
-        self._migrate_to_new_structure()
-
-    def create_paths(self, name: str) -> dict[str, Path]:
-        """Create paths for all output formats.
-
-        Args:
-            name: Name for this log session
-
-        Returns:
-            Dictionary with keys: 'raw', 'json', 'toon', 'md' and Path values
-        """
-        # Sanitize name (replace slashes with dashes, other invalid chars with underscores)
-        sanitized_name = name.lstrip('/')
-        sanitized_name = sanitized_name.replace('/', '-')
-        sanitized_name = re.sub(r'[^\w\-.]', '_', sanitized_name)
-
-        # Create ISO8601 timestamp (prefix)
-        timestamp = dt.datetime.now(tz=dt.UTC).strftime('%Y-%m-%dT%H:%M:%S')
-
-        # Build filename stem (same across all formats)
-        stem = f'{timestamp}-{sanitized_name}'
-
-        # Return paths for all 4 formats
-        return {
-            'raw': self.raw_dir / f'{stem}.log',
-            'json': self.json_dir / f'{stem}.json',
-            'toon': self.toon_dir / f'{stem}.toon',
-            'md': self.md_dir / f'{stem}.md',
-        }
+    def create_paths(self, name: str) -> dict[SavedKind, Path]:
+        """One path per kind for a run starting now, all sharing one stem."""
+        stem = f'{dt.datetime.now(tz=dt.UTC).strftime(STAMP_FORMAT)}-{sanitize_name(name)}'
+        return {kind: self.directory(kind) / f'{stem}{SUFFIXES[kind]}' for kind in SavedKind}
 
     def save_analysis(self, analysis: dict[str, Any], stem: str) -> list[str]:
-        """Write the analysis under stem in json/, toon/ and md/.
+        """Write the analysis under stem as each analysis kind.
 
         Returns:
             One line per file that could not be written, naming it and the reason
         """
         failures = []
-        for path, render in (
-            (self.json_dir / f'{stem}.json', format_json),
-            (self.toon_dir / f'{stem}.toon', format_toon),
-            (self.md_dir / f'{stem}.md', format_markdown),
-        ):
+        for kind, render in ANALYSIS_RENDERERS.items():
+            path = self.directory(kind) / f'{stem}{SUFFIXES[kind]}'
             try:
                 path.write_text(render(analysis), encoding='utf-8')
             except OSError as fault:
                 failures.append(f'{path}: {fault.strerror or fault}')
         return failures
 
-    def get_latest_log(self, name: str) -> Path | None:
-        """Get the latest raw log file for a given name.
+    def files(self, kind: SavedKind) -> list[Path]:
+        """Every saved file of kind, newest first: by modification time, then by name."""
+        found = [path for path in self.directory(kind).glob(f'*{SUFFIXES[kind]}') if path.is_file()]
+        return sorted(found, key=lambda path: (path.stat().st_mtime, path.name), reverse=True)
 
-        Args:
-            name: Name of the log
+    def listing(self, kind: SavedKind) -> list[dict[str, str | int]]:
+        """Each saved file of kind with its size and modification time, newest first."""
+        rows: list[dict[str, str | int]] = []
+        for path in self.files(kind):
+            stat = path.stat()
+            rows.append(
+                {
+                    'path': str(path),
+                    'name': path.name,
+                    'context': '',
+                    'size_bytes': stat.st_size,
+                    'modified_timestamp': int(stat.st_mtime),
+                    'modified_iso': dt.datetime.fromtimestamp(stat.st_mtime, tz=dt.UTC).isoformat(),
+                }
+            )
+        return rows
 
-        Returns:
-            Path to latest raw log file or None if not found
-        """
-        return self._get_latest_in_dir(self.raw_dir, name, '.log')
+    def latest(self, kind: SavedKind, name: str | None = None) -> Path | None:
+        """The newest file of kind, or the newest whose run name contains name."""
+        wanted = sanitize_name(name) if name else ''
+        return next((path for path in self.files(kind) if wanted in run_name(path)), None)
 
-    def get_absolute_latest_log(self) -> Path | None:
-        """Get the absolute latest raw log file across all logs.
+    def latest_run(self, name: str) -> Path | None:
+        """The newest raw log of the run named exactly name, which `monitor --append` adds to."""
+        wanted = sanitize_name(name)
+        return next((path for path in self.files(SavedKind.RAW) if run_name(path) == wanted), None)
 
-        Returns:
-            Path to the most recent raw log file, or None if no logs exist
-        """
-        return self._get_absolute_latest_in_dir(self.raw_dir, '.log')
+    def stale(self, kinds: Iterable[SavedKind], days: int) -> list[Path]:
+        """Every file of kinds last modified more than days ago."""
+        cutoff = (dt.datetime.now(tz=dt.UTC) - dt.timedelta(days=days)).timestamp()
+        return [path for kind in kinds for path in self.files(kind) if path.stat().st_mtime < cutoff]
 
-    def list_all_logs(self) -> list[dict[str, str | int]]:
-        """List all cached raw log files with metadata.
-
-        Returns:
-            List of dictionaries with log file metadata
-        """
-        return self._list_all_in_dir(self.raw_dir, '.log')
-
-    def get_latest_analyzed(self, name: str) -> Path | None:
-        """Get the latest JSON analyzed result for a given name.
-
-        Args:
-            name: Name of the analyzed result
-
-        Returns:
-            Path to latest JSON analyzed result or None if not found
-        """
-        return self._get_latest_in_dir(self.json_dir, name, '.json')
-
-    def get_absolute_latest_analyzed(self) -> Path | None:
-        """Get the absolute latest JSON analyzed result across all analyses.
-
-        Returns:
-            Path to the most recent JSON analyzed result, or None if none exist
-        """
-        return self._get_absolute_latest_in_dir(self.json_dir, '.json')
-
-    def list_all_analyzed(self) -> list[dict[str, str | int]]:
-        """List all JSON analyzed results with metadata.
+    def delete(self, paths: Iterable[Path]) -> list[str]:
+        """Delete each path.
 
         Returns:
-            List of dictionaries with analyzed result metadata
+            One line per file that could not be deleted, naming it and the reason
         """
-        return self._list_all_in_dir(self.json_dir, '.json')
-
-    def list_all_in_format(self, format_name: str) -> list[dict[str, str | int]]:
-        """List all files in a specific format directory.
-
-        Args:
-            format_name: Format name ('raw', 'json', 'toon', or 'md')
-
-        Returns:
-            List of dictionaries with file metadata
-        """
-        dir_map = {
-            'raw': (self.raw_dir, '.log'),
-            'json': (self.json_dir, '.json'),
-            'toon': (self.toon_dir, '.toon'),
-            'md': (self.md_dir, '.md'),
-        }
-
-        if format_name not in dir_map:
-            msg = f'Invalid format: {format_name}. Must be one of: {", ".join(dir_map.keys())}'
-            raise ValueError(msg)
-
-        directory, extension = dir_map[format_name]
-        return self._list_all_in_dir(directory, extension)
-
-    def _get_latest_in_dir(self, directory: Path, name: str, extension: str) -> Path | None:
-        """Get the latest file in a directory matching name and extension.
-
-        Args:
-            directory: Directory to search
-            name: Name pattern to match
-            extension: File extension
-
-        Returns:
-            Path to latest matching file or None
-        """
-        # Sanitize inputs the same way as create_paths
-        sanitized_name = name.lstrip('/')
-        sanitized_name = sanitized_name.replace('/', '-')
-        sanitized_name = re.sub(r'[^\w\-.]', '_', sanitized_name)
-
-        if not directory.exists():
-            return None
-
-        # Find all files matching the name pattern (substring match)
-        pattern = f'*{sanitized_name}*{extension}'
-        matching_files = sorted(directory.glob(pattern))
-
-        if not matching_files:
-            return None
-
-        # Return the last one (most recent due to ISO8601 timestamp sorting)
-        return matching_files[-1]
-
-    def _get_absolute_latest_in_dir(self, directory: Path, extension: str) -> Path | None:
-        """Get the absolute latest file in a directory with given extension.
-
-        Args:
-            directory: Directory to search
-            extension: File extension
-
-        Returns:
-            Path to most recent file or None
-        """
-        if not directory.exists():
-            return None
-
-        # Get all files and sort by name (ISO8601 timestamp prefix)
-        all_files = sorted(directory.glob(f'*{extension}'))
-
-        if not all_files:
-            return None
-
-        # Return the most recent (last in sorted list)
-        return all_files[-1]
-
-    def _list_all_in_dir(self, directory: Path, extension: str) -> list[dict[str, str | int]]:
-        """List all files in a directory with given extension.
-
-        Args:
-            directory: Directory to search
-            extension: File extension
-
-        Returns:
-            List of file metadata dictionaries
-        """
-        results: list[dict[str, str | int]] = []
-
-        if not directory.exists():
-            return results
-
-        # List all files with extension
-        for file_path in sorted(directory.glob(f'*{extension}')):
-            if file_path.is_file():
-                stat = file_path.stat()
-                results.append(
-                    {
-                        'path': str(file_path),
-                        'name': file_path.name,
-                        'context': '',
-                        'size_bytes': stat.st_size,
-                        'modified_timestamp': int(stat.st_mtime),
-                        'modified_iso': dt.datetime.fromtimestamp(stat.st_mtime, tz=dt.UTC).isoformat(),
-                    }
-                )
-
-        # Sort by modification time (newest first)
-        results.sort(key=itemgetter('modified_timestamp'), reverse=True)
-
-        return results
-
-    def _migrate_to_new_structure(self) -> None:
-        """Migrate existing logs from old structure to new format-based structure.
-
-        Old structure: logs/*.log, analyzed/*.json
-        New structure: raw/*.log, json/*.json, toon/*.toon, md/*.md
-
-        This is called automatically during __init__ to handle migration.
-        """
-        if not self.cache_dir.exists():
-            return
-
-        # Migrate logs/ → raw/
-        if self.logs_dir.exists():
-            old_logs = [f for f in self.logs_dir.glob('*.log') if f.is_file()]
-            for old_log in old_logs:
-                new_path = self.raw_dir / old_log.name
-                if not new_path.exists():
-                    old_log.rename(new_path)
-
-            # Remove logs/ directory if empty
-            if not list(self.logs_dir.iterdir()):
-                self.logs_dir.rmdir()
-
-        # Migrate analyzed/ → json/
-        if self.analyzed_dir.exists():
-            old_analyzed = [f for f in self.analyzed_dir.glob('*.json') if f.is_file()]
-            for old_analyzed_file in old_analyzed:
-                new_path = self.json_dir / old_analyzed_file.name
-                if not new_path.exists():
-                    old_analyzed_file.rename(new_path)
-
-            # Remove analyzed/ directory if empty
-            if not list(self.analyzed_dir.iterdir()):
-                self.analyzed_dir.rmdir()
-
-        # Migrate any .log files in root cache directory (very old structure)
-        old_root_logs = [f for f in self.cache_dir.glob('*.log') if f.is_file()]
-        for old_log in old_root_logs:
-            new_path = self.raw_dir / old_log.name
-            if not new_path.exists():
-                old_log.rename(new_path)
+        failures = []
+        for path in paths:
+            try:
+                path.unlink()
+            except OSError as fault:
+                failures.append(f'{path}: {fault.strerror or fault}')
+        return failures

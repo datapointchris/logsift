@@ -1,6 +1,7 @@
 """Display utilities for showing content with bat or fallback."""
 
 import sys
+import time
 from pathlib import Path
 from typing import TextIO
 
@@ -56,3 +57,24 @@ def display_file_with_bat(file_path: Path, language: str | None = None, stream: 
     except FileNotFoundError:
         # bat not installed, fall back to plain output
         _write_plain(file_path.read_text(), stream)
+
+
+def tail_file(file_path: Path, interval: int = 1) -> None:
+    """Print each line appended to file_path until Ctrl+C, checking every interval seconds."""
+    if not file_path.exists():
+        print(f'Error: File not found: {file_path}', file=sys.stderr)
+        sys.exit(1)
+
+    print(f'Tailing: {file_path}\nPress Ctrl+C to stop\n', file=sys.stderr)
+    try:
+        with file_path.open('r', encoding='utf-8') as f:
+            f.seek(0, 2)
+            while True:
+                line = f.readline()
+                if line:
+                    print(line, end='', flush=True)
+                else:
+                    time.sleep(interval)
+    except KeyboardInterrupt:
+        print('\nStopped tailing', file=sys.stderr)
+        sys.exit(0)

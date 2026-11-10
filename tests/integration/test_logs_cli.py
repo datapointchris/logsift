@@ -7,6 +7,7 @@ import time
 from typer.testing import CliRunner
 
 from logsift.cache.manager import CacheManager
+from logsift.cache.manager import SavedKind
 from logsift.cli import app
 
 runner = CliRunner()
@@ -94,7 +95,7 @@ class TestLogsCleanCommand:
         """Test cleaning with dry-run mode."""
         # Create an old log file in raw/ subdirectory
         cache = CacheManager()
-        raw_dir = cache.raw_dir
+        raw_dir = cache.directory(SavedKind.RAW)
         raw_dir.mkdir(parents=True, exist_ok=True)
 
         old_log = raw_dir / '2024-01-01T12:00:00-old-test.log'
@@ -119,7 +120,7 @@ class TestLogsCleanCommand:
         """Test actual deletion of old log files."""
         # Create an old log file in raw/ subdirectory
         cache = CacheManager()
-        raw_dir = cache.raw_dir
+        raw_dir = cache.directory(SavedKind.RAW)
         raw_dir.mkdir(parents=True, exist_ok=True)
 
         old_log = raw_dir / '2024-01-01T12:00:00-delete-test.log'
@@ -142,7 +143,7 @@ class TestLogsCleanCommand:
     def test_logs_clean_custom_retention_days(self, tmp_path):
         """Test cleaning with custom retention period."""
         cache = CacheManager()
-        raw_dir = cache.raw_dir
+        raw_dir = cache.directory(SavedKind.RAW)
         raw_dir.mkdir(parents=True, exist_ok=True)
 
         # Create log files with different ages in raw/ subdirectory

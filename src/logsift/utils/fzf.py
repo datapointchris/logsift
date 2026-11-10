@@ -22,15 +22,14 @@ def select_log_file(log_files: list[dict[str, str | int]], prompt: str = 'Select
     """Use fzf to interactively select a log file.
 
     Args:
-        log_files: List of log file metadata dictionaries (from CacheManager.list_all_logs)
+        log_files: List of log file metadata dictionaries (from CacheManager.listing)
         prompt: Prompt text to show in fzf
 
     Returns:
         Path to selected log file, or None if cancelled
 
     Example:
-        cache = CacheManager()
-        logs = cache.list_all_logs()
+        logs = CacheManager().listing(SavedKind.RAW)
         selected = select_log_file(logs, "Choose log to analyze")
     """
     if not is_fzf_available():

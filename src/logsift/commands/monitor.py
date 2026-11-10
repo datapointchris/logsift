@@ -12,6 +12,7 @@ from rich.console import Console
 
 from logsift import process_runner
 from logsift.cache.manager import CacheManager
+from logsift.cache.manager import SavedKind
 from logsift.commands.analyze import report_unsaved
 from logsift.core.analyzer import Analyzer
 from logsift.output.analysis_format import AnalysisFormat
@@ -102,13 +103,12 @@ def monitor_command(
         cache = CacheManager()
 
         if append:
-            # Try to get the latest log for this command (context defaults to current working directory)
-            log_file = cache.get_latest_log(name)
+            log_file = cache.latest_run(name)
 
         if not log_file or not append:
             # Create new log file paths (all 4 formats)
             log_paths = cache.create_paths(name)
-            log_file = log_paths['raw']
+            log_file = log_paths[SavedKind.RAW]
 
     # Show progress output unless explicitly suppressed with --minimal
     # Progress goes to stderr so it doesn't interfere with piping stdout
@@ -222,7 +222,7 @@ def monitor_command(
 
     # An appended run reuses an earlier log, whose analysis files belong to that earlier run.
     if log_paths:
-        report_unsaved(cache.save_analysis(analysis_result, log_paths['raw'].stem))
+        report_unsaved(cache.save_analysis(analysis_result, log_paths[SavedKind.RAW].stem))
 
     # Print analysis summary header - only in interactive mode
     if show_progress:
