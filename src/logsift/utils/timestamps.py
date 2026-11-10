@@ -19,7 +19,8 @@ def parse_timestamp(timestamp_str: str) -> dt.datetime | None:
     """
     try:
         return parser.parse(timestamp_str)
-    except (ValueError, parser.ParserError):
+    # ParserError is a ValueError, and exists only from python-dateutil 2.8.1.
+    except ValueError:
         return None
 
 
