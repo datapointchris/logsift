@@ -187,8 +187,11 @@ def monitor(
         logsift monitor -q -- pre-commit run --files file.py
         logsift monitor --format json -- docker build -t myapp .
     """
+    if not command:
+        typer.echo('Error: name the command to monitor after --, as in `logsift monitor -- make build`', err=True)
+        raise typer.Exit(2)
     monitor_command(
-        command or [],
+        command,
         name=name,
         output_format=format,
         stream=stream,
