@@ -183,7 +183,8 @@ $XDG_CACHE_HOME/logsift/      # else ~/.cache/logsift/
 four files. `analyze <file>` writes only the three analyses, named after the log file.
 
 Nothing is cleaned automatically. `logsift logs clean` deletes raw logs older than `--days`, 90 by
-default.
+default. `logsift analyzed clean` deletes the `json/`, `toon/` and `md/` analyses older than
+`--days`, 30 by default.
 
 ## See Also
 

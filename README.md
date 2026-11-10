@@ -171,11 +171,12 @@ files share a stem, its UTC start time and a name made from the command:
 `logsift logs list` lists the raw logs, and `logsift analyze latest` re-runs the patterns over the
 newest one.
 
-Clean old logs (older than 90 days by default):
+Clean old raw logs (older than 90 days by default) and old analyses (older than 30 days):
 
 ```bash
 logsift logs clean --dry-run   # list what would go
 logsift logs clean --days 30
+logsift analyzed clean
 ```
 
 ## Installation

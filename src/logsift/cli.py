@@ -19,7 +19,6 @@ from typer.core import TyperGroup
 
 from logsift import __version__
 from logsift.cache.manager import CacheManager
-from logsift.cache.rotation import clean_old_logs
 from logsift.cli_formatter import format_help_with_colors
 from logsift.commands.analyze import analyze_log
 from logsift.commands.analyze import stream_analyze_log
@@ -722,7 +721,8 @@ def analyzed_clean(
 ) -> None:
     """Clean old saved analyses from cache.
 
-    Removes analysis results older than the specified number of days.
+    Removes the json, toon and md analyses older than the specified number of days.
+    Raw logs are left for 'logsift logs clean'.
     Use --dry-run to preview what would be deleted.
 
     Examples:
@@ -736,42 +736,30 @@ def analyzed_clean(
         logsift analyzed clean --dry-run
     """
     cache = CacheManager()
+    cutoff_timestamp = (dt.datetime.now(tz=dt.UTC) - dt.timedelta(days=days)).timestamp()
+    to_delete = [
+        analysis_file
+        for directory, pattern in ((cache.json_dir, '*.json'), (cache.toon_dir, '*.toon'), (cache.md_dir, '*.md'))
+        for analysis_file in sorted(directory.glob(pattern))
+        if analysis_file.is_file() and analysis_file.stat().st_mtime < cutoff_timestamp
+    ]
 
-    if not cache.analyzed_dir.exists():
-        stderr_console.print('[yellow]No cache directory found - nothing to clean[/yellow]')
+    if not to_delete:
+        console.print(f'[green]No analysis files older than {days} days[/green]')
         return
 
     if dry_run:
-        # Show what would be deleted
-        cutoff_time = dt.datetime.now(tz=dt.UTC) - dt.timedelta(days=days)
-        cutoff_timestamp = cutoff_time.timestamp()
-
-        to_delete = []
-        for analysis_file in cache.analyzed_dir.rglob('*.json'):
-            if analysis_file.is_file():
-                mtime = analysis_file.stat().st_mtime
-                if mtime < cutoff_timestamp:
-                    to_delete.append(analysis_file)
-
-        if not to_delete:
-            console.print(f'[green]No analysis files older than {days} days[/green]')
-            return
-
         console.print(f'[yellow]Would delete {len(to_delete)} analysis file(s) older than {days} days:[/yellow]')
-        for analysis_file in to_delete[:10]:  # Show first 10
+        for analysis_file in to_delete[:10]:
             console.print(f'  - {analysis_file}')
         if len(to_delete) > 10:
             console.print(f'  ... and {len(to_delete) - 10} more')
-
         console.print('\n[dim]Run without --dry-run to actually delete[/dim]')
-    else:
-        # Actually delete
-        deleted_count = clean_old_logs(cache.analyzed_dir, retention_days=days)
+        return
 
-        if deleted_count == 0:
-            console.print(f'[green]No analysis files older than {days} days[/green]')
-        else:
-            console.print(f'[green]Deleted {deleted_count} analysis file(s) older than {days} days[/green]')
+    for analysis_file in to_delete:
+        analysis_file.unlink()
+    console.print(f'[green]Deleted {len(to_delete)} analysis file(s) older than {days} days[/green]')
 
 
 # ============================================================================

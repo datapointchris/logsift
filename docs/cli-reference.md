@@ -188,7 +188,12 @@ Manage saved analysis results.
 logsift analyzed [SUBCOMMAND]
 ```
 
-View previously saved analysis results in various formats.
+**Subcommands:**
+
+- `list` - List the saved analyses in `json/`
+- `browse` - Pick a saved analysis with fzf
+- `latest` - Show the newest saved analysis
+- `clean` - Delete the `json/`, `toon/` and `md/` analyses older than `--days`, 30 by default. `--dry-run` previews
 
 ### `raw`, `json`, `toon`, `md`
 
@@ -309,9 +314,10 @@ reads `json/`.
 ### Cache Cleanup
 
 ```bash
-logsift logs clean              # Clean >90 days (default)
+logsift logs clean              # Raw logs older than 90 days (default)
 logsift logs clean --days=30    # Custom retention
 logsift logs clean --dry-run    # List what would be deleted
+logsift analyzed clean          # json/, toon/ and md/ analyses older than 30 days (default)
 ```
 
 ### Configuration File
