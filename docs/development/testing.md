@@ -139,9 +139,9 @@ def test_parser_handles_empty_input():
 
 
 # ✗ BAD - Test implementation
-def test_parser_calls_internal_method(mocker):
-    spy = mocker.spy(LogParser, '_parse_plain_line')
-    LogParser().parse('one line')
+def test_parser_calls_internal_method():
+    with patch.object(LogParser, '_parse_plain_line', wraps=LogParser()._parse_plain_line) as spy:
+        LogParser().parse('one line')
     spy.assert_called_once()
 ```
 
@@ -201,15 +201,18 @@ def test_parser_handles_edge_cases():
 
 ## Mocking
 
-Use pytest-mock for mocking:
+Mock with the standard library's `unittest.mock.patch`, and set environment variables
+with pytest's `monkeypatch`:
 
 ```python
-def test_monitor_command_sends_notification(mocker):
+from unittest.mock import patch
+
+
+def test_monitor_command_sends_notification():
     """Test that monitor_command reports a finished run to the notifier."""
     # Patch the name where monitor_command looks it up, not where it is defined
-    mock_notify = mocker.patch('logsift.commands.monitor.notify_command_complete')
-
-    monitor_command(['echo', 'test'], output_format='json', save_log=False, notify=True)
+    with patch('logsift.commands.monitor.notify_command_complete') as mock_notify:
+        monitor_command(['echo', 'test'], output_format='json', save_log=False, notify=True)
 
     mock_notify.assert_called_once()
     assert mock_notify.call_args.kwargs['success'] is True
