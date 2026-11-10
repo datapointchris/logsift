@@ -4,10 +4,14 @@ Handles loading both built-in and custom pattern libraries.
 """
 
 import tomllib
+from importlib.resources import files
+from importlib.resources.abc import Traversable
 from pathlib import Path
 from typing import Any
 
 from logsift.patterns.validator import validate_pattern_file
+
+BUILTIN_PATTERNS = files('logsift.patterns') / 'defaults'
 
 
 class PatternLoader:
@@ -26,21 +30,15 @@ class PatternLoader:
         Returns:
             Dictionary of loaded patterns organized by category
         """
-        # Get the defaults directory relative to this file
-        defaults_dir = Path(__file__).parent / 'defaults'
-
-        if not defaults_dir.exists():
-            return {}
-
-        pattern_files = sorted(defaults_dir.glob('*.toml'), key=lambda path: (path.stem == 'common', path.stem))
+        pattern_files = sorted(
+            (entry for entry in BUILTIN_PATTERNS.iterdir() if entry.name.endswith('.toml')),
+            key=lambda entry: (entry.name == 'common.toml', entry.name),
+        )
 
         loaded_patterns: dict[str, list[dict[str, Any]]] = {}
         for pattern_file in pattern_files:
-            category = pattern_file.stem  # filename without .toml
-            pattern_data = self.load_pattern_file(pattern_file)
-
-            if 'patterns' in pattern_data and pattern_data['patterns']:
-                loaded_patterns[category] = pattern_data['patterns']
+            category = pattern_file.name.removesuffix('.toml')
+            loaded_patterns[category] = self.load_pattern_file(pattern_file)['patterns']
 
         # Store in instance
         self.patterns.update(loaded_patterns)
@@ -69,15 +67,14 @@ class PatternLoader:
             except ValueError as e:
                 raise ValueError(f'{pattern_file}: {e}') from e
 
-            if pattern_data.get('patterns'):
-                loaded_patterns[pattern_file.stem] = pattern_data['patterns']
+            loaded_patterns[pattern_file.stem] = pattern_data['patterns']
 
         # Store in instance
         self.patterns.update(loaded_patterns)
 
         return loaded_patterns
 
-    def load_pattern_file(self, pattern_file: Path) -> dict[str, Any]:
+    def load_pattern_file(self, pattern_file: Traversable) -> dict[str, Any]:
         """Load a single pattern file.
 
         Args:
@@ -87,8 +84,7 @@ class PatternLoader:
             Dictionary of patterns from the file
 
         Raises:
-            ValueError: If TOML is invalid or patterns are malformed
-            KeyError: If required fields are missing from patterns
+            ValueError: If the TOML is invalid, holds no patterns list, or a pattern is malformed
         """
         try:
             with pattern_file.open('rb') as f:
@@ -96,9 +92,7 @@ class PatternLoader:
         except tomllib.TOMLDecodeError as e:
             raise ValueError(f'Invalid TOML in {pattern_file}: {e}') from e
 
-        # Validate patterns using the validator module
-        if 'patterns' in data:
-            validate_pattern_file(data)
+        validate_pattern_file(data)
 
         return data
 

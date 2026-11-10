@@ -211,15 +211,13 @@ regex = "ERROR: (.+)"
         loader.load_pattern_file(pattern_file)
 
 
-def test_load_pattern_file_empty_patterns_list(tmp_path: Path):
-    """Test loading pattern file with no patterns."""
-    pattern_file = tmp_path / 'empty.toml'
-    pattern_file.write_text('# No patterns defined\n')
+def test_a_pattern_file_with_no_patterns_list_is_refused(tmp_path: Path):
+    """A misspelled [[pattern]] table would otherwise load as no patterns, and the user's file would silently do nothing."""
+    pattern_file = tmp_path / 'typo.toml'
+    pattern_file.write_text('[[pattern]]\nname = "x"\n')
 
-    loader = PatternLoader()
-    patterns = loader.load_pattern_file(pattern_file)
-    # Should return empty patterns list or empty dict
-    assert patterns.get('patterns', []) == []
+    with pytest.raises(ValueError, match="'patterns' key"):
+        PatternLoader().load_pattern_file(pattern_file)
 
 
 # Pattern Access and Retrieval Tests

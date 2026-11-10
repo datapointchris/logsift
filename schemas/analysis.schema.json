@@ -72,7 +72,7 @@
         "tags": {"description": "The matching pattern's tags.", "type": "array", "items": {"type": "string"}},
         "suggestion": {"description": "The matching pattern's fix hint, where it has one.", "type": "string"},
         "pattern_context_lines_after": {"description": "How many lines after this one the matching pattern asked to keep, which context_after then holds in place of the default two.", "type": "integer", "minimum": 0},
-        "code": {"description": "A linter or tool code found in the message, such as F401, SC2086, FURB101, arg-type or B101.", "type": "string"},
+        "code": {"description": "The tool's own code for the problem, from the `code` group of the pattern that matched, such as F401, SC2086, FURB101, arg-type or B602.", "type": "string"},
         "timestamp": {"description": "The line's timestamp, where the parser found one.", "type": "string"},
         "file": {"description": "Copied from a JSON or key=value log line that carries a file field.", "type": "string"},
         "file_line": {"description": "Copied from a JSON or key=value log line that carries a file_line field.", "type": ["integer", "string"]},

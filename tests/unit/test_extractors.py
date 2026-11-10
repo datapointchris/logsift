@@ -1,7 +1,7 @@
 """Unit tests for the detector system."""
 
-from logsift.core.detectors import FileReferenceDetector
 from logsift.core.detectors import IssueDetector
+from logsift.core.file_references import FileReferenceDetector
 from logsift.patterns.loader import PatternLoader
 
 # IssueDetector Tests

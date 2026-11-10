@@ -8,8 +8,8 @@ from contextlib import suppress
 from typing import Any
 
 from logsift import xdg_dirs
-from logsift.core.detectors import FileReferenceDetector
 from logsift.core.detectors import IssueDetector
+from logsift.core.file_references import FileReferenceDetector
 from logsift.core.parser import LogParser
 from logsift.patterns.loader import PatternLoader
 

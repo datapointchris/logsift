@@ -33,8 +33,13 @@ uv run logsift monitor -- echo "test"     # CLI
 
 **NEVER duplicate pattern matching logic between Python code and TOML files**:
 
-- ❌ WRONG: Hardcode regex patterns in `parser.py`, `detectors.py`, or any Python module
-- ✅ RIGHT: ALL pattern matching must be defined exclusively in TOML files under `src/logsift/patterns/defaults/`
+- ❌ WRONG: A regex in any Python module that decides a line's severity, names its error type, or
+  pulls out a tool's code
+- ✅ RIGHT: Each of those lives in a TOML pattern under `src/logsift/patterns/defaults/`. A
+  pattern's regex names its tool's code with a `(?P<code>...)` group.
+
+Two kinds of regex stay in Python, because they read a shape no tool owns and no user customizes:
+the parser's log formats and timestamps, and the `path:line` shapes in `core/file_references.py`.
 
 **Parser Responsibilities** (`core/parser.py`):
 
@@ -106,6 +111,10 @@ suggestion = "Remove package from install list or use 'brew upgrade' instead"
 ```
 
 Required: name, regex, severity, description, tags. Optional: suggestion, context_lines_after.
+
+The first pattern to match a line decides it. `error` and `warning` report it, and `info` claims a
+line known to be benign so no later catch-all reports it. A `(?P<code>...)` group in the regex,
+such as `(?P<code>SC\\d+)`, becomes the issue's `code`.
 
 ## JSON Output Contract (agents parse it — change it only with a version)
 

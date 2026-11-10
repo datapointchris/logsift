@@ -70,7 +70,7 @@ def test_shellcheck_info_pattern():
     test_line = '    ^---^ SC2086 (info): Double quote to prevent globbing and word splitting.'
     match = re.search(pattern['regex'], test_line)
     assert match is not None, f"Pattern didn't match: {test_line}"
-    assert match.group(1) == '2086'
+    assert match.group('code') == 'SC2086'
     assert 'Double quote' in match.group(2)
 
 
@@ -87,12 +87,12 @@ def test_shellcheck_warning_pattern():
     test_line1 = '^--------^ SC2034 (warning): UNUSED_VAR appears unused. Verify use (or export if used externally).'
     match1 = re.search(pattern['regex'], test_line1)
     assert match1 is not None, f"Pattern didn't match: {test_line1}"
-    assert match1.group(1) == '2034'
+    assert match1.group('code') == 'SC2034'
 
     test_line2 = '^----------------^ SC2154 (warning): undefined_command is referenced but not assigned.'
     match2 = re.search(pattern['regex'], test_line2)
     assert match2 is not None, f"Pattern didn't match: {test_line2}"
-    assert match2.group(1) == '2154'
+    assert match2.group('code') == 'SC2154'
 
 
 def test_refurb_suggestion_pattern():
@@ -114,7 +114,7 @@ def test_refurb_suggestion_pattern():
     assert match1.group(1) == 'tests/pre-commit-testing/violations/refurb_pathlib.py'
     assert match1.group(2) == '6'
     assert match1.group(3) == '1'
-    assert match1.group(4) == '101'
+    assert match1.group('code') == 'FURB101'
     assert 'Replace' in match1.group(5)
 
     test_line2 = (
@@ -123,7 +123,7 @@ def test_refurb_suggestion_pattern():
     )
     match2 = re.search(pattern['regex'], test_line2)
     assert match2 is not None, f"Pattern didn't match: {test_line2}"
-    assert match2.group(4) == '103'
+    assert match2.group('code') == 'FURB103'
 
 
 def test_mypy_error_pattern():
