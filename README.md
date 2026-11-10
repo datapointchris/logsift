@@ -249,7 +249,7 @@ chmod 755 ~/.cache/logsift
 
 ## Features
 
-- **Dual Output Modes**: JSON for LLMs, beautiful Markdown for humans
+- **Three Output Formats**: toon for LLMs, JSON for programs, Markdown for humans
 - **Smart Pattern Matching**: Built-in patterns for common tools (Python, npm, cargo, etc.)
 - **Context Extraction**: Automatically extracts context around errors (configurable per-pattern)
 - **File References**: Extracts file:line references for direct editing

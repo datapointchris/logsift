@@ -119,90 +119,62 @@ analysis.errors.forEach(error => {
 
 ## Markdown Output
 
-Beautiful, human-readable formatted output with colors.
+Plain Markdown text for a person to read. It carries no ANSI colors, so it reads the same on a
+terminal, in a file or in an email.
 
 ### When to Use Markdown
 
 - **Interactive terminals** - When you're reading the output
 - **Documentation** - Include in reports or docs
 - **Debugging** - Visual inspection of errors
-- **Demos** - Presenting logsift functionality
 
 ### Markdown Structure
 
+`logsift analyze --format=markdown build.log` prints:
+
 ```markdown
-# Analysis Summary
+# Log Analysis Results
 
-**Status**: failed
-**Exit Code**: 1
-**Duration**: 2.45s
-**Command**: npm run build
-**Log File**: ~/.cache/logsift/monitor/npm-20240115_103000.log
+**Errors:** 2 | **Warnings:** 1
 
-## Errors Found (1)
+## Errors
 
-### Error 1: Module not found
-**Severity**: error
-**File**: src/index.js:12
-**Line in Log**: 45
-**Pattern**: webpack_module_not_found
-**Tags**: webpack, import, fixable
+### Error #1 (Line 2)
 
-**Context:**
+bash: frobnicate: command not found
+
+**Suggestion:** Check command spelling and ensure it's installed and in PATH
+
+**Context:** Lines 1-4
+
+### Error #2 (Line 3)
+
+src/main.py:42:5: F401 'os' imported but unused
+
+**Files:** `src/main.py:42`
+
+**Context:** Lines 1-5
+
+## Warnings
+
+### Warning #1 (Line 4)
+
+WARNING: deprecated flag --legacy
+
+**Context:** Lines 2-5
 ```
 
- 43 | import React from 'react';
- 44 | import App from './App';
-→45 | import Missing from './missing.js';  # Error here
- 46 |
- 47 | ReactDOM.render(<App />, document.getElementById('root'));
-
-```text
-
-**Message:**
-Module not found: Error: Can't resolve './missing.js'
-
-**Suggestion:**
-Create the missing file or fix the import path
-
-**Confidence**: high
-**Automated Fix**: `touch src/missing.js`
-
----
-
-## Statistics
-
-- **Total Errors**: 1
-- **Total Warnings**: 3
-- **Fixable Errors**: 1
-- **Log Size**: 44.6 KB (234 lines)
-```
-
-### Colors and Formatting
-
-Markdown output uses colors when in a terminal:
-
-- **Red** - Errors
-- **Yellow** - Warnings
-- **Green** - Success messages
-- **Blue** - File references
-- **Cyan** - Suggestions
-- **Bold** - Field labels
-
-Colors are automatically disabled when:
-
-- Output is piped
-- Output is redirected
-- `NO_COLOR` environment variable is set
-- Terminal doesn't support ANSI colors
+`**Suggestion:**` appears where the matching pattern has a fix hint, and `**Files:**` where the
+message names a file. `monitor` prints the command's exit code and duration to stderr, in color on
+a terminal, so they never enter the Markdown.
 
 ### Copying from Terminal
 
 Markdown output is designed to be copy-pasteable:
 
 ```bash
-# Copy error context
-logsift analyze app.log | grep -A 5 "Context:"
+# Show each error's context range
+logsift analyze app.log --format=markdown | grep "Context:"
 
 # Save to file
 logsift analyze app.log --format=markdown > report.md
@@ -288,7 +260,7 @@ logsift analyze app.log --format=auto  # or omit --format
 
 ## Plain Text Output
 
-`--format=plain` prints no ANSI colors, for files and email:
+`--format=plain` prints the same Markdown as `--format=markdown`, which already has no ANSI colors:
 
 ```bash
 logsift analyze app.log --format=plain > errors.txt
@@ -318,9 +290,8 @@ metadata an agent reading the message does not need.
 Humans prefer formatted text:
 
 - Visual hierarchy with headers
-- Color-coded severity
-- Code blocks for context
-- Readable without tools
+- Errors and warnings under separate headings
+- Readable without tools, and pasteable into an issue or a doc
 
 ### Why Auto-Detection?
 

@@ -32,10 +32,10 @@ logsift monitor -- python -c "import nonexistent_module"
 
 The output shows:
 
-- Summary of the command execution
-- Extracted errors with context
-- File references (if any)
-- Actionable suggestions
+- The command's exit code and duration, on stderr
+- Each error and warning, with the range of lines around it
+- File references, where a message names one
+- A fix hint, where the matching pattern has one
 
 ## Monitor a Build
 
@@ -74,30 +74,25 @@ logsift analyze build.log --format=markdown
 
 ### Terminal Output (Markdown)
 
-When running in a terminal, logsift outputs beautiful Markdown with colors:
+When running in a terminal, `monitor` prints its progress, exit code and duration to stderr, then
+the analysis to stdout as Markdown:
 
-```text
-# Analysis Summary
+```markdown
+# Log Analysis Results
 
-**Status**: failed
-**Exit Code**: 1
-**Duration**: 0.23s
-**Command**: python -c import nonexistent_module
+**Errors:** 1 | **Warnings:** 0
 
-## Errors Found (1)
+## Errors
 
-### Error 1: ModuleNotFoundError
-**Severity**: error
-**Line**: 3
-
-```
+### Error #1 (Line 4)
 
 ModuleNotFoundError: No module named 'nonexistent_module'
 
-```text
-
-**Suggestion**: Install the missing module using pip
+**Context:** Lines 2-4
 ```
+
+An error a pattern has a fix hint for adds a `**Suggestion:**` line, and one naming a file adds
+`**Files:**`.
 
 ### JSON Output (for LLMs and Scripts)
 

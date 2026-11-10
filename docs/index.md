@@ -8,13 +8,13 @@ logsift transforms verbose command output (2000+ lines) into actionable intellig
 
 ## Key Features
 
-- **LLM-First Design**: JSON output optimized for agent consumption
+- **LLM-First Design**: compact toon output when piped, and JSON with a published schema for programs
 - **Smart Pattern Matching**: Built-in patterns for common tools (Python, npm, cargo, brew, apt)
 - **Context Extraction**: Automatically captures ±2 lines around errors
 - **File References**: Extracts `file:line` references for direct editing
 - **Actionable Suggestions**: Pattern-based fix hints for automated workflows
 - **Process Monitoring**: Run commands and analyze output automatically
-- **Dual Output Modes**: JSON for agents, beautiful Markdown for humans
+- **Three Output Formats**: toon for agents, JSON for programs, Markdown for humans
 
 ## Quick Links
 
@@ -27,7 +27,7 @@ logsift transforms verbose command output (2000+ lines) into actionable intellig
 ### Core Concepts
 
 - [Agentic Integration](concepts/agentic-integration.md) ⭐ Using with Claude Code
-- [Output Modes](concepts/output-modes.md) - JSON vs Markdown
+- [Output Modes](concepts/output-modes.md) - toon, JSON and Markdown
 - [Pattern Matching](concepts/pattern-matching.md) - How patterns work
 - [concepts/](concepts/index.md) - Index of this section
 

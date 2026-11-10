@@ -249,42 +249,41 @@ and [JSON Schema](api/json-schema.md) says how to read it. `monitor` adds a `sum
 
 ### Markdown (`--format=markdown`)
 
-Human-readable formatted output with colors:
+Plain Markdown text with no ANSI colors. `logsift analyze --format=markdown build.log` prints:
 
 ```markdown
-# Analysis Summary
+# Log Analysis Results
 
-**Status**: failed
-**Exit Code**: 1
-**Duration**: 2.45s
-**Command**: npm run build
+**Errors:** 2 | **Warnings:** 1
 
-## Errors Found (1)
+## Errors
 
-### Error 1: Module not found
-**Severity**: error
-**File**: src/index.js:12
-**Line in Log**: 45
+### Error #1 (Line 2)
 
-**Context:**
+bash: frobnicate: command not found
+
+**Suggestion:** Check command spelling and ensure it's installed and in PATH
+
+**Context:** Lines 1-4
+
+### Error #2 (Line 3)
+
+src/main.py:42:5: F401 'os' imported but unused
+
+**Files:** `src/main.py:42`
+
+**Context:** Lines 1-5
+
+## Warnings
+
+### Warning #1 (Line 4)
+
+WARNING: deprecated flag --legacy
+
+**Context:** Lines 2-5
 ```
 
-import React from 'react';
-import App from './App';
-→ import Missing from './missing.js';  # Error here
-
-ReactDOM.render(<App />, document.getElementById('root'));
-
-```text
-
-**Message:**
-Module not found: Error: Can't resolve './missing.js'
-
-**Suggestion:**
-Create the missing file or fix the import path
-
-**Tags**: webpack, import, fixable
-```
+`monitor` prints the command's exit code and duration to stderr, so they never enter this text.
 
 ## Cache and Configuration
 
