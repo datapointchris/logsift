@@ -69,13 +69,9 @@ uv run pytest --cov=logsift --cov-report=term
 uv run pre-commit run --all-files
 ```
 
-This runs:
-
-- ruff (linting + formatting)
-- mypy (type checking)
-- bandit (security scanning)
-- codespell, markdownlint, shellcheck
-- And 10+ other checks
+This runs every hook `.pre-commit-config.yaml` declares, among them ruff, mypy, codespell,
+markdownlint and shellcheck. Bandit is not among them, so run `task lint` for ruff, mypy and bandit
+together. CI runs bandit as well.
 
 ### 5. Commit Changes
 
@@ -170,7 +166,8 @@ uv run bandit -c pyproject.toml -r .
 
 ## Pre-commit Hooks
 
-All hooks (15 total):
+`.pre-commit-config.yaml` declares the hooks, and `uv run pre-commit run --all-files` lists each one
+as it runs:
 
 ```bash
 # Run all hooks

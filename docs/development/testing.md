@@ -118,9 +118,8 @@ def test_monitor_command_end_to_end():
 
 ## Test Coverage
 
-Current coverage: **85%** (245 tests passing)
-
-Target: **80%+**
+Run `task test:coverage` for the current figure. `fail_under` in `pyproject.toml` is the enforced
+floor, and a run below it fails.
 
 Check coverage:
 
