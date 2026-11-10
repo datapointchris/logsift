@@ -442,7 +442,7 @@ requires-dist = [
     { name = "python-dateutil", specifier = ">=2.8.0" },
     { name = "tomli-w", specifier = ">=1.0.0" },
     { name = "toon-format", specifier = ">=1.0.0" },
-    { name = "typer", specifier = ">=0.15.0" },
+    { name = "typer", specifier = ">=0.26.1" },
 ]
 
 [package.metadata.requires-dev]

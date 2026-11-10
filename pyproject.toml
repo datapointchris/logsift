@@ -9,7 +9,9 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     # CLI and UI
-    "typer>=0.15.0",
+    # 0.26.0 is the first Typer to run its own Click, and ignores an option's envvar.
+    # Every older Typer resolves the newest click, whose Argument resets the help Typer sets.
+    "typer>=0.26.1",
     # TOML handling
     "tomli-w>=1.0.0",
     # Date parsing

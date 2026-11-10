@@ -1,0 +1,43 @@
+name: Dependency floors
+
+# validate.yml installs the locked versions, which never tests a lower bound such as typer>=0.26.1.
+# This installs every direct dependency at the floor pyproject.toml declares, each beside the newest
+# release of what it depends on, as a fresh install would resolve it. Then it imports every module
+# and runs the tests, so code that outgrew a floor fails here.
+#
+# push is left out because release.yml calls this on every push to main.
+
+on:
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  floors:
+    name: logsift at its dependency floors
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: "0.12.24"
+
+      # pytest and jsonschema go in after logsift, at their newest releases, so neither resolves to a floor.
+      - name: Install logsift at its floors
+        run: |
+          uv venv --python 3.13 "$RUNNER_TEMP/floors"
+          uv pip install --python "$RUNNER_TEMP/floors" --resolution lowest-direct .
+          uv pip install --python "$RUNNER_TEMP/floors" pytest jsonschema
+          uv pip list --python "$RUNNER_TEMP/floors"
+
+      # Walked rather than listed, so a new module is imported here without anyone adding it.
+      - name: Import every module
+        run: >-
+          "$RUNNER_TEMP/floors/bin/python" -c "import importlib, pkgutil, logsift;
+          [importlib.import_module(module.name) for module in pkgutil.walk_packages(logsift.__path__, 'logsift.')]"
+
+      - name: Test at the floors
+        run: '"$RUNNER_TEMP/floors/bin/python" -m pytest'

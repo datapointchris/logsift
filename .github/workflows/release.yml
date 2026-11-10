@@ -22,8 +22,11 @@ jobs:
   validate:
     uses: ./.github/workflows/validate.yml
 
+  dependency-floors:
+    uses: ./.github/workflows/dependency-floors.yml
+
   release:
-    needs: validate
+    needs: [validate, dependency-floors]
     uses: datapointchris/reusable-workflows/.github/workflows/python-semantic-release.yml@v1
     permissions:
       contents: write
