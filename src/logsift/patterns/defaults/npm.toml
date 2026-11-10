@@ -1,9 +1,11 @@
 # NPM and Node.js package manager error patterns
 # Covers npm install, npm run, yarn, and pnpm errors
+#
+# npm 6 prefixes its lines `npm ERR!` and `npm WARN`, and npm 7 on `npm error` and `npm warn`.
 
 [[patterns]]
 name = "npm_package_not_found"
-regex = "npm ERR! 404\\s+(.+) is not in the npm registry"
+regex = "npm (?:ERR!|error) 404\\s+(.+) is not in (?:the npm|this) registry"
 severity = "error"
 description = "Package not found in npm registry"
 tags = ["npm", "package", "registry"]
@@ -11,7 +13,7 @@ suggestion = "Check package name spelling or verify package exists"
 
 [[patterns]]
 name = "npm_permission_denied"
-regex = "npm ERR!.*EACCES: permission denied"
+regex = "npm (?:ERR!|error).*EACCES: permission denied"
 severity = "error"
 description = "Permission denied during npm operation"
 tags = ["npm", "permissions", "fixable"]
@@ -19,7 +21,7 @@ suggestion = "Use 'sudo npm install -g' for global packages or fix npm permissio
 
 [[patterns]]
 name = "npm_missing_script"
-regex = "npm ERR! missing script: (.+)"
+regex = "npm (?:ERR!|error) [Mm]issing script: (.+)"
 severity = "error"
 description = "NPM script not defined in package.json"
 tags = ["npm", "script", "configuration"]
@@ -27,7 +29,7 @@ suggestion = "Add script to package.json scripts section or check script name"
 
 [[patterns]]
 name = "npm_peer_dependency_error"
-regex = "npm ERR!.*peer dep missing: (.+)"
+regex = "npm (?:ERR!|error).*peer dep missing: (.+)"
 severity = "error"
 description = "Peer dependency not installed"
 tags = ["npm", "dependencies", "fixable"]
@@ -35,7 +37,7 @@ suggestion = "Install required peer dependency manually"
 
 [[patterns]]
 name = "npm_version_conflict"
-regex = "npm ERR!.*Could not resolve dependency"
+regex = "npm (?:ERR!|error).*Could not resolve dependency"
 severity = "error"
 description = "Dependency version conflict"
 tags = ["npm", "dependencies", "version_conflict"]
@@ -43,7 +45,7 @@ suggestion = "Check package.json for conflicting version requirements"
 
 [[patterns]]
 name = "npm_enoent_error"
-regex = "npm ERR!.*ENOENT.*no such file or directory"
+regex = "npm (?:ERR!|error).*ENOENT.*no such file or directory"
 severity = "error"
 description = "File or directory not found"
 tags = ["npm", "filesystem"]
@@ -51,7 +53,7 @@ suggestion = "Verify file paths and ensure all required files exist"
 
 [[patterns]]
 name = "npm_network_error"
-regex = "npm ERR!.*network.*(?:timeout|ECONNREFUSED|ETIMEDOUT)"
+regex = "npm (?:ERR!|error).*network.*(?:timeout|ECONNREFUSED|ETIMEDOUT)"
 severity = "error"
 description = "Network connection error"
 tags = ["npm", "network"]
@@ -59,7 +61,7 @@ suggestion = "Check internet connection or try different registry"
 
 [[patterns]]
 name = "npm_checksum_failed"
-regex = "npm ERR!.*integrity check failed"
+regex = "npm (?:ERR!|error).*integrity check failed"
 severity = "error"
 description = "Package integrity check failed"
 tags = ["npm", "security", "integrity"]
@@ -67,7 +69,7 @@ suggestion = "Clear npm cache with 'npm cache clean --force' and retry"
 
 [[patterns]]
 name = "npm_deprecated_package"
-regex = "npm WARN deprecated (.+)"
+regex = "npm (?:WARN|warn) deprecated (.+)"
 severity = "warning"
 description = "Package is deprecated"
 tags = ["npm", "deprecated", "maintenance"]
@@ -75,7 +77,7 @@ suggestion = "Consider updating to recommended alternative package"
 
 [[patterns]]
 name = "npm_gyp_build_error"
-regex = "npm ERR!.*node-gyp.*failed"
+regex = "npm (?:ERR!|error).*node-gyp.*failed"
 severity = "error"
 description = "Native module build failed"
 tags = ["npm", "native", "build"]
@@ -90,7 +92,7 @@ tags = ["npm", "funding", "info"]
 
 [[patterns]]
 name = "npm_outdated_warning"
-regex = "npm WARN.*deprecated"
+regex = "npm (?:WARN|warn).*deprecated"
 severity = "warning"
 description = "Using outdated/deprecated dependencies"
 tags = ["npm", "outdated", "maintenance"]
@@ -98,7 +100,7 @@ suggestion = "Run 'npm outdated' to see update options"
 
 [[patterns]]
 name = "npm_missing_dependency"
-regex = "npm ERR!.*Cannot find module '(.+)'"
+regex = "npm (?:ERR!|error).*Cannot find module '(.+)'"
 severity = "error"
 description = "Required module not found"
 tags = ["npm", "dependencies", "fixable"]
@@ -122,7 +124,7 @@ suggestion = "Run 'pnpm install' to update lockfile"
 
 [[patterns]]
 name = "npm_engine_mismatch"
-regex = "npm ERR!.*engine.*Unsupported"
+regex = "npm (?:ERR!|error).*engine.*Unsupported"
 severity = "error"
 description = "Node.js version mismatch"
 tags = ["npm", "node", "version"]
@@ -130,7 +132,7 @@ suggestion = "Install required Node.js version or update package.json engines"
 
 [[patterns]]
 name = "npm_syntax_error"
-regex = "npm ERR!.*Unexpected token"
+regex = "npm (?:ERR!|error).*Unexpected token"
 severity = "error"
 description = "Syntax error in package.json or config"
 tags = ["npm", "syntax", "configuration"]
@@ -138,7 +140,7 @@ suggestion = "Check package.json for syntax errors (trailing commas, etc.)"
 
 [[patterns]]
 name = "npm_eexist_error"
-regex = "npm ERR!.*EEXIST.*already exists"
+regex = "npm (?:ERR!|error).*EEXIST.*already exists"
 severity = "error"
 description = "File already exists"
 tags = ["npm", "filesystem", "fixable"]
