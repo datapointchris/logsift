@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "urn:logsift:analysis:v1",
+  "$id": "urn:logsift:analysis:v2",
   "title": "logsift analyze and monitor --format json",
   "description": "One analysis of one log: the errors and warnings found in it, the pre-commit hooks it names, and their counts. `logsift analyze --format json` prints it for a log file, and `logsift monitor --format json` prints it for a command's output with a summary of the run added. Each saved analysis under $XDG_CACHE_HOME/logsift/json/ holds the same document. A change that renames or removes a field, or changes a field's meaning, raises schema_version.",
   "type": "object",
@@ -9,7 +9,7 @@
   "properties": {
     "schema_version": {
       "description": "The version of this shape. A reader checks it before trusting any other field.",
-      "const": 1
+      "const": 2
     },
     "summary": {
       "description": "The monitored run. Present only from `logsift monitor`, because `logsift analyze` reads a file and ran nothing.",

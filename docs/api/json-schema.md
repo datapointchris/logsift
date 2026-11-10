@@ -1,10 +1,10 @@
 # JSON Output Schema
 
 [`schemas/analysis.schema.json`](https://github.com/datapointchris/logsift/blob/main/schemas/analysis.schema.json)
-is the contract for `--format json`. It is a draft-07 JSON Schema with `$id`
-`urn:logsift:analysis:v1`, and each field's meaning is its `description` there. Read the fields
-from the file rather than from an example, because an example goes stale and the file is what a
-test validates every real run against.
+is the contract for `--format json`. It is a draft-07 JSON Schema whose `$id` names its version,
+and each field's meaning is its `description` there. Read the fields from the file rather than
+from an example, because an example goes stale and the file is what a test validates every real
+run against.
 
 ## Three places print it
 
@@ -16,8 +16,9 @@ test validates every real run against.
 
 ## Versioning
 
-Every document carries `schema_version`, which is `1`. A change that renames or removes a field, or
-changes what a field means, raises it along with the `$id`. Adding an optional field raises neither.
+Every document carries `schema_version`, the schema's `const`. A change that renames or removes a
+field, or changes what a field means, raises it along with the `$id`. Adding an optional field
+raises neither.
 Check `schema_version` before trusting any other field.
 
 ## Reading it

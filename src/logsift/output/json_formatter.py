@@ -6,7 +6,7 @@ Generates the document schemas/analysis.schema.json describes, for Claude Code a
 import json
 from typing import Any
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 
 def format_json(analysis_result: dict[str, Any]) -> str:
