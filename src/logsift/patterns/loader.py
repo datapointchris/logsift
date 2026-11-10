@@ -48,30 +48,29 @@ class PatternLoader:
         return loaded_patterns
 
     def load_custom_patterns(self, pattern_dir: Path) -> dict[str, Any]:
-        """Load custom pattern libraries from directory.
+        """Load custom pattern libraries from directory, tried by file name.
 
         Args:
             pattern_dir: Directory containing custom .toml pattern files
 
         Returns:
             Dictionary of loaded patterns organized by category
+
+        Raises:
+            ValueError: If a file is not valid TOML or holds an invalid pattern, naming the file
         """
         if not pattern_dir.exists() or not pattern_dir.is_dir():
             return {}
 
-        pattern_files = pattern_dir.glob('*.toml')
-
         loaded_patterns: dict[str, list[dict[str, Any]]] = {}
-        for pattern_file in pattern_files:
-            category = pattern_file.stem  # filename without .toml
+        for pattern_file in sorted(pattern_dir.glob('*.toml')):
             try:
                 pattern_data = self.load_pattern_file(pattern_file)
+            except ValueError as e:
+                raise ValueError(f'{pattern_file}: {e}') from e
 
-                if 'patterns' in pattern_data and pattern_data['patterns']:
-                    loaded_patterns[category] = pattern_data['patterns']
-            except (ValueError, KeyError):
-                # Skip invalid pattern files in custom directory
-                continue
+            if pattern_data.get('patterns'):
+                loaded_patterns[pattern_file.stem] = pattern_data['patterns']
 
         # Store in instance
         self.patterns.update(loaded_patterns)

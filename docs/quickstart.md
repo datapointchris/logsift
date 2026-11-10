@@ -196,7 +196,8 @@ suggestion = "Check database connection string and credentials"
 EOF
 ```
 
-Patterns are automatically loaded and applied to all analyses.
+Every run reads them, before the built-in patterns, so yours wins a line both match.
+logsift reads `$XDG_CONFIG_HOME/logsift/patterns/` when `XDG_CONFIG_HOME` is set.
 
 See [Custom Patterns](guides/custom-patterns.md) for detailed guidance.
 

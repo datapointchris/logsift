@@ -119,7 +119,7 @@ logsift includes patterns for common tools in `src/logsift/patterns/defaults/`:
 ```text
 1. Parse log line by line
 2. For each line, try all patterns
-3. First match wins: files are tried by name with common.toml last, and patterns in file order
+3. First match wins: custom files first, then built-in files by name with common.toml last, and patterns in file order
 4. Extract matched groups
 5. Add suggestion if available
 6. Tag with pattern name
@@ -140,10 +140,10 @@ tags = ["database", "connection", "myapp"]
 suggestion = "Check database credentials and network connectivity"
 ```
 
-Patterns are automatically loaded from:
+Every run tries patterns in this order:
 
-1. Built-in: `src/logsift/patterns/defaults/*.toml`
-2. Custom: `~/.config/logsift/patterns/*.toml`
+1. Custom: `$XDG_CONFIG_HOME/logsift/patterns/*.toml`, else `~/.config/logsift/patterns/*.toml`
+2. Built-in: `src/logsift/patterns/defaults/*.toml`, with `common.toml` last
 
 ## See Also
 

@@ -35,7 +35,8 @@ name = "python_import_error"
 
 Rules:
 
-- Must be unique across all loaded pattern files
+- Must be unique within its file, which the validator checks
+- Keep it unique across files too, because it is what `pattern_name` reports
 - Use `snake_case` convention
 - Descriptive and specific
 
@@ -64,9 +65,9 @@ severity = "error"  # or "warning" or "info"
 
 Valid values:
 
-- `"error"` - Critical failures
-- `"warning"` - Non-critical issues
-- `"info"` - Informational messages
+- `"error"` - Reported under `errors`
+- `"warning"` - Reported under `warnings`
+- `"info"` - Claims the line and reports nothing, so no later pattern can match it
 
 ### description
 
@@ -184,7 +185,8 @@ confidence = "medium"
 
 ## Validation
 
-Patterns are validated on load. Invalid patterns cause logsift to fail at startup.
+Patterns are validated on load. An invalid built-in or custom file stops the run, and the error
+names the file.
 
 Checks:
 
@@ -204,7 +206,8 @@ logsift analyze test.log
 
 ## Pattern Priority
 
-Patterns are matched in order. **First match wins.**
+Patterns are matched in order. **First match wins.** Custom files come first, then the built-in
+files by name with `common.toml` last, and the patterns within a file in the order written.
 
 ```toml
 # More specific patterns first
@@ -241,7 +244,7 @@ src/logsift/patterns/defaults/
 
 ### Custom Patterns
 
-Located in `~/.config/logsift/patterns/`:
+Located in `$XDG_CONFIG_HOME/logsift/patterns/`, else `~/.config/logsift/patterns/`:
 
 ```text
 ~/.config/logsift/patterns/
@@ -250,7 +253,8 @@ Located in `~/.config/logsift/patterns/`:
 └── docker.toml      # Docker/containers
 ```
 
-All files are automatically loaded and merged.
+Every run reads each file. Custom files are tried before the built-in ones, in file-name order. A
+custom `docker.toml` adds to the built-in Docker patterns rather than replacing them.
 
 ## Regex Examples
 

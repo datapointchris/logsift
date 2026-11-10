@@ -60,8 +60,8 @@ Detection strategy:
 - **For JSON/structured logs**: Use explicit `level` field if present
 - **For plain text logs**: Apply TOML pattern regex to message content
 - **Single pass**: All pattern matching happens in one iteration
-- **First match wins**: the built-in files are tried by name, and `common.toml` goes last, so its
-  catch-alls such as `generic_error` never shadow a tool's specific pattern
+- **First match wins**: custom files are tried first, then the built-in files by name with
+  `common.toml` last, so its catch-alls such as `generic_error` never shadow a specific pattern
 
 Pattern matching:
 
@@ -76,10 +76,10 @@ for line in log_lines:
             break  # First match wins
 ```
 
-Patterns loaded from:
+`Analyzer.__init__` loads the patterns, and detection tries them in this order:
 
-1. Built-in patterns (`src/logsift/patterns/defaults/*.toml`)
-2. Custom patterns (`~/.config/logsift/patterns/*.toml`)
+1. Custom patterns (`$XDG_CONFIG_HOME/logsift/patterns/*.toml`, else `~/.config/logsift/patterns/*.toml`)
+2. Built-in patterns (`src/logsift/patterns/defaults/*.toml`)
 
 ### 4. Analyzer
 

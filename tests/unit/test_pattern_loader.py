@@ -3,6 +3,8 @@
 import tempfile
 from pathlib import Path
 
+import pytest
+
 from logsift.patterns.loader import PatternLoader
 
 
@@ -98,25 +100,12 @@ def test_load_custom_patterns_nonexistent_directory():
     assert patterns == {}
 
 
-def test_load_custom_patterns_skips_invalid_files():
-    """Test that invalid pattern files are skipped."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        pattern_dir = Path(tmpdir)
+def test_load_custom_patterns_names_an_invalid_file(tmp_path):
+    """An invalid custom file fails the load, and the error names the file to fix."""
+    (tmp_path / 'invalid.toml').write_text('[[patterns]]\nname = "invalid"\n')
 
-        # Create invalid pattern file
-        invalid_pattern = """
-[[patterns]]
-name = "invalid"
-# Missing required fields
-"""
-        pattern_file = pattern_dir / 'invalid.toml'
-        pattern_file.write_text(invalid_pattern)
-
-        loader = PatternLoader()
-        patterns = loader.load_custom_patterns(pattern_dir)
-
-        # Should skip invalid file and return empty
-        assert patterns == {}
+    with pytest.raises(ValueError, match=r'invalid\.toml: .*missing required field'):
+        PatternLoader().load_custom_patterns(tmp_path)
 
 
 def test_load_pattern_file():

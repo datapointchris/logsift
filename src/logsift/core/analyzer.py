@@ -7,6 +7,7 @@ import re
 from contextlib import suppress
 from typing import Any
 
+from logsift import xdg_dirs
 from logsift.core.detectors import FileReferenceDetector
 from logsift.core.detectors import IssueDetector
 from logsift.core.parser import LogParser
@@ -29,8 +30,10 @@ class Analyzer:
         self.file_reference_detector = FileReferenceDetector()
         self.context_lines = context_lines
 
-        # Load built-in patterns
-        self.patterns = self.pattern_loader.load_builtin_patterns()
+        builtin = self.pattern_loader.load_builtin_patterns()
+        custom = self.pattern_loader.load_custom_patterns(xdg_dirs.config_dir() / 'patterns')
+        # Custom first, so a user's pattern wins; the prefix keeps a custom docker.toml from replacing the built-in one.
+        self.patterns = {f'custom/{category}': patterns for category, patterns in custom.items()} | builtin
 
     def analyze(self, log_content: str) -> dict[str, Any]:
         """Analyze log content and return structured results.

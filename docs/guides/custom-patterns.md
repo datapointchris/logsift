@@ -19,7 +19,13 @@ suggestion = "Check database connection string and credentials"
 EOF
 ```
 
-Patterns are automatically loaded on next logsift run.
+The next run reads it. logsift reads `$XDG_CONFIG_HOME/logsift/patterns/` when
+`XDG_CONFIG_HOME` is set, else `~/.config/logsift/patterns/`.
+
+Custom files are tried before the built-in ones, in file-name order, so your pattern wins a line a
+built-in pattern also matches. A custom `docker.toml` adds to the built-in Docker patterns rather
+than replacing them. A file that is not valid TOML, or holds an invalid pattern, stops the run, and
+the error names the file.
 
 ## Pattern Format
 

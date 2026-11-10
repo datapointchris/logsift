@@ -126,21 +126,26 @@ Line 3: Something else"""
 # Pattern Matching Tests
 
 
-def test_analyze_with_pattern_matching():
-    """Test that analysis includes pattern matches."""
-    log_content = """INFO: Installing packages
-Error: tmux is already installed
-INFO: Installation complete"""
+def test_custom_pattern_wins_over_the_builtin_catch_all(tmp_path, monkeypatch):
+    """A pattern under $XDG_CONFIG_HOME/logsift/patterns matches before generic_error would."""
+    patterns_dir = tmp_path / 'config' / 'logsift' / 'patterns'
+    patterns_dir.mkdir(parents=True)
+    (patterns_dir / 'myapp.toml').write_text("""\
+[[patterns]]
+name = "myapp_database_error"
+regex = "DATABASE ERROR: (.+)"
+severity = "error"
+description = "Database connection or query error"
+tags = ["database", "myapp"]
+suggestion = "Check database connection string and credentials"
+""")
+    monkeypatch.setenv('XDG_CONFIG_HOME', str(tmp_path / 'config'))
 
-    analyzer = Analyzer()
-    result = analyzer.analyze(log_content)
+    result = Analyzer().analyze('INFO: starting\nDATABASE ERROR: cannot connect\n')
 
-    # Should match brew pattern
-    assert len(result['errors']) == 1
-    error = result['errors'][0]
-    # Pattern matching should add metadata
-    if 'pattern_matched' in error:
-        assert error['pattern_matched'] is not None
+    [error] = result['errors']
+    assert error['pattern_name'] == 'myapp_database_error'
+    assert error['suggestion'] == 'Check database connection string and credentials'
 
 
 # File Reference Extraction Tests

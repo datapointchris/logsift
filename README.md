@@ -130,7 +130,9 @@ tags = ["database", "myapp"]
 suggestion = "Check database connection string and credentials"
 ```
 
-Patterns are automatically loaded and merged with built-in patterns.
+Every run reads each `.toml` file in `$XDG_CONFIG_HOME/logsift/patterns/`, which defaults to
+`~/.config/logsift/patterns/`. Your patterns are tried before the built-in ones, so yours wins a
+line both match. A file that fails validation stops the run, and the error names the file.
 
 ### Configuration
 
