@@ -145,3 +145,14 @@ severity = "error"
 description = "File already exists"
 tags = ["npm", "filesystem", "fixable"]
 suggestion = "Remove existing file or use --force flag"
+
+# npm opens most failures with a `code` line, such as E404, EACCES or ELIFECYCLE, and says what
+# failed on the lines after it. So a failure no pattern above names is still reported, once.
+[[patterns]]
+name = "npm_error_code"
+regex = "npm (?:ERR!|error) code (\\S+)"
+severity = "error"
+description = "npm stopped with an error code"
+tags = ["npm"]
+suggestion = "The npm lines after this one say what failed"
+context_lines_after = 5

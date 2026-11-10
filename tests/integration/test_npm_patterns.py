@@ -11,6 +11,15 @@ NPM_FAILURES = {
         'npm_missing_script',
     ),
     'npm 6 missing script': ('npm ERR! missing script: build\n', 'npm_missing_script'),
+    'npm 11 install offline': (
+        'npm error code ENOTCACHED\n'
+        "npm error request to https://registry.npmjs.org/no-such-package failed: cache mode is 'only-if-cached'\n",
+        'npm_error_code',
+    ),
+    'npm 6 failed script': (
+        'npm ERR! code ELIFECYCLE\nnpm ERR! errno 2\nnpm ERR! app@1.0.0 build: `webpack`\nnpm ERR! Exit status 2\n',
+        'npm_error_code',
+    ),
 }
 
 
