@@ -116,10 +116,10 @@ def main(
     ),
 ) -> None:
     """Load config.toml for every command, and queue the daily update notice."""
-    # Never raises and never prints an error; the notice is deferred to exit so
-    # it lands after the command's own output. `logsift update` is the only
-    # place an update failure is reported, and is skipped here because it is
-    # about to do the thing the notice would suggest.
+    # pyselfupdate's notify never raises, and its default defer=True prints the
+    # notice at interpreter exit, after the command's own output.
+    # `logsift update` is the only place an update failure is reported, and is
+    # skipped here because it is about to do the thing the notice would suggest.
     if ctx.invoked_subcommand != 'update':
         notify(UPDATE_CONFIG)
 
