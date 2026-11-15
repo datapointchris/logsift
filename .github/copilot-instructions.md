@@ -6,7 +6,7 @@ lives only in the TOML pattern files, the JSON output contract, and the develope
 
 The facts it points at are read from their source rather than copied here:
 
-- `pyproject.toml` holds the dependencies, the tool settings and the coverage floor
-  (`fail_under`).
+- `pyproject.toml` holds the dependencies and the tool settings. Coverage has no floor, as
+  `CLAUDE.md` says.
 - `.pre-commit-config.yaml` holds the checks every commit runs.
 - `Taskfile.yml` holds the developer commands, and `task --list` names them.
