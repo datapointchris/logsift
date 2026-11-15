@@ -118,8 +118,7 @@ def test_monitor_command_end_to_end():
 
 ## Test Coverage
 
-Run `task test:coverage` for the current figure. `fail_under` in `pyproject.toml` is the enforced
-floor, and a run below it fails.
+Coverage has no enforced floor. Run `task test:coverage` for the current figure.
 
 Check coverage:
 
