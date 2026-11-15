@@ -84,7 +84,17 @@ def add_choose_command(app: typer.Typer, kind: SavedKind, group: str) -> None:
 
 def create_kind_group(kind: SavedKind) -> typer.Typer:
     """The group named for kind: its `list`, `latest` and `choose`, and nothing else."""
-    app = typer.Typer(name=kind, help=KIND_TEXT[kind].group_help, no_args_is_help=True, pretty_exceptions_enable=False)
+    noun = KIND_TEXT[kind].noun
+    epilog = (
+        '\b\nExamples:\n'
+        f'  # Page the most recently written of the saved {noun}\n'
+        f'  logsift {kind} latest\n'
+        f'  # The newest from a run whose name contains pytest\n'
+        f'  logsift {kind} latest pytest\n'
+        f'  # Every saved one, newest first\n'
+        f'  logsift {kind} list'
+    )
+    app = typer.Typer(name=kind, help=KIND_TEXT[kind].group_help, epilog=epilog, no_args_is_help=True, pretty_exceptions_enable=False)
     add_list_command(app, kind, kind)
     add_latest_command(app, kind, kind)
     add_choose_command(app, kind, kind)

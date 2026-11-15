@@ -281,6 +281,16 @@ def analyze(
 
 logs_app = typer.Typer(
     help='Manage cached log files',
+    epilog=(
+        '\b\n'
+        'Examples:\n'
+        '  # Page what the most recent run printed\n'
+        '  logsift logs latest\n'
+        '  # Every cached log, newest first\n'
+        '  logsift logs list\n'
+        '  # Preview deleting logs older than 30 days\n'
+        '  logsift logs clean --days 30 --dry-run'
+    ),
     no_args_is_help=True,
     pretty_exceptions_enable=False,
 )
@@ -291,6 +301,16 @@ add_latest_command(logs_app, SavedKind.RAW, 'logs')
 
 analyzed_app = typer.Typer(
     help='Manage saved analysis results',
+    epilog=(
+        '\b\n'
+        'Examples:\n'
+        '  # Reread the errors the most recent run hit\n'
+        '  logsift analyzed latest\n'
+        '  # The latest analysis of a run named build\n'
+        '  logsift analyzed latest build\n'
+        '  # Every saved analysis, newest first\n'
+        '  logsift analyzed list'
+    ),
     no_args_is_help=True,
     pretty_exceptions_enable=False,
 )
