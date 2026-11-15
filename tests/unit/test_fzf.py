@@ -34,7 +34,7 @@ def test_select_log_file_empty_list():
 
 def test_select_log_file_user_cancels():
     """Test select_log_file when user cancels selection."""
-    logs = [
+    logs: list[dict[str, str | int]] = [
         {
             'context': 'monitor',
             'name': 'test-20240101_120000_000000',
@@ -55,7 +55,7 @@ def test_select_log_file_user_cancels():
 
 def test_select_log_file_success():
     """Test successful log file selection."""
-    logs = [
+    logs: list[dict[str, str | int]] = [
         {
             'context': 'monitor',
             'name': 'test-20240101_120000_000000',

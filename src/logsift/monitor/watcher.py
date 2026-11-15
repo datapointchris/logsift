@@ -12,7 +12,7 @@ from pathlib import Path
 class LogWatcher:
     """Watch a log file in real-time."""
 
-    def __init__(self, log_file: Path, interval: int = 1) -> None:
+    def __init__(self, log_file: Path, interval: float = 1) -> None:
         """Initialize the log watcher.
 
         Args:

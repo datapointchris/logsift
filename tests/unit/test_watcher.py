@@ -64,7 +64,7 @@ def test_log_watcher_stop(tmp_path):
     log_file.write_text('initial\n')
 
     watcher = LogWatcher(log_file, interval=0.1)
-    lines = []
+    lines: list[str] = []
 
     def watch_thread():
         watcher.watch(lines.append)

@@ -127,7 +127,7 @@ def test_validate_pattern_file_valid():
 
 def test_validate_pattern_file_missing_patterns_key():
     """Test validating pattern file without 'patterns' key."""
-    pattern_file = {'other_key': []}
+    pattern_file: dict[str, list] = {'other_key': []}
 
     try:
         validate_pattern_file(pattern_file)
@@ -149,7 +149,7 @@ def test_validate_pattern_file_patterns_not_list():
 
 def test_validate_pattern_file_empty_patterns():
     """Test validating pattern file with empty patterns list."""
-    pattern_file = {'patterns': []}
+    pattern_file: dict[str, list] = {'patterns': []}
 
     try:
         validate_pattern_file(pattern_file)

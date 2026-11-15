@@ -1,5 +1,7 @@
 """Unit tests for the detector system."""
 
+from typing import Any
+
 from logsift.core.detectors import IssueDetector
 from logsift.core.file_references import FileReferenceDetector
 from logsift.patterns.loader import PatternLoader
@@ -84,7 +86,7 @@ def test_extract_errors_case_insensitive():
 def test_extract_from_empty_list():
     """Test extracting from empty log list."""
     detector = IssueDetector()
-    patterns = {}
+    patterns: dict[str, list[dict[str, Any]]] = {}
     errors, warnings = detector.detect_issues([], patterns)
 
     assert errors == []
@@ -98,7 +100,7 @@ def test_extract_when_none_exist():
         {'level': 'DEBUG', 'message': 'Debug info', 'line_number': 2},
     ]
     detector = IssueDetector()
-    patterns = {}
+    patterns: dict[str, list[dict[str, Any]]] = {}
     errors, warnings = detector.detect_issues(log_entries, patterns)
 
     assert errors == []

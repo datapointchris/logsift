@@ -4,6 +4,8 @@ These tests verify that logsift extracts hook names from pre-commit output
 and includes them in the summary for LLM consumption.
 """
 
+from typing import Any
+
 import toon_format
 
 from logsift.core.analyzer import Analyzer
@@ -110,7 +112,7 @@ mypy...Passed
 
 def test_toon_carries_only_the_failed_hooks():
     """toon names the hooks that failed, and leaves out the passed list and an empty failed one."""
-    analysis_result = {
+    analysis_result: dict[str, Any] = {
         'summary': {'status': 'failed', 'exit_code': 1},
         'stats': {'total_errors': 0, 'total_warnings': 0},
         'errors': [],

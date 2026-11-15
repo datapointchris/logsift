@@ -98,7 +98,7 @@ exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:", "@abstractmethod"]
 [tool.mypy]
 pretty = true
 ignore_missing_imports = true
-check_untyped_defs = false
+check_untyped_defs = true
 warn_return_any = false
 # Same tree ruff already excludes below. These files carry deliberate type
 # errors so the pattern tests have real mypy output to match against; CI runs
