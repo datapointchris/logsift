@@ -113,11 +113,12 @@ def stream_analyze_log(log_file: str, interval: int = 1) -> None:
         stderr_console.print(f'[red]Error reading file: {e}[/red]')
         sys.exit(1)
 
+    lines_count = len(existing_content.splitlines())
+
     if existing_content:
         result = analyzer.analyze(existing_content)
         console.clear()
         console.print(f'[blue]Stream analyzing:[/blue] {file_path}')
-        lines_count = len(existing_content.splitlines())
         errors = result['stats']['total_errors']
         warnings = result['stats']['total_warnings']
         console.print(f'Lines: {lines_count} | Errors: {errors} | Warnings: {warnings}\n')
@@ -130,16 +131,16 @@ def stream_analyze_log(log_file: str, interval: int = 1) -> None:
 
     accumulated_content = existing_content
 
-    def process_new_line(line: str) -> None:
-        """Process each new log line."""
-        nonlocal accumulated_content
-        accumulated_content += line + '\n'
+    def process_new_lines(lines: list[str]) -> None:
+        """Re-analyze once for each batch of lines the watcher reads in an interval."""
+        nonlocal accumulated_content, lines_count
+        accumulated_content += ''.join(line + '\n' for line in lines)
+        lines_count += len(lines)
 
         result = analyzer.analyze(accumulated_content)
 
         console.clear()
         console.print(f'[blue]Stream analyzing:[/blue] {file_path}')
-        lines_count = len(accumulated_content.splitlines())
         errors = result['stats']['total_errors']
         warnings = result['stats']['total_warnings']
         console.print(f'Lines: {lines_count} | Errors: {errors} | Warnings: {warnings}\n')
@@ -153,7 +154,7 @@ def stream_analyze_log(log_file: str, interval: int = 1) -> None:
     watcher = LogWatcher(file_path, interval)
 
     try:
-        watcher.watch(process_new_line)
+        watcher.watch(process_new_lines)
     except KeyboardInterrupt:
         stderr_console.print('\n[yellow]Stopped stream analysis[/yellow]')
         watcher.stop()

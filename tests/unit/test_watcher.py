@@ -14,7 +14,7 @@ def test_log_watcher_file_not_found(tmp_path):
     watcher = LogWatcher(log_file)
 
     with pytest.raises(FileNotFoundError, match='Log file not found'):
-        watcher.watch(lambda line: None)
+        watcher.watch(lambda lines: None)
 
 
 def test_log_watcher_processes_new_lines(tmp_path):
@@ -24,9 +24,9 @@ def test_log_watcher_processes_new_lines(tmp_path):
 
     lines_received = []
 
-    def callback(line: str) -> None:
-        lines_received.append(line)
-        # Stop after first new line
+    def callback(lines: list[str]) -> None:
+        lines_received.extend(lines)
+        # Stop once both new lines arrived
         if len(lines_received) >= 2:
             watcher.stop()
 
@@ -67,7 +67,7 @@ def test_log_watcher_stop(tmp_path):
     lines: list[str] = []
 
     def watch_thread():
-        watcher.watch(lines.append)
+        watcher.watch(lines.extend)
 
     thread = threading.Thread(target=watch_thread, daemon=True)
     thread.start()
@@ -83,15 +83,15 @@ def test_log_watcher_stop(tmp_path):
     assert not thread.is_alive()
 
 
-def test_log_watcher_strips_newlines(tmp_path):
-    """Test that watcher strips trailing newlines from lines."""
+def test_log_watcher_batches_lines_without_newlines(tmp_path):
+    """Lines appended together reach the callback as one batch, each without its trailing newline."""
     log_file = tmp_path / 'test.log'
     log_file.write_text('initial\n')
 
-    lines_received = []
+    batches: list[list[str]] = []
 
-    def callback(line: str) -> None:
-        lines_received.append(line)
+    def callback(lines: list[str]) -> None:
+        batches.append(lines)
         watcher.stop()
 
     watcher = LogWatcher(log_file, interval=0.1)
@@ -104,12 +104,10 @@ def test_log_watcher_strips_newlines(tmp_path):
 
     time.sleep(0.2)
 
-    # Append line with newline
     with log_file.open('a') as f:
-        f.write('test line\n')
+        f.write('test line\nsecond line\n')
         f.flush()
 
     thread.join(timeout=1)
 
-    # Line should not have trailing newline
-    assert lines_received == ['test line']
+    assert batches == [['test line', 'second line']]

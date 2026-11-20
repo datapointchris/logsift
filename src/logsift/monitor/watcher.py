@@ -23,11 +23,14 @@ class LogWatcher:
         self.interval = interval
         self._stop_requested = False
 
-    def watch(self, callback: Callable[[str], None]) -> None:
+    def watch(self, callback: Callable[[list[str]], None]) -> None:
         """Start watching the log file.
 
+        Each interval, every line appended since the last one reaches the callback as one batch,
+        so a caller that re-analyzes does so once per burst rather than once per line.
+
         Args:
-            callback: Function to call for each new line
+            callback: Function to call with each batch of new lines, newlines stripped
 
         Raises:
             FileNotFoundError: If log file doesn't exist
@@ -39,12 +42,11 @@ class LogWatcher:
             f.seek(0, os.SEEK_END)
 
             while not self._stop_requested:
-                line = f.readline()
+                lines = f.readlines()
 
-                if line:
-                    callback(line.rstrip('\n'))
-                else:
-                    time.sleep(self.interval)
+                if lines:
+                    callback([line.rstrip('\n') for line in lines])
+                time.sleep(self.interval)
 
     def stop(self) -> None:
         """Stop watching the log file."""
