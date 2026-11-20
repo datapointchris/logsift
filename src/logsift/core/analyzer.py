@@ -47,9 +47,16 @@ class Analyzer:
 
         errors, warnings = self.issue_detector.detect_issues(log_entries, self.patterns)
 
-        enhanced_errors = self._enhance_issues(errors, log_entries)
+        # Each line number's first entry, so finding an issue's context is one lookup rather than a scan.
+        entry_index: dict[int, int] = {}
+        for idx, entry in enumerate(log_entries):
+            line_number = entry.get('line_number')
+            if line_number is not None:
+                entry_index.setdefault(line_number, idx)
 
-        enhanced_warnings = self._enhance_issues(warnings, log_entries)
+        enhanced_errors = self._enhance_issues(errors, log_entries, entry_index)
+
+        enhanced_warnings = self._enhance_issues(warnings, log_entries, entry_index)
 
         hooks = self._detect_hooks(log_entries)
 
@@ -65,7 +72,9 @@ class Analyzer:
             'stats': stats,
         }
 
-    def _enhance_issues(self, issues: list[dict[str, Any]], log_entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    def _enhance_issues(
+        self, issues: list[dict[str, Any]], log_entries: list[dict[str, Any]], entry_index: dict[int, int]
+    ) -> list[dict[str, Any]]:
         """Enhance issues with file references and context.
 
         Pattern matching already happened during detection, so we only add:
@@ -75,6 +84,7 @@ class Analyzer:
         Args:
             issues: List of error or warning dictionaries
             log_entries: All parsed log entries
+            entry_index: Each line number's first position in log_entries
 
         Returns:
             Enhanced issues with additional metadata
@@ -88,15 +98,13 @@ class Analyzer:
                 issue['file_references'] = file_refs
 
             line_number = issue.get('line_in_log')
-            if line_number is not None:
-                for idx, entry in enumerate(log_entries):
-                    if entry.get('line_number') == line_number:
-                        with suppress(IndexError, ValueError):
-                            pattern_context_after = issue.get('pattern_context_lines_after')
-                            context = self._extract_context(log_entries, idx, context_lines_after=pattern_context_after)
-                            issue['context_before'] = context['context_before']
-                            issue['context_after'] = context['context_after']
-                        break
+            idx = entry_index.get(line_number) if line_number is not None else None
+            if idx is not None:
+                with suppress(IndexError, ValueError):
+                    pattern_context_after = issue.get('pattern_context_lines_after')
+                    context = self._extract_context(log_entries, idx, context_lines_after=pattern_context_after)
+                    issue['context_before'] = context['context_before']
+                    issue['context_after'] = context['context_after']
 
             enhanced.append(issue)
 
