@@ -3,6 +3,7 @@
 Handles loading both built-in and custom pattern libraries.
 """
 
+import re
 import tomllib
 from importlib.resources import files
 from importlib.resources.abc import Traversable
@@ -79,7 +80,7 @@ class PatternLoader:
             pattern_file: Path to .toml pattern file
 
         Returns:
-            Dictionary of patterns from the file
+            Dictionary of patterns from the file, each carrying its regex compiled under `compiled`
 
         Raises:
             ValueError: If the TOML is invalid, holds no patterns list, or a pattern is malformed
@@ -91,6 +92,10 @@ class PatternLoader:
             raise ValueError(f'Invalid TOML in {pattern_file}: {e}') from e
 
         validate_pattern_file(data)
+
+        # Detection tries every pattern against every log line, so each regex is compiled once here.
+        for pattern in data['patterns']:
+            pattern['compiled'] = re.compile(pattern['regex'])
 
         return data
 

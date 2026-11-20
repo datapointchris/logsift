@@ -26,7 +26,7 @@ class IssueDetector:
 
         Args:
             log_entries: List of normalized log entry dictionaries
-            patterns: Dictionary of patterns organized by category (from TOML files)
+            patterns: Dictionary of patterns organized by category, as PatternLoader loads them with each regex compiled
 
         Returns:
             Tuple of (errors, warnings) lists with metadata
@@ -65,7 +65,7 @@ class IssueDetector:
             # Method 2: the first TOML pattern to match the line decides it
             message = entry.get('message', '')
             for pattern in all_patterns:
-                found = re.search(pattern['regex'], message)
+                found = pattern['compiled'].search(message)
                 if not found:
                     continue
                 match pattern['severity']:
